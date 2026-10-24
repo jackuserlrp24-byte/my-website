@@ -123,7 +123,7 @@ export async function POST(req: Request) {
       }
     );
 
-    // 4. Send Channel Audit Log Embed to #1563506688798236743
+    // 4. Send Channel Audit Log Embed (Cleaned without emojis)
     try {
       await fetch(`https://discord.com/api/v10/channels/${LOG_CHANNEL_ID}/messages`, {
         method: 'POST',
@@ -134,32 +134,32 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           embeds: [
             {
-              title: '📋 Whitelist Application Submitted',
-              description: `A new whitelist application has been processed and automatically assigned in-game parameters.`,
+              title: 'Whitelist Application Submitted',
+              description: 'A new whitelist application has been processed and automatically assigned in-game parameters.',
               color: 3092790, // Central Operations Blue
               fields: [
                 {
-                  name: '👤 User Identity',
+                  name: 'User Identity',
                   value: `**Full Name:** ${forename} ${surname}\n**DOB:** ${dob}\n**Email:** ${email}`,
                   inline: true
                 },
                 {
-                  name: '🎮 Roleplay Parameters',
+                  name: 'Roleplay Parameters',
                   value: `**RP Name:** ${rpName}\n**Collar Number:** \`[${collarNumber}]\`\n**Formatted Nick:** \`${formattedNickname}\``,
                   inline: true
                 },
                 {
-                  name: '💬 Discord Account',
+                  name: 'Discord Account',
                   value: `**User:** <@${discordId}>\n**ID:** \`${discordId}\``,
                   inline: false
                 },
                 {
-                  name: '🔍 Referral Source',
+                  name: 'Referral Source',
                   value: referralSource || 'None provided',
                   inline: true
                 },
                 {
-                  name: '📜 RP Background / Experience',
+                  name: 'RP Background / Experience',
                   value: rpExperience || 'None provided',
                   inline: false
                 }

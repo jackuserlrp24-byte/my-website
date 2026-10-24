@@ -67,7 +67,7 @@ export default function PatrolsPage() {
       time: time || 'TBD',
       lead: lead || userNickname || 'Shift Lead',
       status: 'UPCOMING',
-      description: description || 'No additional details provided.'
+      description: description || 'No additional briefing details provided.'
     };
 
     try {
@@ -93,32 +93,45 @@ export default function PatrolsPage() {
     }
   };
 
-  const handleAttendanceToggle = (patrolId: string, statusType: 'attending' | 'unattending') => {
+  const handleAttendanceToggle = async (patrolId: string, statusType: 'attending' | 'unattending') => {
     if (!userNickname) {
-      alert('Session not detected. Please ensure you are logged into your Discord account via the panel.');
+      alert('Session not detected. Please ensure you are logged into your Discord account via the portal.');
       return;
     }
 
-    setAttendanceLists((prev: AttendanceState) => {
-      const current = prev[patrolId] || { attending: [], unattending: [] };
-      const attending = current.attending.filter((name: string) => name !== userNickname);
-      const unattending = current.unattending.filter((name: string) => name !== userNickname);
+    const current = attendanceLists[patrolId] || { attending: [], unattending: [] };
+    const attending = current.attending.filter((name: string) => name !== userNickname);
+    const unattending = current.unattending.filter((name: string) => name !== userNickname);
 
-      if (statusType === 'attending') {
-        attending.push(userNickname);
-      } else if (statusType === 'unattending') {
-        unattending.push(userNickname);
-      }
+    if (statusType === 'attending') {
+      attending.push(userNickname);
+    } else if (statusType === 'unattending') {
+      unattending.push(userNickname);
+    }
 
-      return {
-        ...prev,
-        [patrolId]: { attending, unattending }
-      };
-    });
+    const updatedLists = {
+      ...attendanceLists,
+      [patrolId]: { attending, unattending }
+    };
+
+    setAttendanceLists(updatedLists);
+
+    // Sync with backend / Discord embed update
+    try {
+      await fetch('/api/patrols/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patrolId, userNickname, statusType, attendance: updatedLists[patrolId] }),
+      });
+    } catch (err) {
+      console.error('Failed to sync attendance:', err);
+    }
   };
 
   return (
-    <main className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-12">
+    <main className="flex flex-col px-8 mt-6 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none antialiased">
+      
+      {/* Top Header Banner */}
       <div className="w-full bg-neutral-900/90 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         
@@ -142,82 +155,83 @@ export default function PatrolsPage() {
         </button>
       </div>
 
+      {/* Create Patrol Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-neutral-800 max-w-lg w-full p-6 shadow-2xl relative">
             <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
             
-            <h3 className="text-lg font-bold text-neutral-100 mb-1">Schedule New Patrol Shift</h3>
-            <p className="text-xs text-neutral-400 mb-6">Publishing will log your creator handle automatically.</p>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-100 mb-1 font-mono">Schedule New Patrol Shift</h3>
+            <p className="text-xs text-neutral-400 mb-6 font-mono">Publishing will log your creator handle automatically and broadcast to Discord.</p>
 
             <form onSubmit={handleCreatePatrol} className="space-y-4">
               <div>
-                <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Shift Title</label>
+                <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Shift Title</label>
                 <input 
                   type="text" 
                   required
                   placeholder="e.g. Metropolitan Police Joint Agency Shift"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Division</label>
+                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Division</label>
                   <input 
                     type="text" 
                     required
                     placeholder="e.g. Metropolitan Police"
                     value={division}
                     onChange={(e) => setDivision(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Shift Lead</label>
+                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Shift Lead</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Insp. Harrison"
                     value={lead}
                     onChange={(e) => setLead(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Date</label>
+                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Date</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Friday, Oct 2, 2026"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Time</label>
+                  <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Time</label>
                   <input 
                     type="text" 
                     placeholder="e.g. 20:00 BST"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1">Description / Briefing</label>
+                <label className="block text-[11px] font-mono text-neutral-400 uppercase tracking-wider mb-1.5">Description / Briefing</label>
                 <textarea 
                   rows={3}
                   placeholder="Enter briefing guidelines..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]"
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none transition-colors"
                 />
               </div>
 
@@ -225,14 +239,14 @@ export default function PatrolsPage() {
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold uppercase tracking-wider cursor-pointer transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-50 transition-colors"
                 >
                   {isSubmitting ? 'Publishing...' : 'Publish Patrol'}
                 </button>
@@ -242,11 +256,12 @@ export default function PatrolsPage() {
         </div>
       )}
 
+      {/* Patrols Feed */}
       <div className="grid grid-cols-1 gap-4">
         {patrols.length === 0 ? (
-          <div className="bg-neutral-900/60 border border-neutral-800/80 p-12 text-center flex flex-col items-center justify-center">
-            <p className="text-xs font-mono text-neutral-500 uppercase tracking-wider mb-2">No active patrols scheduled</p>
-            <p className="text-xs text-neutral-400 max-w-sm mb-4">Click the "+ Create Patrol" button above to publish your first shift deployment.</p>
+          <div className="bg-neutral-900/60 border border-neutral-800/80 p-16 text-center flex flex-col items-center justify-center">
+            <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">No active patrols scheduled</p>
+            <p className="text-xs text-neutral-400 max-w-sm">Click the "+ Create Patrol" button above to publish your first shift deployment.</p>
           </div>
         ) : (
           patrols.map((patrol: PatrolShift) => {
@@ -263,13 +278,13 @@ export default function PatrolsPage() {
             return (
               <div 
                 key={patrol.id}
-                className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col gap-6 hover:border-neutral-700 transition-colors"
+                className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col gap-6 hover:border-neutral-700 transition-colors shadow-lg"
               >
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                   <div className="flex flex-col gap-2 max-w-3xl">
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-mono text-neutral-500">{patrol.id}</span>
-                      <span className={`px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-wider border rounded ${statusColor}`}>
+                      <span className={`px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-wider border rounded-sm ${statusColor}`}>
                         {patrol.status}
                       </span>
                       <span className="text-xs font-mono text-[#5865F2] uppercase">{patrol.division}</span>
@@ -283,7 +298,7 @@ export default function PatrolsPage() {
                       {patrol.description}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-neutral-400 mt-2">
+                    <div className="flex flex-wrap items-center gap-6 text-xs font-mono text-neutral-400 mt-2">
                       <div>Date: <span className="text-neutral-200">{patrol.date}</span></div>
                       <div>Time: <span className="text-neutral-200">{patrol.time}</span></div>
                       <div>Lead: <span className="text-neutral-200">{patrol.lead}</span></div>
@@ -297,7 +312,7 @@ export default function PatrolsPage() {
                           onClick={() => handleAttendanceToggle(patrol.id, 'attending')}
                           className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border ${
                             isUserAttending
-                              ? 'bg-emerald-600 border-emerald-500 text-white'
+                              ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
                               : 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-900/60 text-emerald-400'
                           }`}
                         >
@@ -307,11 +322,11 @@ export default function PatrolsPage() {
                           onClick={() => handleAttendanceToggle(patrol.id, 'unattending')}
                           className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border ${
                             isUserUnattending
-                              ? 'bg-red-600 border-red-500 text-white'
+                              ? 'bg-red-600 border-red-500 text-white shadow-md'
                               : 'bg-red-950/40 hover:bg-red-900/50 border-red-900/60 text-red-400'
                           }`}
                         >
-                          Unattending
+                          Not Attending
                         </button>
                       </>
                     ) : (
@@ -325,32 +340,45 @@ export default function PatrolsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-neutral-800/60 text-xs font-mono">
-                  <div className="bg-neutral-950/50 border border-neutral-800/80 p-3">
-                    <span className="text-emerald-400 uppercase tracking-wider block mb-1">Attending:</span>
+                {/* Attendance Lists Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-neutral-800/80 text-xs font-mono">
+                  
+                  {/* Booked On Section */}
+                  <div className="bg-neutral-950/60 border border-neutral-800/80 p-3.5">
+                    <span className="text-emerald-400 uppercase tracking-widest block mb-2 font-semibold">
+                      Booked On ({currentList.attending.length}):
+                    </span>
                     <div className="text-neutral-300 flex flex-col gap-1">
                       {currentList.attending.length > 0 ? (
                         currentList.attending.map((name: string, idx: number) => (
-                          <span key={idx} className="text-neutral-200 font-sans">- {name}</span>
+                          <span key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-2 py-1 border border-neutral-800/60">
+                            {name}
+                          </span>
                         ))
                       ) : (
-                        <span className="text-neutral-600 italic">None</span>
+                        <span className="text-neutral-600 italic">No personnel booked on yet.</span>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-neutral-950/50 border border-neutral-800/80 p-3">
-                    <span className="text-red-400 uppercase tracking-wider block mb-1">Not Attending:</span>
+                  {/* Not Attending Section */}
+                  <div className="bg-neutral-950/60 border border-neutral-800/80 p-3.5">
+                    <span className="text-red-400 uppercase tracking-widest block mb-2 font-semibold">
+                      Not Attending ({currentList.unattending.length}):
+                    </span>
                     <div className="text-neutral-300 flex flex-col gap-1">
                       {currentList.unattending.length > 0 ? (
                         currentList.unattending.map((name: string, idx: number) => (
-                          <span key={idx} className="text-neutral-200 font-sans">- {name}</span>
+                          <span key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-2 py-1 border border-neutral-800/60">
+                            {name}
+                          </span>
                         ))
                       ) : (
-                        <span className="text-neutral-600 italic">None</span>
+                        <span className="text-neutral-600 italic">No personnel marked absent.</span>
                       )}
                     </div>
                   </div>
+
                 </div>
 
               </div>
