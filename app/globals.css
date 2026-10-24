@@ -21,27 +21,3 @@
 .suggestions {
   font-family: 'Inter', sans-serif !important;
 }
-
-/* Brighter & Slower Background Slideshow Animations (45-second loop) */
-@keyframes slideShow {
-  0% { opacity: 0; }
-  10% { opacity: 0.75; }
-  33% { opacity: 0.75; }
-  43% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-.animate-slide-1 {
-  animation: slideShow 45s infinite;
-  animation-delay: 0s;
-}
-
-.animate-slide-2 {
-  animation: slideShow 45s infinite;
-  animation-delay: 15s;
-}
-
-.animate-slide-3 {
-  animation: slideShow 45s infinite;
-  animation-delay: 30s;
-}

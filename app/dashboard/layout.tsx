@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import BackgroundSlideshow from './BackgroundSlideshow';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,27 +102,11 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen w-full text-neutral-100 flex flex-col justify-between select-none antialiased relative overflow-x-hidden">
       
-      {/* Background Slideshow Layer */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-neutral-950">
-        {/* Slide 1 */}
-        <div className="absolute inset-0 opacity-75 animate-slide-1">
-          <Image src="/slide1.png" alt="Background Slide 1" fill priority className="object-cover" />
-        </div>
-        {/* Slide 2 */}
-        <div className="absolute inset-0 opacity-75 animate-slide-2">
-          <Image src="/slide2.png" alt="Background Slide 2" fill priority className="object-cover" />
-        </div>
-        {/* Slide 3 */}
-        <div className="absolute inset-0 opacity-75 animate-slide-3">
-          <Image src="/slide3.png" alt="Background Slide 3" fill priority className="object-cover" />
-        </div>
-
-        {/* Lighter overlay to show background images clearly */}
-        <div className="absolute inset-0 bg-neutral-950/50 backdrop-blur-[1px]" />
-      </div>
+      {/* Client-side Background Slideshow */}
+      <BackgroundSlideshow />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-10 py-5 bg-neutral-900/80 border-b border-neutral-800/80 backdrop-blur-md shrink-0">
+      <header className="sticky top-0 z-50 flex items-center justify-between px-10 py-5 bg-neutral-900/90 border-b border-neutral-800 backdrop-blur-md shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 rounded bg-neutral-800 border border-neutral-700 overflow-hidden">
             <Image src="/logo.png" alt="Server Logo" fill sizes="40px" className="object-cover" />
@@ -134,7 +119,7 @@ export default async function DashboardLayout({
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="px-3 py-1.5 bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
           >
             Dashboard
           </Link>
@@ -142,7 +127,7 @@ export default async function DashboardLayout({
           {access.isManagement && (
             <Link
               href="/dashboard/management"
-              className="px-3 py-1.5 bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
               Management
             </Link>
@@ -150,14 +135,14 @@ export default async function DashboardLayout({
 
           <Link
             href="/dashboard/command"
-            className="px-3 py-1.5 bg-neutral-800/80 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
           >
             Command
           </Link>
 
           {/* Profile Dropdown */}
           <details className="relative group ml-2">
-            <summary className="flex items-center gap-2.5 bg-neutral-950/80 border border-neutral-800 hover:border-neutral-700 px-3 py-1.5 cursor-pointer list-none transition-colors">
+            <summary className="flex items-center gap-2.5 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 px-3 py-1.5 cursor-pointer list-none transition-colors">
               <img 
                 src={avatarUrl} 
                 alt="User Avatar" 
@@ -201,7 +186,7 @@ export default async function DashboardLayout({
       </div>
 
       {/* Global Uniform Footer */}
-      <footer className="flex flex-col sm:flex-row items-center justify-between px-8 py-3 bg-neutral-900/80 border-t border-neutral-800/80 text-xs text-neutral-400 w-full shrink-0 backdrop-blur-md z-10">
+      <footer className="flex flex-col sm:flex-row items-center justify-between px-8 py-3 bg-neutral-900/90 border-t border-neutral-800 text-xs text-neutral-400 w-full shrink-0 backdrop-blur-md z-10">
         <div className="max-w-[1450px] mx-auto w-full flex flex-col sm:flex-row items-center justify-between">
           <p className="font-mono text-[11px]">&copy; Central Operations. All rights reserved.</p>
           
