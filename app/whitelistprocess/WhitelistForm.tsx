@@ -52,10 +52,10 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
 
       if (data.success) {
         setSuccess(true);
-        // Delay navigation slightly so Discord API role assignment finishes propagating
+        // Force full browser navigation straight to the main dashboard
         setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
+          window.location.assign('/dashboard');
+        }, 1000);
       } else {
         alert(data.error || 'An error occurred.');
         setLoading(false);
@@ -130,7 +130,7 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
               </svg>
             </div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">Application Approved</h3>
-            <p className="text-xs text-neutral-400">Your collar number has been assigned and roles updated. Redirecting to dashboard...</p>
+            <p className="text-xs text-neutral-400">Your collar number has been assigned. Entering main dashboard...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
