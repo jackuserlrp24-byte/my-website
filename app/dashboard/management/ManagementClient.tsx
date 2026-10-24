@@ -53,10 +53,10 @@ export default function ManagementClient({
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         <div>
           <span className="text-[10px] text-[#5865F2] tracking-widest uppercase block mb-1">
-            ADMINISTRATION & OVERVIEW
+            Administration & Overview
           </span>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-100 uppercase">
-            Management Center
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
+            Management Panel
           </h2>
           <p className="text-xs text-neutral-400 mt-1 font-sans">
             Centralized administration suite for user dossier lookups, shift dispatches, community broadcasts, and moderation history.
@@ -68,29 +68,29 @@ export default function ManagementClient({
       <div className="flex border-b border-neutral-800 bg-neutral-900/50 p-1 gap-1 overflow-x-auto">
         <button
           onClick={() => setActiveTab('dossiers')}
-          className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+          className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'dossiers'
               ? 'bg-[#5865F2] border-[#5865F2] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Operator Dossiers
+          User Search
         </button>
 
         <button
           onClick={() => setActiveTab('patrols')}
-          className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+          className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'patrols'
               ? 'bg-[#5865F2] border-[#5865F2] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Patrol Dispatch ({patrols.length})
+          Manage Events ({patrols.length})
         </button>
 
         <button
           onClick={() => setActiveTab('notices')}
-          className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+          className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'notices'
               ? 'bg-[#5865F2] border-[#5865F2] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
@@ -101,23 +101,23 @@ export default function ManagementClient({
 
         <button
           onClick={() => setActiveTab('logs')}
-          className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border shrink-0 ${
+          className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'logs'
               ? 'bg-[#5865F2] border-[#5865F2] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Global Infraction Registry
+          Global Moderation Data
         </button>
       </div>
 
-      {/* TAB 1: OPERATOR DOSSIER LOOKUP */}
+      {/* TAB 1: USER SEARCH & DOSSIER LOOKUP */}
       {activeTab === 'dossiers' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-100">
-                Operator Registry & Dossier Lookup
+              <h3 className="text-sm font-bold tracking-wider text-neutral-100">
+                User Search & Record Lookup
               </h3>
               <p className="text-xs text-neutral-400 font-sans mt-0.5">
                 Select a registered operator from the dropdown or search by name, collar number, or ID.
@@ -160,7 +160,7 @@ export default function ManagementClient({
                   alt="Avatar" 
                   className="w-20 h-20 rounded-full border border-neutral-700 mb-3 shadow-lg object-cover"
                 />
-                <h4 className="text-sm font-bold text-neutral-100 uppercase tracking-wide">
+                <h4 className="text-sm font-bold text-neutral-100 tracking-wide">
                   {selectedUser.rp_name || `${selectedUser.forename} ${selectedUser.surname}`}
                 </h4>
                 <p className="text-xs text-neutral-500 mb-1">Collar: #{selectedUser.collar_number}</p>
@@ -178,7 +178,7 @@ export default function ManagementClient({
 
               {/* Roles Breakdown */}
               <div className="flex flex-col border-b lg:border-b-0 lg:border-r border-neutral-800 pb-6 lg:pb-0 lg:pr-6">
-                <h5 className="text-[11px] uppercase tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
+                <h5 className="text-[11px] tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
                   Active Guild Roles ({selectedUser.discord?.roles?.length || 0})
                 </h5>
                 <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto pr-1">
@@ -201,7 +201,7 @@ export default function ManagementClient({
 
               {/* Moderation Records */}
               <div className="flex flex-col">
-                <h5 className="text-[11px] uppercase tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
+                <h5 className="text-[11px] tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
                   Infraction History ({selectedUser.moderation?.length || 0})
                 </h5>
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -233,57 +233,57 @@ export default function ManagementClient({
         </div>
       )}
 
-      {/* TAB 2: PATROL DISPATCH */}
+      {/* TAB 2: MANAGE EVENTS */}
       {activeTab === 'patrols' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-100 pb-3 border-b border-neutral-800">
-            Patrol Dispatch & Shift Management
+          <h3 className="text-sm font-bold tracking-wider text-neutral-100 pb-3 border-b border-neutral-800">
+            Manage Events & Shift Dispatch
           </h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Create Patrol Form */}
+            {/* Create Event Form */}
             <div className="bg-neutral-950 border border-neutral-800 p-5">
-              <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-3">Schedule Shift</h4>
+              <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Schedule Shift</h4>
               <form action={actions.createManagementPatrol} className="space-y-3">
                 <input type="hidden" name="creator" value={currentModName} />
                 <div>
-                  <label className="block text-[10px] uppercase text-neutral-400 mb-1">Shift Title</label>
+                  <label className="block text-[10px] text-neutral-400 mb-1">Shift Title</label>
                   <input type="text" name="title" required placeholder="e.g. MET Police Joint Patrol" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] uppercase text-neutral-400 mb-1">Division</label>
+                    <label className="block text-[10px] text-neutral-400 mb-1">Division</label>
                     <input type="text" name="division" required placeholder="e.g. MET Police" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase text-neutral-400 mb-1">Shift Lead</label>
+                    <label className="block text-[10px] text-neutral-400 mb-1">Shift Lead</label>
                     <input type="text" name="lead" placeholder="e.g. Insp. Harrison" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] uppercase text-neutral-400 mb-1">Date</label>
+                    <label className="block text-[10px] text-neutral-400 mb-1">Date</label>
                     <input type="text" name="date" placeholder="e.g. Friday, Oct 2" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase text-neutral-400 mb-1">Time</label>
+                    <label className="block text-[10px] text-neutral-400 mb-1">Time</label>
                     <input type="text" name="time" placeholder="e.g. 20:00 BST" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase text-neutral-400 mb-1">Briefing Description</label>
+                  <label className="block text-[10px] text-neutral-400 mb-1">Briefing Description</label>
                   <textarea name="description" rows={2} placeholder="Briefing guidelines..." className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
                 </div>
-                <button type="submit" className="w-full py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer">
+                <button type="submit" className="w-full py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                   Publish & Dispatch Shift
                 </button>
               </form>
             </div>
 
-            {/* Active Patrols List */}
+            {/* Active Events List */}
             <div className="lg:col-span-2 bg-neutral-950 border border-neutral-800 p-5">
-              <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-3">Active Patrols ({patrols.length})</h4>
+              <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Active Events ({patrols.length})</h4>
               <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                 {patrols.length > 0 ? (
                   patrols.map((p) => (
@@ -300,7 +300,7 @@ export default function ManagementClient({
                       <form action={actions.deletePatrol}>
                         <input type="hidden" name="patrolId" value={p.id} />
                         <input type="hidden" name="messageId" value={p.discord_message_id} />
-                        <button type="submit" className="px-3 py-1.5 bg-neutral-800 hover:bg-red-950 border border-neutral-700 hover:border-red-800 text-neutral-300 hover:text-red-400 text-[11px] uppercase tracking-wider transition-colors cursor-pointer">
+                        <button type="submit" className="px-3 py-1.5 bg-neutral-800 hover:bg-red-950 border border-neutral-700 hover:border-red-800 text-neutral-300 hover:text-red-400 text-[11px] tracking-wider transition-colors cursor-pointer">
                           Delete Shift
                         </button>
                       </form>
@@ -323,27 +323,27 @@ export default function ManagementClient({
           {/* Post Notice */}
           <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col justify-between">
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
+              <h3 className="text-xs font-semibold tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
                 Publish Community Notice
               </h3>
               <form action={actions.postNotice} className="space-y-4">
                 <input type="hidden" name="author" value={currentModName} />
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Notice Title</label>
+                  <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Notice Title</label>
                   <input type="text" name="title" required placeholder="e.g. Mandatory Briefing" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Content / Body</label>
+                  <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Content / Body</label>
                   <textarea name="content" rows={3} required placeholder="Enter notice details..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
                 </div>
-                <button type="submit" className="w-full py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer">
+                <button type="submit" className="w-full py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                   Broadcast Notice
                 </button>
               </form>
             </div>
 
             <div className="mt-6 pt-4 border-t border-neutral-800">
-              <h4 className="text-[11px] text-neutral-400 uppercase tracking-widest mb-3">Live Notices ({notices.length})</h4>
+              <h4 className="text-[11px] text-neutral-400 tracking-widest mb-3">Live Notices ({notices.length})</h4>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {notices.map((n) => (
                   <div key={n.id} className="bg-neutral-950 border border-neutral-800 p-2.5">
@@ -357,23 +357,23 @@ export default function ManagementClient({
 
           {/* Issue Moderation */}
           <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
+            <h3 className="text-xs font-semibold tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
               Issue Moderation Action
             </h3>
             <form action={actions.issueModeration} className="space-y-4">
               <input type="hidden" name="moderator" value={currentModName} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Target Discord ID</label>
+                  <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Target Discord ID</label>
                   <input type="text" name="discordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Username / Handle</label>
+                  <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Username / Handle</label>
                   <input type="text" name="username" placeholder="e.g. J.Costin" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Action Type</label>
+                <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Action Type</label>
                 <select name="actionType" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] cursor-pointer">
                   <option value="WARN">WARNING</option>
                   <option value="BAN">BAN / SUSPENSION</option>
@@ -381,10 +381,10 @@ export default function ManagementClient({
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Reason / Details</label>
+                <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Reason / Details</label>
                 <textarea name="reason" rows={3} required placeholder="Infraction details..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer">
+              <button type="submit" className="w-full py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                 Log Moderation Action
               </button>
             </form>
@@ -393,23 +393,23 @@ export default function ManagementClient({
         </div>
       )}
 
-      {/* TAB 4: GLOBAL INFRACTION REGISTRY */}
+      {/* TAB 4: GLOBAL MODERATION DATA */}
       {activeTab === 'logs' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 pb-3 border-b border-neutral-800">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">
-              Global Moderation History Registry
+            <h3 className="text-xs font-semibold tracking-wider text-neutral-200">
+              Global Moderation Data
             </h3>
             <form method="GET" className="flex gap-2 w-full sm:w-auto">
               <input type="text" name="search" defaultValue={modSearchQuery} placeholder="Search logs..." className="bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] w-full sm:w-64" />
-              <button type="submit" className="px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase transition-colors">Filter</button>
+              <button type="submit" className="px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold transition-colors">Filter</button>
             </form>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-neutral-800 text-neutral-400 text-[10px] uppercase tracking-wider">
+                <tr className="border-b border-neutral-800 text-neutral-400 text-[10px] tracking-wider">
                   <th className="py-2.5 px-3">Date / Time</th>
                   <th className="py-2.5 px-3">Type</th>
                   <th className="py-2.5 px-3">User</th>
