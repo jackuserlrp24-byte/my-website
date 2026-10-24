@@ -10,22 +10,36 @@ const supabase = createClient(
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = '1532786346920247398';
 
-interface CreatePatrolBody {
-  title?: string;
-  division?: string;
-  date?: string;
-  time?: string;
-  lead?: string;
-  description?: string;
-  id?: string;
+// GET: Fetch active patrols created within the last 24 hours
+export async function GET() {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabase
+      .from('patrols')
+      .select('*')
+      .gte('created_at', twentyFourHoursAgo)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch patrols:', error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, patrols: data || [] });
+  } catch (error) {
+    console.error('Error fetching patrols:', error);
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
+// POST: Create a new patrol shift
 export async function POST(request: Request) {
   try {
     const session = await getDiscordSession();
     const creatorName = session ? getDiscordDisplayName(session) : 'Server Staff';
 
-    const body = (await request.json()) as CreatePatrolBody;
+    const body = await request.json();
     const { title, division, date, time, lead, description, id } = body;
 
     const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
@@ -83,7 +97,8 @@ export async function POST(request: Request) {
         description,
         status: 'UPCOMING',
         attending: [],
-        unattending: []
+        unattending: [],
+        created_at: new Date().toISOString()
       });
     }
 

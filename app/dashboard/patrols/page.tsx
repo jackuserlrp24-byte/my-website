@@ -11,6 +11,8 @@ interface PatrolShift {
   lead: string;
   status: 'UPCOMING' | 'ACTIVE' | 'CONCLUDED';
   description: string;
+  attending?: string[];
+  unattending?: string[];
 }
 
 interface AttendanceState {
@@ -25,6 +27,7 @@ export default function PatrolsPage() {
   const [patrols, setPatrols] = useState<PatrolShift[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   
   const [attendanceLists, setAttendanceLists] = useState<AttendanceState>({});
 
@@ -35,19 +38,44 @@ export default function PatrolsPage() {
   const [lead, setLead] = useState<string>('');
   const [description, setDescription] = useState<string>('');
 
+  // Fetch session & persistent patrols from DB on load
   useEffect(() => {
-    async function fetchSession() {
+    async function loadInitialData() {
       try {
-        const res = await fetch('/api/auth/discord/session');
-        if (res.ok) {
-          const data = await res.json();
-          setUserNickname(data?.user?.name || data?.name || '');
+        const [sessionRes, patrolsRes] = await Promise.all([
+          fetch('/api/auth/discord/session'),
+          fetch('/api/patrols')
+        ]);
+
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          setUserNickname(sessionData?.user?.name || sessionData?.name || '');
+        }
+
+        if (patrolsRes.ok) {
+          const patrolsData = await patrolsRes.json();
+          if (patrolsData.success && Array.isArray(patrolsData.patrols)) {
+            setPatrols(patrolsData.patrols);
+
+            // Populate attendance state mapping from fetched database records
+            const initialAttendance: AttendanceState = {};
+            patrolsData.patrols.forEach((p: PatrolShift) => {
+              initialAttendance[p.id] = {
+                attending: p.attending || [],
+                unattending: p.unattending || []
+              };
+            });
+            setAttendanceLists(initialAttendance);
+          }
         }
       } catch (err) {
-        console.error('Failed to load session user:', err);
+        console.error('Failed to load patrol data:', err);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchSession();
+
+    loadInitialData();
   }, []);
 
   const handleCreatePatrol = async (e: React.FormEvent) => {
@@ -67,25 +95,35 @@ export default function PatrolsPage() {
       time: time || 'TBD',
       lead: lead || userNickname || 'Shift Lead',
       status: 'UPCOMING',
-      description: description || 'No additional briefing details provided.'
+      description: description || 'No additional briefing details provided.',
+      attending: [],
+      unattending: []
     };
 
     try {
-      await fetch('/api/patrols', {
+      const res = await fetch('/api/patrols', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newPatrol, userNickname }),
       });
 
-      setPatrols([newPatrol, ...patrols]);
-      setIsModalOpen(false);
+      if (res.ok) {
+        setPatrols([newPatrol, ...patrols]);
+        setAttendanceLists((prev) => ({
+          ...prev,
+          [newPatrol.id]: { attending: [], unattending: [] }
+        }));
+        setIsModalOpen(false);
 
-      setTitle('');
-      setDivision('');
-      setDate('');
-      setTime('');
-      setLead('');
-      setDescription('');
+        setTitle('');
+        setDivision('');
+        setDate('');
+        setTime('');
+        setLead('');
+        setDescription('');
+      } else {
+        alert('Failed to publish patrol shift.');
+      }
     } catch (error) {
       console.error('Error posting patrol:', error);
     } finally {
@@ -142,7 +180,7 @@ export default function PatrolsPage() {
             Server Organised Patrols
           </h2>
           <p className="text-xs text-neutral-400 mt-1">
-            Review upcoming community shifts and book your attendance using your connected Discord identity.
+            Review active community shifts. Patrols automatically remain active for 24 hours.
           </p>
         </div>
 
@@ -257,9 +295,13 @@ export default function PatrolsPage() {
 
       {/* Patrol Cards Feed */}
       <div className="grid grid-cols-1 gap-6">
-        {patrols.length === 0 ? (
+        {loading ? (
+          <div className="bg-neutral-900 border border-neutral-800 p-12 text-center text-xs font-mono text-neutral-500 uppercase tracking-widest">
+            Loading active operational deployments...
+          </div>
+        ) : patrols.length === 0 ? (
           <div className="bg-neutral-900 border border-neutral-800 p-16 text-center flex flex-col items-center justify-center shadow-lg">
-            <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">No active patrols scheduled</p>
+            <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">No active patrols scheduled in the last 24 hours</p>
             <p className="text-xs text-neutral-400 max-w-sm">Click the "+ Create Patrol" button above to publish your first shift deployment.</p>
           </div>
         ) : (
