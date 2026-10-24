@@ -21,3 +21,27 @@
 .suggestions {
   font-family: 'Inter', sans-serif !important;
 }
+
+/* Background Slideshow Animations */
+@keyframes slideShow {
+  0% { opacity: 0; }
+  20% { opacity: 0.4; }
+  33% { opacity: 0.4; }
+  53% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.animate-slide-1 {
+  animation: slideShow 15s infinite;
+  animation-delay: 0s;
+}
+
+.animate-slide-2 {
+  animation: slideShow 15s infinite;
+  animation-delay: 5s;
+}
+
+.animate-slide-3 {
+  animation: slideShow 15s infinite;
+  animation-delay: 10s;
+}
