@@ -11,6 +11,8 @@ interface Props {
   modSearchQuery: string;
   actions: {
     postNotice: (formData: FormData) => Promise<void>;
+    editNotice: (formData: FormData) => Promise<void>;
+    deleteNotice: (formData: FormData) => Promise<void>;
     issueModeration: (formData: FormData) => Promise<void>;
     createManagementPatrol: (formData: FormData) => Promise<void>;
     deletePatrol: (formData: FormData) => Promise<void>;
@@ -29,6 +31,14 @@ export default function ManagementClient({
   const [activeTab, setActiveTab] = useState<'dossiers' | 'patrols' | 'notices' | 'logs'>('dossiers');
   const [userSearchText, setUserSearchText] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // States for Live Notices interactivity
+  const [expandedNotices, setExpandedNotices] = useState<Record<string, boolean>>({});
+  const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
+
+  const toggleExpandNotice = (id: string) => {
+    setExpandedNotices((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     allUsers.length > 0 ? allUsers[0].discord_id : null
@@ -220,7 +230,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                   
-                  {/* Forename */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Forename</span>
@@ -231,7 +240,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Surname */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Surname</span>
@@ -242,7 +250,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Email */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div className="truncate pr-2">
                       <span className="block text-[10px] text-neutral-500 uppercase">Email Address</span>
@@ -253,7 +260,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Collar Number */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Collar Number</span>
@@ -264,7 +270,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Date of Birth */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Date of Birth</span>
@@ -275,7 +280,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Hours Played */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">FiveM Hours</span>
@@ -286,7 +290,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Referral Source */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Referral Source</span>
@@ -297,7 +300,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </button>
                   </div>
 
-                  {/* Working Microphone */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Working Microphone</span>
@@ -305,7 +307,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     </div>
                   </div>
 
-                  {/* Agreed to Rules */}
                   <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
                     <div>
                       <span className="block text-[10px] text-neutral-500 uppercase">Agreed to Rules</span>
@@ -315,7 +316,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
 
                 </div>
 
-                {/* Roleplay Experience Narrative */}
                 <div className="bg-neutral-900 border border-neutral-800 p-4 mt-2">
                   <span className="block text-[10px] text-neutral-500 uppercase mb-1">Roleplay Experience / Background Statement</span>
                   <p className="text-xs text-neutral-300 font-sans leading-relaxed">
@@ -327,7 +327,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
               {/* Grid 2: Discord Account & Guild Roles */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
-                {/* Discord Account Details */}
                 <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
                   <div>
                     <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
@@ -362,7 +361,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                   </div>
                 </div>
 
-                {/* Active Discord Guild Roles */}
                 <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
                   <div>
                     <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
@@ -432,7 +430,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Create Event Form */}
             <div className="bg-neutral-950 border border-neutral-800 p-5">
               <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Schedule Shift</h4>
               <form action={actions.createManagementPatrol} className="space-y-3">
@@ -471,7 +468,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
               </form>
             </div>
 
-            {/* Active Events List */}
             <div className="lg:col-span-2 bg-neutral-950 border border-neutral-800 p-5">
               <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Active Events ({patrols.length})</h4>
               <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -510,8 +506,8 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
       {activeTab === 'notices' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Post Notice */}
-          <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col justify-between">
+          {/* Post Notice & Live Management List */}
+          <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col justify-between gap-6">
             <div>
               <h3 className="text-xs font-semibold tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
                 Publish Community Notice
@@ -532,15 +528,77 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
               </form>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-neutral-800">
-              <h4 className="text-[11px] text-neutral-400 tracking-widest mb-3">Live Notices ({notices.length})</h4>
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                {notices.map((n) => (
-                  <div key={n.id} className="bg-neutral-950 border border-neutral-800 p-2.5">
-                    <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-neutral-200">{n.title}</span><span className="text-[10px] text-neutral-500">{new Date(n.created_at).toLocaleDateString()}</span></div>
-                    <p className="text-xs text-neutral-400 line-clamp-1 font-sans">{n.content}</p>
-                  </div>
-                ))}
+            {/* Live Notices Manager with Expand, Edit, Delete */}
+            <div className="pt-4 border-t border-neutral-800">
+              <h4 className="text-[11px] text-neutral-400 uppercase tracking-widest mb-3">Live Notices ({notices.length})</h4>
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {notices.length > 0 ? (
+                  notices.map((n) => (
+                    <div key={n.id} className="bg-neutral-950 border border-neutral-800 p-3 text-xs">
+                      
+                      {editingNoticeId === n.id ? (
+                        /* Inline Edit Form */
+                        <form action={actions.editNotice} onSubmit={() => setEditingNoticeId(null)} className="space-y-2">
+                          <input type="hidden" name="noticeId" value={n.id} />
+                          <input type="text" name="title" defaultValue={n.title} required className="w-full bg-neutral-900 border border-neutral-700 px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                          <textarea name="content" defaultValue={n.content} rows={2} required className="w-full bg-neutral-900 border border-neutral-700 px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
+                          <div className="flex gap-2 justify-end">
+                            <button type="button" onClick={() => setEditingNoticeId(null)} className="px-2.5 py-1 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 text-[10px] uppercase">Cancel</button>
+                            <button type="submit" className="px-2.5 py-1 bg-[#5865F2] text-white hover:bg-[#4752C4] text-[10px] uppercase font-semibold">Save Changes</button>
+                          </div>
+                        </form>
+                      ) : (
+                        /* Standard Row View */
+                        <div>
+                          <div className="flex justify-between items-center gap-2">
+                            <div className="flex items-center gap-2 truncate">
+                              {/* Expand Arrow Button */}
+                              <button 
+                                onClick={() => toggleExpandNotice(n.id)} 
+                                className="w-5 h-5 flex items-center justify-center bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-transform cursor-pointer shrink-0"
+                                title="Toggle details"
+                              >
+                                <span className={`transform transition-transform text-[10px] ${expandedNotices[n.id] ? 'rotate-90' : ''}`}>▶</span>
+                              </button>
+                              <span className="font-bold text-neutral-200 truncate">{n.title}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-[10px] text-neutral-500 mr-2">{new Date(n.created_at).toLocaleDateString()}</span>
+                              
+                              {/* Edit Button */}
+                              <button 
+                                onClick={() => setEditingNoticeId(n.id)}
+                                className="px-2 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-[10px] uppercase transition-colors cursor-pointer"
+                              >
+                                Edit
+                              </button>
+
+                              {/* Delete Button */}
+                              <form action={actions.deleteNotice}>
+                                <input type="hidden" name="noticeId" value={n.id} />
+                                <button type="submit" className="px-2 py-1 bg-neutral-900 hover:bg-red-950 border border-neutral-800 hover:border-red-900 text-neutral-400 hover:text-red-400 text-[10px] uppercase transition-colors cursor-pointer">
+                                  Delete
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+
+                          {/* Expandable Text Body */}
+                          {expandedNotices[n.id] && (
+                            <div className="mt-3 pt-3 border-t border-neutral-900 text-neutral-300 font-sans leading-relaxed text-xs">
+                              <p className="whitespace-pre-wrap">{n.content}</p>
+                              <span className="text-[10px] text-neutral-500 font-mono block mt-2">Author: {n.author_name || 'Management'}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-neutral-500 italic font-sans py-4 text-center">No active live notices found.</p>
+                )}
               </div>
             </div>
           </div>

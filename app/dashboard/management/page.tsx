@@ -37,6 +37,54 @@ export async function postNotice(formData: FormData) {
   revalidatePath('/dashboard');
 }
 
+export async function editNotice(formData: FormData) {
+  'use server';
+  const noticeId = formData.get('noticeId') as string;
+  const title = formData.get('title') as string;
+  const content = formData.get('content') as string;
+
+  if (!noticeId || !title || !content) return;
+
+  try {
+    const { error } = await supabase
+      .from('community_notices')
+      .update({ title, content })
+      .eq('id', noticeId);
+
+    if (error) {
+      console.error('Supabase update error for notice:', error.message);
+    }
+  } catch (err) {
+    console.error('Failed to edit notice:', err);
+  }
+
+  revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard');
+}
+
+export async function deleteNotice(formData: FormData) {
+  'use server';
+  const noticeId = formData.get('noticeId') as string;
+
+  if (!noticeId) return;
+
+  try {
+    const { error } = await supabase
+      .from('community_notices')
+      .delete()
+      .eq('id', noticeId);
+
+    if (error) {
+      console.error('Supabase delete error for notice:', error.message);
+    }
+  } catch (err) {
+    console.error('Failed to delete notice:', err);
+  }
+
+  revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard');
+}
+
 export async function issueModeration(formData: FormData) {
   'use server';
   const discordId = formData.get('discordId') as string;
@@ -248,6 +296,8 @@ export default async function ManagementPage({
       modSearchQuery={modSearchQuery}
       actions={{
         postNotice,
+        editNotice,
+        deleteNotice,
         issueModeration,
         createManagementPatrol,
         deletePatrol
