@@ -48,6 +48,27 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString()
     };
 
+    // Action Row with Interactive Buttons
+    const components = [
+      {
+        type: 1, // Action Row
+        components: [
+          {
+            type: 2, // Button
+            style: 3, // Success / Green
+            label: 'Book On',
+            custom_id: `patrol_book_${id}`
+          },
+          {
+            type: 2, // Button
+            style: 4, // Danger / Red
+            label: 'Not Attending',
+            custom_id: `patrol_unattend_${id}`
+          }
+        ]
+      }
+    ];
+
     let discordMessageId = null;
 
     if (DISCORD_BOT_TOKEN) {
@@ -57,7 +78,7 @@ export async function POST(request: Request) {
           'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ embeds: [embed] }),
+        body: JSON.stringify({ embeds: [embed], components }),
       });
 
       if (response.ok) {
@@ -69,7 +90,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Save patrol and its associated Discord message ID in Supabase
     if (id) {
       await supabase.from('patrols').upsert({
         id,
@@ -80,7 +100,9 @@ export async function POST(request: Request) {
         time,
         lead,
         description,
-        status: 'UPCOMING'
+        status: 'UPCOMING',
+        attending: [],
+        unattending: []
       });
     }
 
