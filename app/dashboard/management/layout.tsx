@@ -10,9 +10,8 @@ async function verifyManagementAccess(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) return true;
 
   try {
-    // This utilizes Next.js native data caching (10 min), so it's instant and avoids cookie errors
     const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
-      headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` },
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
       next: { revalidate: 600 }
     });
     
