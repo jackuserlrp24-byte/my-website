@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Check if application exists or insert new one
+    // 2. Database Insert / Update
     const { data: existingApp } = await supabase
       .from('user_whitelists')
       .select('collar_number')
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
 
     const formattedNickname = `[${collarNumber}] ${rpName}`;
 
-    // 3. Update Roles & Nickname in Discord
+    // 3. Update Guild Member Roles and Nickname
     const updatedRoles = Array.from(
       new Set([
         ...currentRoles.filter((r) => r !== UNVERIFIED_ROLE),
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
       }
     );
 
-    // 4. Send DM Embed via Discord API
+    // 4. Send Direct Message Embed to User
     try {
       const dmChannelRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
         method: 'POST',
@@ -124,9 +124,9 @@ export async function POST(req: Request) {
       });
 
       if (dmChannelRes.ok) {
-        const channelData = await dmChannelRes.json();
-        
-        await fetch(`https://discord.com/api/v10/channels/${channelData.id}/messages`, {
+        const dmChannel = await dmChannelRes.json();
+
+        await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
           method: 'POST',
           headers: {
             Authorization: `Bot ${BOT_TOKEN}`,
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
         });
       }
     } catch (dmErr) {
-      console.error('Failed to send Discord DM:', dmErr);
+      console.error('Discord DM dispatch failed:', dmErr);
     }
 
     return NextResponse.json({ success: true, collarNumber, nickname: formattedNickname });

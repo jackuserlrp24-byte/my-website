@@ -16,6 +16,7 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
   const [rpExperience, setRpExperience] = useState('');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   // Background Slideshow Timer
   useEffect(() => {
@@ -50,8 +51,11 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
       }
 
       if (data.success) {
-        // Force full refresh redirect straight to main dashboard
-        window.location.href = '/dashboard';
+        setSuccess(true);
+        // Delay navigation slightly so Discord API role assignment finishes propagating
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1500);
       } else {
         alert(data.error || 'An error occurred.');
         setLoading(false);
@@ -118,51 +122,63 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
         <h2 className="text-xl font-bold tracking-wider uppercase mb-1">Whitelist Application</h2>
         <p className="text-xs text-neutral-400 mb-6">Complete your information to gain full access to the portal dashboard.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Roleplay Name</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. John Miller"
-              value={rpName}
-              onChange={(e) => setRpName(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600"
-            />
+        {success ? (
+          <div className="py-8 text-center space-y-3">
+            <div className="inline-block p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full mb-2">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">Application Approved</h3>
+            <p className="text-xs text-neutral-400">Your collar number has been assigned and roles updated. Redirecting to dashboard...</p>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Roleplay Name</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. John Miller"
+                value={rpName}
+                onChange={(e) => setRpName(e.target.value)}
+                className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Where did you find out about us?</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. TikTok, Friend, FiveM Server List"
-              value={referralSource}
-              onChange={(e) => setReferralSource(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Where did you find out about us?</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. TikTok, Friend, FiveM Server List"
+                value={referralSource}
+                onChange={(e) => setReferralSource(e.target.value)}
+                className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Do you have any previous roleplay experience?</label>
-            <textarea
-              required
-              rows={3}
-              placeholder="Describe your prior RP background..."
-              value={rpExperience}
-              onChange={(e) => setRpExperience(e.target.value)}
-              className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 resize-none"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase text-neutral-400 mb-2">Do you have any previous roleplay experience?</label>
+              <textarea
+                required
+                rows={3}
+                placeholder="Describe your prior RP background..."
+                value={rpExperience}
+                onChange={(e) => setRpExperience(e.target.value)}
+                className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 resize-none"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Processing...' : 'Complete Whitelist'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : 'Complete Whitelist'}
+            </button>
+          </form>
+        )}
       </div>
     </main>
   );
