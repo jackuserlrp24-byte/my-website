@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     const collarNumber = appData.collar_number;
     const formattedNickname = `[${collarNumber}] ${rpName}`;
 
-    // 3. Update Roles (Add Whitelist Roles, Remove Unverified)
+    // 3. Update Roles (Add Whitelist Roles, Remove Unverified) & Nickname
     const updatedRoles = Array.from(
       new Set([
         ...currentRoles.filter((r) => r !== UNVERIFIED_ROLE),
@@ -87,6 +87,42 @@ export async function POST(req: Request) {
         })
       }
     );
+
+    // 4. Send Discord DM Embed to User
+    try {
+      const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bot ${BOT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ recipient_id: discordId })
+      });
+
+      if (dmRes.ok) {
+        const dmChannel = await dmRes.json();
+        const channelId = dmChannel.id;
+
+        await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bot ${BOT_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            embeds: [
+              {
+                title: 'Central Operations ┃ Whitelist Complete',
+                description: `**Welcome to Central Operations!**\n\nYou have successfully been processed into our systems and are now fully cleared to access all server facilities and begin your roleplay experience. Please remember that we maintain exceptionally high standards for roleplay—any form of failRP, rule-breaking, or trolling will not be tolerated.\n\n**Roleplay Name:**\`\`\`${rpName}\`\`\`\n**Collar Number:**\`\`\`[${collarNumber}] ${rpName}\`\`\`\n\n- **Applications & Channels:** You can find our community channels and further applications here: https://discord.com/channels/1497557904704671808/1497557905753378889\n- **Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p\n\n-# Central Operations Team`,
+                color: 3092790
+              }
+            ]
+          })
+        });
+      }
+    } catch (dmError) {
+      console.error('Could not send DM to user:', dmError);
+    }
 
     return NextResponse.json({ success: true, collarNumber, nickname: formattedNickname });
   } catch (error) {
