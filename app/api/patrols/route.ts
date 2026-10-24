@@ -28,9 +28,11 @@ export async function POST(request: Request) {
     const body = (await request.json()) as CreatePatrolBody;
     const { title, division, date, time, lead, description, id } = body;
 
+    const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
+
     const embed = {
       title: `New Event : ${title}`,
-      description: description || 'No additional details provided.',
+      description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
       color: 5793266,
       fields: [
         { name: 'Division', value: division || 'N/A', inline: true },
@@ -48,27 +50,6 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString()
     };
 
-    // Action Row with Interactive Buttons
-    const components = [
-      {
-        type: 1, // Action Row
-        components: [
-          {
-            type: 2, // Button
-            style: 3, // Success / Green
-            label: 'Book On',
-            custom_id: `patrol_book_${id}`
-          },
-          {
-            type: 2, // Button
-            style: 4, // Danger / Red
-            label: 'Not Attending',
-            custom_id: `patrol_unattend_${id}`
-          }
-        ]
-      }
-    ];
-
     let discordMessageId = null;
 
     if (DISCORD_BOT_TOKEN) {
@@ -78,7 +59,7 @@ export async function POST(request: Request) {
           'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ embeds: [embed], components }),
+        body: JSON.stringify({ embeds: [embed] }),
       });
 
       if (response.ok) {

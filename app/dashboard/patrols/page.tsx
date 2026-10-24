@@ -116,12 +116,11 @@ export default function PatrolsPage() {
 
     setAttendanceLists(updatedLists);
 
-    // Sync with backend / Discord embed update
     try {
       await fetch('/api/patrols/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patrolId, userNickname, statusType, attendance: updatedLists[patrolId] }),
+        body: JSON.stringify({ patrolId, attendance: updatedLists[patrolId] }),
       });
     } catch (err) {
       console.error('Failed to sync attendance:', err);
@@ -131,12 +130,12 @@ export default function PatrolsPage() {
   return (
     <main className="flex flex-col px-8 mt-6 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none antialiased">
       
-      {/* Top Header Banner */}
-      <div className="w-full bg-neutral-900/90 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* Header Banner */}
+      <div className="w-full bg-neutral-900/95 border border-neutral-800 p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         
         <div>
-          <span className="text-[11px] font-mono text-[#5865F2] tracking-widest uppercase block mb-1">
+          <span className="text-[10px] font-mono text-[#5865F2] tracking-widest uppercase block mb-1">
             OPERATIONAL DEPLOYMENTS
           </span>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
@@ -149,7 +148,7 @@ export default function PatrolsPage() {
 
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer shrink-0 border border-[#5865F2]"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer shrink-0 border border-[#5865F2]/50 shadow-lg"
         >
           <span className="text-base font-bold leading-none">+</span> Create Patrol
         </button>
@@ -162,7 +161,7 @@ export default function PatrolsPage() {
             <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
             
             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-100 mb-1 font-mono">Schedule New Patrol Shift</h3>
-            <p className="text-xs text-neutral-400 mb-6 font-mono">Publishing will log your creator handle automatically and broadcast to Discord.</p>
+            <p className="text-xs text-neutral-400 mb-6 font-mono">Publishing will broadcast an announcement embed to Discord.</p>
 
             <form onSubmit={handleCreatePatrol} className="space-y-4">
               <div>
@@ -173,7 +172,7 @@ export default function PatrolsPage() {
                   placeholder="e.g. Metropolitan Police Joint Agency Shift"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                 />
               </div>
 
@@ -186,7 +185,7 @@ export default function PatrolsPage() {
                     placeholder="e.g. Metropolitan Police"
                     value={division}
                     onChange={(e) => setDivision(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
                 <div>
@@ -196,7 +195,7 @@ export default function PatrolsPage() {
                     placeholder="e.g. Insp. Harrison"
                     value={lead}
                     onChange={(e) => setLead(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
               </div>
@@ -209,7 +208,7 @@ export default function PatrolsPage() {
                     placeholder="e.g. Friday, Oct 2, 2026"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
                 <div>
@@ -219,7 +218,7 @@ export default function PatrolsPage() {
                     placeholder="e.g. 20:00 BST"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
+                    className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] transition-colors"
                   />
                 </div>
               </div>
@@ -231,7 +230,7 @@ export default function PatrolsPage() {
                   placeholder="Enter briefing guidelines..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none transition-colors"
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3.5 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none transition-colors"
                 />
               </div>
 
@@ -246,7 +245,7 @@ export default function PatrolsPage() {
                 <button 
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-50 transition-colors"
+                  className="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider cursor-pointer disabled:opacity-50 transition-colors shadow-md"
                 >
                   {isSubmitting ? 'Publishing...' : 'Publish Patrol'}
                 </button>
@@ -259,7 +258,7 @@ export default function PatrolsPage() {
       {/* Patrols Feed */}
       <div className="grid grid-cols-1 gap-4">
         {patrols.length === 0 ? (
-          <div className="bg-neutral-900/60 border border-neutral-800/80 p-16 text-center flex flex-col items-center justify-center">
+          <div className="bg-neutral-900/60 border border-neutral-800 p-16 text-center flex flex-col items-center justify-center shadow-lg">
             <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">No active patrols scheduled</p>
             <p className="text-xs text-neutral-400 max-w-sm">Click the "+ Create Patrol" button above to publish your first shift deployment.</p>
           </div>
@@ -278,27 +277,27 @@ export default function PatrolsPage() {
             return (
               <div 
                 key={patrol.id}
-                className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col gap-6 hover:border-neutral-700 transition-colors shadow-lg"
+                className="bg-neutral-900/90 border border-neutral-800 p-6 flex flex-col gap-6 hover:border-neutral-700 transition-colors shadow-xl"
               >
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                  <div className="flex flex-col gap-2 max-w-3xl">
+                  <div className="flex flex-col gap-2.5 max-w-3xl">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-neutral-500">{patrol.id}</span>
+                      <span className="text-xs font-mono text-neutral-400 font-semibold">{patrol.id}</span>
                       <span className={`px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-wider border rounded-sm ${statusColor}`}>
                         {patrol.status}
                       </span>
-                      <span className="text-xs font-mono text-[#5865F2] uppercase">{patrol.division}</span>
+                      <span className="text-xs font-mono text-[#5865F2] uppercase tracking-wide">{patrol.division}</span>
                     </div>
 
                     <h3 className="text-lg font-bold text-neutral-100 tracking-tight">
                       {patrol.title}
                     </h3>
 
-                    <p className="text-xs text-neutral-400 leading-relaxed">
+                    <p className="text-xs text-neutral-300 leading-relaxed font-sans">
                       {patrol.description}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-6 text-xs font-mono text-neutral-400 mt-2">
+                    <div className="flex flex-wrap items-center gap-6 text-xs font-mono text-neutral-400 mt-1">
                       <div>Date: <span className="text-neutral-200">{patrol.date}</span></div>
                       <div>Time: <span className="text-neutral-200">{patrol.time}</span></div>
                       <div>Lead: <span className="text-neutral-200">{patrol.lead}</span></div>
@@ -310,20 +309,20 @@ export default function PatrolsPage() {
                       <>
                         <button 
                           onClick={() => handleAttendanceToggle(patrol.id, 'attending')}
-                          className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border ${
+                          className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border shadow-sm ${
                             isUserAttending
-                              ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
-                              : 'bg-emerald-950/40 hover:bg-emerald-900/50 border-emerald-900/60 text-emerald-400'
+                              ? 'bg-emerald-600 border-emerald-500 text-white shadow-emerald-900/40'
+                              : 'bg-emerald-950/30 hover:bg-emerald-900/50 border-emerald-900/50 text-emerald-400'
                           }`}
                         >
                           Book On
                         </button>
                         <button 
                           onClick={() => handleAttendanceToggle(patrol.id, 'unattending')}
-                          className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border ${
+                          className={`flex-1 md:flex-initial px-5 py-3 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer border shadow-sm ${
                             isUserUnattending
-                              ? 'bg-red-600 border-red-500 text-white shadow-md'
-                              : 'bg-red-950/40 hover:bg-red-900/50 border-red-900/60 text-red-400'
+                              ? 'bg-red-600 border-red-500 text-white shadow-red-900/40'
+                              : 'bg-red-950/30 hover:bg-red-900/50 border-red-900/50 text-red-400'
                           }`}
                         >
                           Not Attending
@@ -340,20 +339,21 @@ export default function PatrolsPage() {
                   </div>
                 </div>
 
-                {/* Attendance Lists Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-neutral-800/80 text-xs font-mono">
+                {/* Attendance Breakdown Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-neutral-800 text-xs font-mono">
                   
-                  {/* Booked On Section */}
-                  <div className="bg-neutral-950/60 border border-neutral-800/80 p-3.5">
+                  {/* Booked On */}
+                  <div className="bg-neutral-950 border border-neutral-800 p-4 shadow-inner">
                     <span className="text-emerald-400 uppercase tracking-widest block mb-2 font-semibold">
                       Booked On ({currentList.attending.length}):
                     </span>
-                    <div className="text-neutral-300 flex flex-col gap-1">
+                    <div className="text-neutral-300 flex flex-col gap-1.5">
                       {currentList.attending.length > 0 ? (
                         currentList.attending.map((name: string, idx: number) => (
-                          <span key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-2 py-1 border border-neutral-800/60">
-                            {name}
-                          </span>
+                          <div key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-3 py-1.5 border border-neutral-800 flex items-center justify-between">
+                            <span>{name}</span>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          </div>
                         ))
                       ) : (
                         <span className="text-neutral-600 italic">No personnel booked on yet.</span>
@@ -361,17 +361,18 @@ export default function PatrolsPage() {
                     </div>
                   </div>
 
-                  {/* Not Attending Section */}
-                  <div className="bg-neutral-950/60 border border-neutral-800/80 p-3.5">
+                  {/* Not Attending */}
+                  <div className="bg-neutral-950 border border-neutral-800 p-4 shadow-inner">
                     <span className="text-red-400 uppercase tracking-widest block mb-2 font-semibold">
                       Not Attending ({currentList.unattending.length}):
                     </span>
-                    <div className="text-neutral-300 flex flex-col gap-1">
+                    <div className="text-neutral-300 flex flex-col gap-1.5">
                       {currentList.unattending.length > 0 ? (
                         currentList.unattending.map((name: string, idx: number) => (
-                          <span key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-2 py-1 border border-neutral-800/60">
-                            {name}
-                          </span>
+                          <div key={idx} className="text-neutral-200 font-sans text-xs bg-neutral-900 px-3 py-1.5 border border-neutral-800 flex items-center justify-between">
+                            <span>{name}</span>
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                          </div>
                         ))
                       ) : (
                         <span className="text-neutral-600 italic">No personnel marked absent.</span>
