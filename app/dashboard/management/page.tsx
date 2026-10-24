@@ -23,7 +23,7 @@ export async function postNotice(formData: FormData) {
 
   try {
     const { error } = await supabase.from('community_notices').insert([
-      { title, content, author_name: author || 'Management' }
+      { title, content, author_name: author || 'Central Operations Team' }
     ]);
 
     if (error) {
@@ -97,7 +97,7 @@ export async function issueModeration(formData: FormData) {
 
   try {
     await supabase.from('moderation_logs').insert([
-      { discord_id: discordId, username: username || 'Unknown', action_type: actionType, reason, moderator_name: moderator || 'Management' }
+      { discord_id: discordId, username: username || 'Unknown', action_type: actionType, reason, moderator_name: moderator || 'Central Operations Team' }
     ]);
   } catch (err) {
     console.error('Failed to log moderation action:', err);
@@ -242,8 +242,8 @@ export default async function ManagementPage({
 }) {
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('discord_user')?.value;
-  const user = userCookie ? JSON.parse(userCookie) : { username: 'Management Operator' };
-  const currentModName = user.nickname || user.username;
+  const user = userCookie ? JSON.parse(userCookie) : { username: 'Central Operations Team' };
+  const currentModName = user.nickname || user.username || 'Central Operations Team';
 
   const resolvedSearchParams = await searchParams;
   const modSearchQuery = resolvedSearchParams.search || '';

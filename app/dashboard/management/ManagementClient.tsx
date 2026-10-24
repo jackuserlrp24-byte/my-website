@@ -32,7 +32,7 @@ export default function ManagementClient({
   const [userSearchText, setUserSearchText] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // States for Live Notices interactivity
+  // Live Notices Interactive State
   const [expandedNotices, setExpandedNotices] = useState<Record<string, boolean>>({});
   const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
 
@@ -513,7 +513,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                 Publish Community Notice
               </h3>
               <form action={actions.postNotice} className="space-y-4">
-                <input type="hidden" name="author" value={currentModName} />
+                <input type="hidden" name="author" value="Central Operations Team" />
                 <div>
                   <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Notice Title</label>
                   <input type="text" name="title" required placeholder="e.g. Mandatory Briefing" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
@@ -588,7 +588,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                           {expandedNotices[n.id] && (
                             <div className="mt-3 pt-3 border-t border-neutral-900 text-neutral-300 font-sans leading-relaxed text-xs">
                               <p className="whitespace-pre-wrap">{n.content}</p>
-                              <span className="text-[10px] text-neutral-500 font-mono block mt-2">Author: {n.author_name || 'Management'}</span>
+                              <span className="text-[10px] text-neutral-500 font-mono block mt-2">Author: {n.author_name || 'Central Operations Team'}</span>
                             </div>
                           )}
                         </div>

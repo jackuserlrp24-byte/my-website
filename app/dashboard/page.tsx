@@ -82,7 +82,7 @@ export default async function DashboardPage() {
                       {notice.content}
                     </p>
                     <span className="text-[10px] text-neutral-500 font-mono mt-1 pt-1 border-t border-neutral-900 block">
-                      Posted by: {notice.author_name || 'Management'}
+                      Posted by: {notice.author_name || 'Central Operations Team'}
                     </span>
                   </div>
                 ))
