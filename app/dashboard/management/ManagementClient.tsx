@@ -28,13 +28,22 @@ export default function ManagementClient({
 }: Props) {
   const [activeTab, setActiveTab] = useState<'dossiers' | 'patrols' | 'notices' | 'logs'>('dossiers');
   const [userSearchText, setUserSearchText] = useState('');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     allUsers.length > 0 ? allUsers[0].discord_id : null
   );
 
+  const handleCopy = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(label);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const filteredUsers = allUsers.filter((u) => {
     const q = userSearchText.toLowerCase();
-    const name = `${u.forename} ${u.surname}`.toLowerCase();
+    const name = `${u.forename || ''} ${u.surname || ''}`.toLowerCase();
     const rpName = (u.rp_name || '').toLowerCase();
     const discordId = (u.discord_id || '').toLowerCase();
     const email = (u.email || '').toLowerCase();
@@ -44,6 +53,30 @@ export default function ManagementClient({
   });
 
   const selectedUser = allUsers.find((u) => u.discord_id === selectedUserId);
+
+  const copyAllUserDetails = () => {
+    if (!selectedUser) return;
+    const summary = `
+=== OPERATOR DOSSIER ===
+RP Name: ${selectedUser.rp_name || `${selectedUser.forename} ${selectedUser.surname}`}
+Collar Number: #${selectedUser.collar_number || 'N/A'}
+Discord ID: ${selectedUser.discord_id}
+Discord Tag: @${selectedUser.discord?.username || 'Unknown'}
+Email: ${selectedUser.email || 'N/A'}
+DOB: ${selectedUser.dob || 'N/A'}
+Referral: ${selectedUser.referral_source || 'N/A'}
+Hours Played: ${selectedUser.hours_played || 'N/A'}
+Microphone: ${selectedUser.has_mic ? 'Yes' : 'No'}
+Rules Agreed: ${selectedUser.agreed_rules ? 'Yes' : 'No'}
+Experience: ${selectedUser.rp_experience || 'None specified'}
+Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleString('en-GB') : 'N/A'}
+========================
+    `.trim();
+
+    navigator.clipboard.writeText(summary);
+    setCopiedField('ALL_DOSSIER');
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
@@ -111,16 +144,16 @@ export default function ManagementClient({
         </button>
       </div>
 
-      {/* TAB 1: USER SEARCH & DOSSIER LOOKUP */}
+      {/* TAB 1: USER SEARCH & DETAILED DOSSIER */}
       {activeTab === 'dossiers' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
             <div>
               <h3 className="text-sm font-bold tracking-wider text-neutral-100">
-                User Search & Record Lookup
+                User Search & Complete Application Dossier
               </h3>
               <p className="text-xs text-neutral-400 font-sans mt-0.5">
-                Select a registered operator from the dropdown or search by name, collar number, or ID.
+                Select an operator from the dropdown or search to inspect all submitted whitelist responses and live Discord details.
               </p>
             </div>
 
@@ -151,70 +184,227 @@ export default function ManagementClient({
           </div>
 
           {selectedUser ? (
-            <div className="bg-neutral-950 border border-neutral-800 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-6">
               
-              {/* Profile Card */}
-              <div className="flex flex-col items-center text-center border-b lg:border-b-0 lg:border-r border-neutral-800 pb-6 lg:pb-0 lg:pr-6">
-                <img 
-                  src={selectedUser.discord?.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'} 
-                  alt="Avatar" 
-                  className="w-20 h-20 rounded-full border border-neutral-700 mb-3 shadow-lg object-cover"
-                />
-                <h4 className="text-sm font-bold text-neutral-100 tracking-wide">
-                  {selectedUser.rp_name || `${selectedUser.forename} ${selectedUser.surname}`}
+              {/* Header Action Row */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-neutral-950 border border-neutral-800 p-4">
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={selectedUser.discord?.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'} 
+                    alt="Avatar" 
+                    className="w-14 h-14 rounded-full border border-neutral-700 object-cover shadow-md"
+                  />
+                  <div>
+                    <h4 className="text-base font-bold text-neutral-100">
+                      {selectedUser.rp_name || `${selectedUser.forename} ${selectedUser.surname}`}
+                    </h4>
+                    <span className="text-xs text-[#5865F2]">@{selectedUser.discord?.username || 'Unknown'}</span>
+                    <span className="text-xs text-neutral-500 ml-3">Collar: #{selectedUser.collar_number || '000'}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={copyAllUserDetails}
+                  className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer border border-[#5865F2]/50"
+                >
+                  {copiedField === 'ALL_DOSSIER' ? '✓ Dossier Copied' : 'Copy Full Dossier'}
+                </button>
+              </div>
+
+              {/* Grid 1: Whitelist Application Details */}
+              <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col gap-4">
+                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 flex items-center justify-between">
+                  <span>Whitelist Application Answers</span>
+                  <span className="text-[10px] text-neutral-500 font-normal">Submitted: {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleString('en-GB') : 'N/A'}</span>
                 </h4>
-                <p className="text-xs text-neutral-500 mb-1">Collar: #{selectedUser.collar_number}</p>
-                <p className="text-[11px] text-[#5865F2] mb-4">@{selectedUser.discord?.username || 'Unknown'}</p>
 
-                <div className="w-full text-left text-xs space-y-2 pt-3 border-t border-neutral-800">
-                  <div className="flex justify-between"><span className="text-neutral-500">Forename:</span> <span className="text-neutral-300">{selectedUser.forename}</span></div>
-                  <div className="flex justify-between"><span className="text-neutral-500">Surname:</span> <span className="text-neutral-300">{selectedUser.surname}</span></div>
-                  <div className="flex justify-between"><span className="text-neutral-500">Discord ID:</span> <span className="text-neutral-300">{selectedUser.discord_id}</span></div>
-                  <div className="flex justify-between"><span className="text-neutral-500">Email:</span> <span className="text-neutral-300 truncate max-w-[180px]">{selectedUser.email}</span></div>
-                  <div className="flex justify-between"><span className="text-neutral-500">DOB:</span> <span className="text-neutral-300">{selectedUser.dob}</span></div>
-                  <div className="flex justify-between"><span className="text-neutral-500">Referral:</span> <span className="text-neutral-300">{selectedUser.referral_source || 'N/A'}</span></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                  
+                  {/* Forename */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Forename</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.forename || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.forename, 'forename')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'forename' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Surname */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Surname</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.surname || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.surname, 'surname')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'surname' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Email */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div className="truncate pr-2">
+                      <span className="block text-[10px] text-neutral-500 uppercase">Email Address</span>
+                      <span className="text-neutral-200 font-semibold truncate block max-w-[180px]">{selectedUser.email || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.email, 'email')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer shrink-0">
+                      {copiedField === 'email' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Collar Number */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Collar Number</span>
+                      <span className="text-neutral-200 font-semibold">#{selectedUser.collar_number || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(String(selectedUser.collar_number), 'collar')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'collar' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Date of Birth</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.dob || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.dob, 'dob')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'dob' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Hours Played */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">FiveM Hours</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.hours_played || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.hours_played, 'hours')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'hours' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Referral Source */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Referral Source</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.referral_source || 'N/A'}</span>
+                    </div>
+                    <button onClick={() => handleCopy(selectedUser.referral_source, 'referral')} className="px-2 py-1 bg-neutral-950 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                      {copiedField === 'referral' ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {/* Working Microphone */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Working Microphone</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.has_mic ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+
+                  {/* Agreed to Rules */}
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 flex justify-between items-center">
+                    <div>
+                      <span className="block text-[10px] text-neutral-500 uppercase">Agreed to Rules</span>
+                      <span className="text-neutral-200 font-semibold">{selectedUser.agreed_rules ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Roleplay Experience Narrative */}
+                <div className="bg-neutral-900 border border-neutral-800 p-4 mt-2">
+                  <span className="block text-[10px] text-neutral-500 uppercase mb-1">Roleplay Experience / Background Statement</span>
+                  <p className="text-xs text-neutral-300 font-sans leading-relaxed">
+                    {selectedUser.rp_experience || 'No previous experience description submitted.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Roles Breakdown */}
-              <div className="flex flex-col border-b lg:border-b-0 lg:border-r border-neutral-800 pb-6 lg:pb-0 lg:pr-6">
-                <h5 className="text-[11px] tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
-                  Active Guild Roles ({selectedUser.discord?.roles?.length || 0})
-                </h5>
-                <div className="flex flex-wrap gap-1.5 max-h-64 overflow-y-auto pr-1">
-                  {selectedUser.discord?.roles?.length > 0 ? (
-                    selectedUser.discord.roles.map((role: any) => (
-                      <span 
-                        key={role.id}
-                        className="px-2 py-1 bg-neutral-900 border text-[11px] rounded-sm flex items-center gap-1.5"
-                        style={{ borderColor: `${role.color}40`, color: role.color }}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: role.color }} />
-                        @{role.name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-neutral-500 italic font-sans">No live roles retrieved.</span>
-                  )}
+              {/* Grid 2: Discord Account & Guild Roles */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Discord Account Details */}
+                <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
+                      Discord Account Details
+                    </h4>
+                    <div className="space-y-3 text-xs">
+                      <div className="flex justify-between items-center pb-2 border-b border-neutral-900">
+                        <span className="text-neutral-500">Discord ID</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-neutral-200">{selectedUser.discord_id}</span>
+                          <button onClick={() => handleCopy(selectedUser.discord_id, 'discord_id')} className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-[10px] text-neutral-400 hover:text-white transition-colors cursor-pointer">
+                            {copiedField === 'discord_id' ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-2 border-b border-neutral-900">
+                        <span className="text-neutral-500">Username</span>
+                        <span className="text-neutral-200">@{selectedUser.discord?.username || 'Unknown'}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center pb-2 border-b border-neutral-900">
+                        <span className="text-neutral-500">Guild Nickname</span>
+                        <span className="text-neutral-200">{selectedUser.discord?.nickname || 'None'}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-500">Server Join Date</span>
+                        <span className="text-neutral-200">{selectedUser.discord?.joinedAt ? new Date(selectedUser.discord.joinedAt).toLocaleString('en-GB') : 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Active Discord Guild Roles */}
+                <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
+                      Active Guild Roles ({selectedUser.discord?.roles?.length || 0})
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                      {selectedUser.discord?.roles?.length > 0 ? (
+                        selectedUser.discord.roles.map((role: any) => (
+                          <span 
+                            key={role.id}
+                            className="px-2.5 py-1 bg-neutral-900 border text-[11px] rounded-sm flex items-center gap-1.5"
+                            style={{ borderColor: `${role.color}40`, color: role.color }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: role.color }} />
+                            @{role.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-neutral-500 italic font-sans">No live roles retrieved from Discord.</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
-              {/* Moderation Records */}
-              <div className="flex flex-col">
-                <h5 className="text-[11px] tracking-wider text-neutral-400 mb-3 pb-2 border-b border-neutral-800">
-                  Infraction History ({selectedUser.moderation?.length || 0})
-                </h5>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {/* Grid 3: Individual Moderation Records */}
+              <div className="bg-neutral-950 border border-neutral-800 p-6 flex flex-col gap-4">
+                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800">
+                  Individual Moderation History ({selectedUser.moderation?.length || 0})
+                </h4>
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {selectedUser.moderation?.length > 0 ? (
                     selectedUser.moderation.map((log: any) => (
-                      <div key={log.id} className="bg-neutral-900 border border-neutral-800 p-2.5 text-xs">
+                      <div key={log.id} className="bg-neutral-900 border border-neutral-800 p-3 text-xs">
                         <div className="flex justify-between items-center mb-1">
-                          <span className={`px-1.5 py-0.5 text-[9px] font-bold ${log.action_type === 'BAN' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                          <span className={`px-2 py-0.5 text-[9px] font-bold ${log.action_type === 'BAN' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
                             {log.action_type}
                           </span>
-                          <span className="text-[10px] text-neutral-500">{new Date(log.created_at).toLocaleDateString()}</span>
+                          <span className="text-[10px] text-neutral-500">{new Date(log.created_at).toLocaleString('en-GB')}</span>
                         </div>
-                        <p className="text-neutral-300 text-[11px] font-sans">{log.reason}</p>
+                        <p className="text-neutral-300 text-xs font-sans mt-1">{log.reason}</p>
                         <span className="text-[10px] text-neutral-500 block mt-1">Logged by: {log.moderator_name}</span>
                       </div>
                     ))
