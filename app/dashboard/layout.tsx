@@ -3,49 +3,7 @@ import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
-const WHITELISTED_ROLE_ID = '1497557905895850113';
-const MASTER_ROLE_ID = '1497557905275224149';
-const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
-
-async function checkUserAccess(userId: string) {
-  if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true };
-  }
-
-  try {
-    // Next.js natively caches this fetch result for 10 minutes (600 seconds)
-    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
-      headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` },
-      next: { revalidate: 600 }
-    });
-    
-    if (res.status === 404) {
-      return { inGuild: false, hasAccess: false, isManagement: false };
-    }
-    if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false };
-    }
-
-    const member = await res.json();
-    const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
-    
-    const hasMasterRole = roles.includes(MASTER_ROLE_ID);
-    const hasWhitelistRole = roles.includes(WHITELISTED_ROLE_ID);
-    const hasAltManagementRole = roles.includes(MANAGEMENT_ROLE_ALT);
-
-    return {
-      inGuild: true,
-      hasAccess: hasWhitelistRole || hasMasterRole,
-      isManagement: hasMasterRole || hasAltManagementRole
-    };
-  } catch (err) {
-    console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false };
-  }
-}
 
 export default async function DashboardLayout({
   children,
@@ -58,47 +16,7 @@ export default async function DashboardLayout({
   const user = userCookie ? JSON.parse(userCookie) : { username: 'Operator', nickname: 'Operator', id: '0000', avatar: null };
 
   if (!user.id || user.id === '0000') {
-    redirect('/api/auth/discord/login');
-  }
-
-  const access = await checkUserAccess(user.id);
-
-  if (!access.inGuild || !access.hasAccess) {
-    return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center px-4 select-none antialiased">
-        <div className="bg-neutral-900 border border-neutral-800 p-8 max-w-md w-full text-center relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
-          
-          <h2 className="text-sm font-bold tracking-widest uppercase text-neutral-200 mb-3 font-mono">
-            Access Restricted
-          </h2>
-          
-          <p className="text-xs text-neutral-400 uppercase tracking-wide leading-relaxed mb-6 font-mono">
-            {!access.inGuild 
-              ? "You were not detected in our Discord server. Please join and complete your whitelist process to access this portal."
-              : "You do not have the required role in our Discord server to access this portal."}
-          </p>
-
-          <div className="space-y-3">
-            <a
-              href={DISCORD_INVITE_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider transition-colors text-center cursor-pointer"
-            >
-              Join Discord Server
-            </a>
-
-            <Link
-              href="/"
-              className="block w-full py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-semibold uppercase tracking-wider transition-colors text-center border border-neutral-700 cursor-pointer"
-            >
-              Log Out / Switch Account
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
+    redirect('/');
   }
 
   const displayName = user.nickname || user.username;
@@ -126,15 +44,6 @@ export default async function DashboardLayout({
           >
             Dashboard
           </Link>
-
-          {access.isManagement && (
-            <Link
-              href="/dashboard/management"
-              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-            >
-              Management
-            </Link>
-          )}
 
           <Link
             href="/dashboard/command"
@@ -196,7 +105,7 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-2 mt-2 sm:mt-0">
             <span className="text-neutral-500">Support / Comms:</span>
             <a
-              href="https://discord.gg/yourinvite"
+              href={DISCORD_INVITE_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="text-neutral-200 hover:text-white font-medium tracking-wide underline underline-offset-4 transition-colors"
