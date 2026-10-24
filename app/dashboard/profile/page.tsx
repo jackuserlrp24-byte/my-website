@@ -1,4 +1,10 @@
 import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 interface RoleItem {
   id: string;
@@ -13,7 +19,6 @@ async function fetchUserProfileData(userId: string) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
 
   if (!guildId || !botToken || !userId) {
-    console.error('Missing guildId, botToken, or userId for profile fetching');
     return { username: 'Operator', nickname: null, joinedAt: null, roles: [] };
   }
 
@@ -24,7 +29,6 @@ async function fetchUserProfileData(userId: string) {
     });
 
     if (!memberRes.ok) {
-      console.error('Failed to fetch guild member for profile:', memberRes.status);
       return { username: 'Operator', nickname: null, joinedAt: null, roles: [] };
     }
     
@@ -76,6 +80,24 @@ async function fetchUserProfileData(userId: string) {
   }
 }
 
+// Fetch user whitelist and registration details from Supabase
+async function fetchUserWhitelistData(userId: string) {
+  if (!userId) return null;
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_whitelists')
+      .select('forename, surname, dob, email, rp_name, collar_number')
+      .eq('discord_id', userId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export default async function ProfilePage() {
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('discord_user')?.value;
@@ -88,7 +110,10 @@ export default async function ProfilePage() {
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
     : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
-  const profileData = user.id ? await fetchUserProfileData(user.id) : { username: user.username || 'Operator', nickname: null, joinedAt: null, roles: [] };
+  const [profileData, dbData] = await Promise.all([
+    user.id ? fetchUserProfileData(user.id) : Promise.resolve({ username: user.username || 'Operator', nickname: null, joinedAt: null, roles: [] }),
+    user.id ? fetchUserWhitelistData(user.id) : Promise.resolve(null)
+  ]);
 
   const discordUsername = profileData.username || user.username || 'Operator';
   const serverNickname = profileData.nickname ? profileData.nickname : 'None (Using Username)';
@@ -105,19 +130,22 @@ export default async function ProfilePage() {
   const officialProfileName = serverNickname !== 'None (Using Username)' ? serverNickname : discordUsername;
 
   return (
-    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-4">
+    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-4 select-none">
+      
+      {/* Top Banner */}
       <div className="w-full bg-neutral-900/90 border border-neutral-800 p-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
           User Profile & Settings
         </h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Manage your connected identity, sync preferences, and clearance parameters.
+          Manage your registered identity, Discord credentials, and server clearance parameters.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left Column: Identity Card with Integrated Ordered Roles */}
+        
+        {/* Left Column: Identity Card with Integrated Roles */}
         <div className="flex flex-col gap-4">
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col items-center text-center">
             <img 
@@ -159,13 +187,71 @@ export default async function ProfilePage() {
           </div>
         </div>
 
-        {/* Right Columns */}
+        {/* Right Columns: Credentials Breakdown */}
         <div className="lg:col-span-2 flex flex-col gap-4">
+          
+          {/* SECTION 1: USER CREDENTIALS */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800">
-              Connected Discord Credentials
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800 font-mono">
+              User Credentials
             </h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Forename
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.forename || 'Not Provided'} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Surname
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.surname || 'Not Provided'} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Date of Birth
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.dob || 'Not Provided'} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Email Address
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.email || 'Not Provided'} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: DISCORD USER CREDENTIALS */}
+          <div className="bg-neutral-900/80 border border-neutral-800 p-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800 font-mono">
+              Discord User Credentials
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
                   Discord Username
@@ -180,24 +266,44 @@ export default async function ProfilePage() {
 
               <div>
                 <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
-                  Server Nickname / Name in Server
-                </label>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={serverNickname} 
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
                   Discord ID
                 </label>
                 <input 
                   type="text" 
                   readOnly 
                   value={user.id} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: SERVER CREDENTIALS */}
+          <div className="bg-neutral-900/80 border border-neutral-800 p-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-4 pb-2 border-b border-neutral-800 font-mono">
+              Server Credentials
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Roleplay Name
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.rp_name || 'Not Registered'} 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
+                  Collar Number
+                </label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={dbData?.collar_number ? `#${dbData.collar_number}` : 'Unassigned'} 
                   className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-300 font-mono focus:outline-none cursor-not-allowed"
                 />
               </div>
@@ -215,7 +321,9 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
   );
