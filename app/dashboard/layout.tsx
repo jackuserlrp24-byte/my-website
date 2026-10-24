@@ -2,11 +2,18 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-// Your 10 official whitelist roles
 const WHITELISTED_ROLES = [
   '1533037093306105896',
   '1532781088827507038',
@@ -26,17 +33,28 @@ const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
 async function checkUserAccess(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { hasAccess: true, isManagement: true };
+    return { inGuild: true, hasAccess: true, isManagement: true };
   }
 
   try {
     const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
       headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` },
-      next: { revalidate: 30 }
+      cache: 'no-store'
     });
     
+    // User is NOT in the Discord server
+    if (res.status === 404) {
+      // Delete user whitelist data from database since they left
+      await supabase
+        .from('user_whitelists')
+        .delete()
+        .eq('discord_id', userId);
+
+      return { inGuild: false, hasAccess: false, isManagement: false };
+    }
+
     if (!res.ok) {
-      return { hasAccess: false, isManagement: false };
+      return { inGuild: true, hasAccess: false, isManagement: false };
     }
 
     const member = await res.json();
@@ -47,11 +65,13 @@ async function checkUserAccess(userId: string) {
     const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
 
     return {
+      inGuild: true,
       hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole,
       isManagement: hasMasterRole || hasAltManagementRole
     };
   } catch (err) {
-    return { hasAccess: false, isManagement: false };
+    console.error('Discord membership check error:', err);
+    return { inGuild: false, hasAccess: false, isManagement: false };
   }
 }
 
@@ -71,8 +91,8 @@ export default async function DashboardLayout({
 
   const access = await checkUserAccess(user.id);
 
-  // If they do not have any of the whitelist roles, redirect them to the whitelist process page!
-  if (!access.hasAccess) {
+  // If they left the server or do not have the required roles, redirect them away
+  if (!access.inGuild || !access.hasAccess) {
     redirect('/whitelistprocess');
   }
 
