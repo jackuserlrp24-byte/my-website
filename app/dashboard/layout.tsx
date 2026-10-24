@@ -104,20 +104,20 @@ export default async function DashboardLayout({
       {/* Background Slideshow Layer */}
       <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-neutral-950">
         {/* Slide 1 */}
-        <div className="absolute inset-0 opacity-40 animate-slide-1">
+        <div className="absolute inset-0 opacity-75 animate-slide-1">
           <Image src="/slide1.png" alt="Background Slide 1" fill priority className="object-cover" />
         </div>
         {/* Slide 2 */}
-        <div className="absolute inset-0 opacity-40 animate-slide-2">
+        <div className="absolute inset-0 opacity-75 animate-slide-2">
           <Image src="/slide2.png" alt="Background Slide 2" fill priority className="object-cover" />
         </div>
         {/* Slide 3 */}
-        <div className="absolute inset-0 opacity-40 animate-slide-3">
+        <div className="absolute inset-0 opacity-75 animate-slide-3">
           <Image src="/slide3.png" alt="Background Slide 3" fill priority className="object-cover" />
         </div>
 
-        {/* Dark Overlay to ensure portal UI remains readable */}
-        <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-[2px]" />
+        {/* Lighter overlay to show background images clearly */}
+        <div className="absolute inset-0 bg-neutral-950/50 backdrop-blur-[1px]" />
       </div>
 
       {/* Top Header */}
