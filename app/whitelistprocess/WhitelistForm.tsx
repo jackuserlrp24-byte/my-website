@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const slides = [
@@ -11,7 +10,6 @@ const slides = [
 ];
 
 export default function WhitelistForm({ userDiscordId }: { userDiscordId: string }) {
-  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [rpName, setRpName] = useState('');
   const [referralSource, setReferralSource] = useState('');
@@ -31,29 +29,35 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
     e.preventDefault();
     setLoading(true);
 
-    const res = await fetch('/api/whitelist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        discordId: userDiscordId,
-        rpName,
-        referralSource,
-        rpExperience,
-      }),
-    });
+    try {
+      const res = await fetch('/api/whitelist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discordId: userDiscordId,
+          rpName,
+          referralSource,
+          rpExperience,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.status === 404 && data.error === 'NOT_IN_SERVER') {
-      setShowJoinModal(true);
-      setLoading(false);
-      return;
-    }
+      if (res.status === 404 && data.error === 'NOT_IN_SERVER') {
+        setShowJoinModal(true);
+        setLoading(false);
+        return;
+      }
 
-    if (data.success) {
-      router.push('/dashboard');
-    } else {
-      alert(data.error || 'An error occurred.');
+      if (data.success) {
+        // Force full refresh redirect straight to main dashboard
+        window.location.href = '/dashboard';
+      } else {
+        alert(data.error || 'An error occurred.');
+        setLoading(false);
+      }
+    } catch (err) {
+      alert('Failed to submit application. Please try again.');
       setLoading(false);
     }
   };

@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Check if user already submitted an application before
+    // 2. Check if application exists or insert new one
     const { data: existingApp } = await supabase
       .from('user_whitelists')
       .select('collar_number')
@@ -56,7 +56,6 @@ export async function POST(req: Request) {
     let collarNumber: number;
 
     if (existingApp) {
-      // Update existing application info and keep their original collar number
       const { error: updateError } = await supabase
         .from('user_whitelists')
         .update({
@@ -71,7 +70,6 @@ export async function POST(req: Request) {
       }
       collarNumber = existingApp.collar_number;
     } else {
-      // Insert new application, gets next collar number from sequence
       const { data: newApp, error: insertError } = await supabase
         .from('user_whitelists')
         .insert({
@@ -91,7 +89,7 @@ export async function POST(req: Request) {
 
     const formattedNickname = `[${collarNumber}] ${rpName}`;
 
-    // 3. Update Roles (Add Whitelist Roles, Remove Unverified) & Nickname
+    // 3. Update Roles & Nickname in Discord
     const updatedRoles = Array.from(
       new Set([
         ...currentRoles.filter((r) => r !== UNVERIFIED_ROLE),
@@ -114,9 +112,9 @@ export async function POST(req: Request) {
       }
     );
 
-    // 4. Send Discord DM Embed to User
+    // 4. Send DM Embed via Discord API
     try {
-      const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
+      const dmChannelRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
         method: 'POST',
         headers: {
           Authorization: `Bot ${BOT_TOKEN}`,
@@ -125,11 +123,10 @@ export async function POST(req: Request) {
         body: JSON.stringify({ recipient_id: discordId })
       });
 
-      if (dmRes.ok) {
-        const dmChannel = await dmRes.json();
-        const channelId = dmChannel.id;
-
-        await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      if (dmChannelRes.ok) {
+        const channelData = await dmChannelRes.json();
+        
+        await fetch(`https://discord.com/api/v10/channels/${channelData.id}/messages`, {
           method: 'POST',
           headers: {
             Authorization: `Bot ${BOT_TOKEN}`,
@@ -139,15 +136,15 @@ export async function POST(req: Request) {
             embeds: [
               {
                 title: 'Central Operations ┃ Whitelist Complete',
-                description: `**Welcome to Central Operations!**\n\nYou have successfully been processed into our systems and are now fully cleared to access all server facilities and begin your roleplay experience. Please remember that we maintain exceptionally high standards for roleplay—any form of failRP, rule-breaking, or trolling will not be tolerated.\n\n**Roleplay Name:**\`\`\`${rpName}\`\`\`\n**Collar Number:**\`\`\`[${collarNumber}] ${rpName}\`\`\`\n\n- **Applications & Channels:** You can find our community channels and further applications here: https://discord.com/channels/1497557904704671808/1497557905753378889\n- **Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p\n\n-# Central Operations Team`,
+                description: `**Welcome to Central Operations!**\n\nYou have successfully been processed into our systems and are now fully cleared to access all server facilities and begin your roleplay experience. Please remember that we maintain exceptionally high standards for roleplay—any form of failRP, rule-breaking, or trolling will not be tolerated.\n\n**Roleplay Name:**\n\`\`\`${rpName}\`\`\`\n\n**Collar Number:**\n\`\`\`[${collarNumber}] ${rpName}\`\`\`\n\n- **Applications & Channels:** You can find our community channels and further applications here: https://discord.com/channels/1497557904704671808/1497557905753378889\n- **Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p\n\n-# Central Operations Team`,
                 color: 3092790
               }
             ]
           })
         });
       }
-    } catch (dmError) {
-      console.error('Could not send DM to user:', dmError);
+    } catch (dmErr) {
+      console.error('Failed to send Discord DM:', dmErr);
     }
 
     return NextResponse.json({ success: true, collarNumber, nickname: formattedNickname });
