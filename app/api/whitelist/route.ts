@@ -25,9 +25,9 @@ const WHITELIST_ROLES = [
 
 export async function POST(req: Request) {
   try {
-    const { discordId, rpName, referralSource, rpExperience } = await req.json();
+    const { discordId, forename, surname, dob, email, rpName, referralSource, rpExperience } = await req.json();
 
-    if (!discordId || !rpName || !referralSource || !rpExperience) {
+    if (!discordId || !forename || !surname || !dob || !email || !rpName || !referralSource || !rpExperience) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Database Insert / Update
+    // 2. Database Insert / Update with all fields
     const { data: existingApp } = await supabase
       .from('user_whitelists')
       .select('collar_number')
@@ -59,6 +59,10 @@ export async function POST(req: Request) {
       const { error: updateError } = await supabase
         .from('user_whitelists')
         .update({
+          forename,
+          surname,
+          dob,
+          email,
           rp_name: rpName,
           referral_source: referralSource,
           rp_experience: rpExperience
@@ -74,6 +78,10 @@ export async function POST(req: Request) {
         .from('user_whitelists')
         .insert({
           discord_id: discordId,
+          forename,
+          surname,
+          dob,
+          email,
           rp_name: rpName,
           referral_source: referralSource,
           rp_experience: rpExperience
