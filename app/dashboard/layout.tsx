@@ -3,7 +3,57 @@ import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+
+// Your 10 official whitelist roles
+const WHITELISTED_ROLES = [
+  '1533037093306105896',
+  '1532781088827507038',
+  '1532841715151671436',
+  '1534119748416049193',
+  '1532781271477129226',
+  '1533023231206883338',
+  '1533023096922050750',
+  '1532828055154720981',
+  '1532781330071425104',
+  '1546219971359543408'
+];
+
+const MASTER_ROLE_ID = '1497557905275224149';
+const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
+
+async function checkUserAccess(userId: string) {
+  if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
+    return { hasAccess: true, isManagement: true };
+  }
+
+  try {
+    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
+      headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` },
+      next: { revalidate: 30 }
+    });
+    
+    if (!res.ok) {
+      return { hasAccess: false, isManagement: false };
+    }
+
+    const member = await res.json();
+    const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
+    
+    const hasMasterRole = roles.includes(MASTER_ROLE_ID);
+    const hasAltManagementRole = roles.includes(MANAGEMENT_ROLE_ALT);
+    const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
+
+    return {
+      hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole,
+      isManagement: hasMasterRole || hasAltManagementRole
+    };
+  } catch (err) {
+    return { hasAccess: false, isManagement: false };
+  }
+}
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +67,13 @@ export default async function DashboardLayout({
 
   if (!user.id || user.id === '0000') {
     redirect('/');
+  }
+
+  const access = await checkUserAccess(user.id);
+
+  // If they do not have any of the whitelist roles, redirect them to the whitelist process page!
+  if (!access.hasAccess) {
+    redirect('/whitelistprocess');
   }
 
   const displayName = user.nickname || user.username;
@@ -44,6 +101,15 @@ export default async function DashboardLayout({
           >
             Dashboard
           </Link>
+
+          {access.isManagement && (
+            <Link
+              href="/dashboard/management"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Management
+            </Link>
+          )}
 
           <Link
             href="/dashboard/command"
