@@ -8,6 +8,7 @@ const supabase = createClient(
 
 const GUILD_ID = process.env.DISCORD_GUILD_ID!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
+const LOG_CHANNEL_ID = '1563506688798236743'; // Audit Log Channel
 
 const UNVERIFIED_ROLE = '1533021619331534848';
 const WHITELIST_ROLES = [
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Check existing record or insert
+    // 2. Database Insert / Update
     const { data: existingApp } = await supabase
       .from('user_whitelists')
       .select('collar_number')
@@ -56,7 +57,6 @@ export async function POST(req: Request) {
     let collarNumber: number;
 
     if (existingApp && existingApp.collar_number) {
-      // Update existing record
       const { error: updateError } = await supabase
         .from('user_whitelists')
         .update({
@@ -76,7 +76,6 @@ export async function POST(req: Request) {
       }
       collarNumber = existingApp.collar_number;
     } else {
-      // Insert new record
       const { data: newApp, error: insertError } = await supabase
         .from('user_whitelists')
         .insert({
@@ -124,7 +123,60 @@ export async function POST(req: Request) {
       }
     );
 
-    // 4. Send Direct Message Embed to User
+    // 4. Send Channel Audit Log Embed to #1563506688798236743
+    try {
+      await fetch(`https://discord.com/api/v10/channels/${LOG_CHANNEL_ID}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bot ${BOT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: '📋 Whitelist Application Submitted',
+              description: `A new whitelist application has been processed and automatically assigned in-game parameters.`,
+              color: 3092790, // Central Operations Blue
+              fields: [
+                {
+                  name: '👤 User Identity',
+                  value: `**Full Name:** ${forename} ${surname}\n**DOB:** ${dob}\n**Email:** ${email}`,
+                  inline: true
+                },
+                {
+                  name: '🎮 Roleplay Parameters',
+                  value: `**RP Name:** ${rpName}\n**Collar Number:** \`[${collarNumber}]\`\n**Formatted Nick:** \`${formattedNickname}\``,
+                  inline: true
+                },
+                {
+                  name: '💬 Discord Account',
+                  value: `**User:** <@${discordId}>\n**ID:** \`${discordId}\``,
+                  inline: false
+                },
+                {
+                  name: '🔍 Referral Source',
+                  value: referralSource || 'None provided',
+                  inline: true
+                },
+                {
+                  name: '📜 RP Background / Experience',
+                  value: rpExperience || 'None provided',
+                  inline: false
+                }
+              ],
+              footer: {
+                text: 'Central Operations Portal ┃ Automated Audit Logs'
+              },
+              timestamp: new Date().toISOString()
+            }
+          ]
+        })
+      });
+    } catch (logErr) {
+      console.error('Failed to dispatch channel log embed:', logErr);
+    }
+
+    // 5. Send Direct Message Welcome Embed to User
     try {
       const dmChannelRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
         method: 'POST',
