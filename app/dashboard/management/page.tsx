@@ -22,9 +22,13 @@ export async function postNotice(formData: FormData) {
   if (!title || !content) return;
 
   try {
-    await supabase.from('community_notices').insert([
+    const { error } = await supabase.from('community_notices').insert([
       { title, content, author_name: author || 'Management' }
     ]);
+
+    if (error) {
+      console.error('Supabase insert error for notice:', error.message);
+    }
   } catch (err) {
     console.error('Failed to post notice:', err);
   }
