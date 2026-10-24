@@ -9,9 +9,17 @@ const slides = [
   '/slide3.png',
 ];
 
+interface DiscordUser {
+  id: string;
+  username: string;
+  global_name?: string;
+  avatar?: string;
+}
+
 export default function WhitelistForm({ userDiscordId }: { userDiscordId: string }) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [step, setStep] = useState(1); // Step 1: Account Register, Step 2: Whitelist Process
+  const [step, setStep] = useState(1);
+  const [discordUser, setDiscordUser] = useState<DiscordUser | null>(null);
 
   // Form Fields
   const [forename, setForename] = useState('');
@@ -26,13 +34,29 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Background Slideshow Timer
+  // Background Slideshow Timer & Fetch User Cookie Info
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
+
+    // Read cookie or parse user data if needed
+    try {
+      const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
+      if (match) {
+        const parsed = JSON.parse(decodeURIComponent(match[2]));
+        setDiscordUser(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to parse user cookie', e);
+    }
+
     return () => clearInterval(timer);
   }, []);
+
+  const avatarUrl = discordUser?.avatar
+    ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+    : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,8 +137,8 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-xl bg-neutral-900/95 backdrop-blur-md border border-neutral-800 p-8 shadow-2xl">
         
-        {/* Header & Progress Indicator */}
-        <div className="flex items-center justify-between pb-6 mb-6 border-b border-neutral-800">
+        {/* Header & Step Indicator */}
+        <div className="flex items-center justify-between pb-6 mb-5 border-b border-neutral-800">
           <div>
             <h2 className="text-sm font-mono tracking-widest uppercase text-neutral-400">Central Operations Portal</h2>
             <h1 className="text-xl font-bold tracking-wider uppercase text-neutral-100 mt-1">
@@ -124,6 +148,29 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
           <div className="text-right font-mono text-xs text-neutral-400">
             STEP <span className="text-neutral-100 font-bold">{step}</span> OF 2
           </div>
+        </div>
+
+        {/* Connected Discord Account Info Banner */}
+        <div className="flex items-center justify-between bg-neutral-950 border border-neutral-800 px-4 py-3 mb-6">
+          <div className="flex items-center gap-3">
+            <img
+              src={avatarUrl}
+              alt="Discord Avatar"
+              className="w-9 h-9 rounded-full border border-neutral-700 object-cover"
+            />
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Connected Account</p>
+              <p className="text-xs font-semibold text-neutral-200 tracking-wider">
+                {discordUser?.global_name || discordUser?.username || 'Verified Operator'}
+              </p>
+            </div>
+          </div>
+          <a
+            href="/"
+            className="text-[11px] font-mono uppercase text-[#5865F2] hover:text-indigo-400 transition-colors underline underline-offset-4"
+          >
+            Switch
+          </a>
         </div>
 
         {success ? (
