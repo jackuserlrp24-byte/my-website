@@ -1,15 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
+const slides = [
+  '/slide1.png',
+  '/slide2.png',
+  '/slide3.png',
+];
 
 export default function WhitelistForm({ userDiscordId }: { userDiscordId: string }) {
   const router = useRouter();
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [rpName, setRpName] = useState('');
   const [referralSource, setReferralSource] = useState('');
   const [rpExperience, setRpExperience] = useState('');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Background Slideshow Timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +59,30 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center p-4">
+    <main className="relative min-h-screen w-full overflow-hidden bg-neutral-950 text-neutral-100 flex items-center justify-center p-4 select-none">
+      
+      {/* Background Slideshow */}
+      <div className="absolute inset-0 z-0">
+        {slides.map((slide, index) => (
+          <div
+            key={slide}
+            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+              index === currentSlide ? 'opacity-40' : 'opacity-0'
+            }`}
+          >
+            <Image
+              src={slide}
+              alt={`Slide ${index + 1}`}
+              fill
+              sizes="100vw"
+              className="object-cover grayscale contrast-125"
+              priority={index === 0}
+            />
+          </div>
+        ))}
+        <div className="absolute inset-0 bg-neutral-950/80" />
+      </div>
+
       {/* Modal for users not detected in Discord Server */}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -71,7 +110,7 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
       )}
 
       {/* Main Whitelist Form */}
-      <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 p-8">
+      <div className="relative z-10 w-full max-w-lg bg-neutral-900/90 backdrop-blur-md border border-neutral-800 p-8 shadow-2xl">
         <h2 className="text-xl font-bold tracking-wider uppercase mb-1">Whitelist Application</h2>
         <p className="text-xs text-neutral-400 mb-6">Complete your information to gain full access to the portal dashboard.</p>
 
@@ -121,6 +160,6 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

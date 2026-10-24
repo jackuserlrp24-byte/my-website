@@ -46,23 +46,49 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Save Application & Get Unique Collar Number
-    const { data: appData, error: dbError } = await supabase
+    // 2. Check if user already submitted an application before
+    const { data: existingApp } = await supabase
       .from('user_whitelists')
-      .insert({
-        discord_id: discordId,
-        rp_name: rpName,
-        referral_source: referralSource,
-        rp_experience: rpExperience
-      })
       .select('collar_number')
+      .eq('discord_id', discordId)
       .single();
 
-    if (dbError) {
-      return NextResponse.json({ error: 'Failed to save application or already completed.' }, { status: 500 });
+    let collarNumber: number;
+
+    if (existingApp) {
+      // Update existing application info and keep their original collar number
+      const { error: updateError } = await supabase
+        .from('user_whitelists')
+        .update({
+          rp_name: rpName,
+          referral_source: referralSource,
+          rp_experience: rpExperience
+        })
+        .eq('discord_id', discordId);
+
+      if (updateError) {
+        return NextResponse.json({ error: 'Failed to update application.' }, { status: 500 });
+      }
+      collarNumber = existingApp.collar_number;
+    } else {
+      // Insert new application, gets next collar number from sequence
+      const { data: newApp, error: insertError } = await supabase
+        .from('user_whitelists')
+        .insert({
+          discord_id: discordId,
+          rp_name: rpName,
+          referral_source: referralSource,
+          rp_experience: rpExperience
+        })
+        .select('collar_number')
+        .single();
+
+      if (insertError) {
+        return NextResponse.json({ error: 'Failed to save application.' }, { status: 500 });
+      }
+      collarNumber = newApp.collar_number;
     }
 
-    const collarNumber = appData.collar_number;
     const formattedNickname = `[${collarNumber}] ${rpName}`;
 
     // 3. Update Roles (Add Whitelist Roles, Remove Unverified) & Nickname
