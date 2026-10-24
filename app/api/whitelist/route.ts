@@ -46,16 +46,17 @@ export async function POST(req: Request) {
     const memberData = await memberRes.json();
     const currentRoles: string[] = memberData.roles || [];
 
-    // 2. Database Insert / Update with all fields
+    // 2. Check existing record or insert
     const { data: existingApp } = await supabase
       .from('user_whitelists')
       .select('collar_number')
       .eq('discord_id', discordId)
-      .single();
+      .maybeSingle();
 
     let collarNumber: number;
 
-    if (existingApp) {
+    if (existingApp && existingApp.collar_number) {
+      // Update existing record
       const { error: updateError } = await supabase
         .from('user_whitelists')
         .update({
@@ -70,10 +71,12 @@ export async function POST(req: Request) {
         .eq('discord_id', discordId);
 
       if (updateError) {
-        return NextResponse.json({ error: 'Failed to update application.' }, { status: 500 });
+        console.error('Supabase update error:', updateError);
+        return NextResponse.json({ error: `Database Update Failed: ${updateError.message}` }, { status: 500 });
       }
       collarNumber = existingApp.collar_number;
     } else {
+      // Insert new record
       const { data: newApp, error: insertError } = await supabase
         .from('user_whitelists')
         .insert({
@@ -90,7 +93,8 @@ export async function POST(req: Request) {
         .single();
 
       if (insertError) {
-        return NextResponse.json({ error: 'Failed to save application.' }, { status: 500 });
+        console.error('Supabase insert error:', insertError);
+        return NextResponse.json({ error: `Database Insert Failed: ${insertError.message}` }, { status: 500 });
       }
       collarNumber = newApp.collar_number;
     }
@@ -157,6 +161,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, collarNumber, nickname: formattedNickname });
   } catch (error) {
+    console.error('Internal whitelist POST error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
