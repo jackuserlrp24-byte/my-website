@@ -16,10 +16,10 @@ interface DiscordUser {
   avatar?: string;
 }
 
-export default function WhitelistForm({ userDiscordId }: { userDiscordId: string }) {
+export default function WhitelistForm({ initialUser }: { initialUser: DiscordUser | null }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [step, setStep] = useState(1);
-  const [discordUser, setDiscordUser] = useState<DiscordUser | null>(null);
+  const discordUser = initialUser;
 
   // Form Fields
   const [forename, setForename] = useState('');
@@ -34,23 +34,11 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Background Slideshow Timer & Fetch User Cookie Info
+  // Background Slideshow Timer
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
-
-    // Read cookie or parse user data if needed
-    try {
-      const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
-      if (match) {
-        const parsed = JSON.parse(decodeURIComponent(match[2]));
-        setDiscordUser(parsed);
-      }
-    } catch (e) {
-      console.error('Failed to parse user cookie', e);
-    }
-
     return () => clearInterval(timer);
   }, []);
 
@@ -60,6 +48,10 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!discordUser) {
+      alert('Please connect your Discord account first.');
+      return;
+    }
     if (!forename || !surname || !dob || !email) {
       alert('Please fill in all account registration fields.');
       return;
@@ -69,6 +61,10 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!discordUser) {
+      alert('Please connect your Discord account first.');
+      return;
+    }
     if (!rpName || !referralSource || !rpExperience) {
       alert('Please fill in all whitelist process fields.');
       return;
@@ -81,7 +77,7 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          discordId: userDiscordId,
+          discordId: discordUser.id,
           forename,
           surname,
           dob,
@@ -161,15 +157,15 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
             <div>
               <p className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Connected Account</p>
               <p className="text-xs font-semibold text-neutral-200 tracking-wider">
-                {discordUser?.global_name || discordUser?.username || 'Verified Operator'}
+                {discordUser ? (discordUser.global_name || discordUser.username) : 'Not Verified Operator'}
               </p>
             </div>
           </div>
           <a
-            href="/"
+            href="/api/auth/discord"
             className="text-[11px] font-mono uppercase text-[#5865F2] hover:text-indigo-400 transition-colors underline underline-offset-4"
           >
-            Switch
+            {discordUser ? 'Switch' : 'Connect'}
           </a>
         </div>
 
@@ -182,6 +178,18 @@ export default function WhitelistForm({ userDiscordId }: { userDiscordId: string
             </div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-400">Application Approved</h3>
             <p className="text-xs text-neutral-400">Collar number assigned & roles synchronized. Entering dashboard...</p>
+          </div>
+        ) : !discordUser ? (
+          <div className="py-8 text-center space-y-4">
+            <p className="text-xs text-neutral-400 font-mono uppercase tracking-wider">
+              You must connect your Discord account before completing your whitelist application.
+            </p>
+            <a
+              href="/api/auth/discord"
+              className="inline-block w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider transition-colors text-center"
+            >
+              Connect Discord Account
+            </a>
           </div>
         ) : step === 1 ? (
           /* STEP 1 FORM */
