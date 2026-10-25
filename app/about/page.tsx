@@ -108,7 +108,7 @@ export default function AboutUsPage() {
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
-                vMenu Based Environment
+                vMenu Based
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 We operate as a pure vMenu server, providing complete operational flexibility. Members enjoy direct control over loadouts, vehicle spawning, and character setup without unnecessary framework restrictions, keeping roleplay smooth and dynamic.
@@ -141,11 +141,11 @@ export default function AboutUsPage() {
                 Custom Development
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                We take extreme care and credibility in our technical development. From optimized standalone Lua resources to our proprietary custom MDT/CAD system tailored specifically for Central Operations, every feature is built ground-up exclusively for our community.
+                We take extreme care and credibility in our technical development. From optimized standalone Lua resources to our custom MDT/CAD system tailored specifically for Central Operations, every feature is built ground-up exclusively for our community.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-neutral-800 text-[10px] font-mono text-neutral-500">
-              CUSTOM ENGINEERING
+              CUSTOM RESOURCES
             </div>
           </div>
 
