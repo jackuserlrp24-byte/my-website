@@ -431,39 +431,33 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <div className="bg-neutral-950 border border-neutral-800 p-5">
-              <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Schedule Shift</h4>
+              <h4 className="text-xs font-bold text-neutral-200 tracking-wider mb-3">Create Patrol</h4>
               <form action={actions.createManagementPatrol} className="space-y-3">
                 <input type="hidden" name="creator" value={currentModName} />
                 <div>
-                  <label className="block text-[10px] text-neutral-400 mb-1">Shift Title</label>
-                  <input type="text" name="title" required placeholder="e.g. MET Police Joint Patrol" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                  <label className="block text-[10px] text-neutral-400 mb-1">Patrol Title</label>
+                  <input type="text" name="title" required placeholder="e.g. Joint Agency Patrol" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-neutral-400 mb-1">Date</label>
+                  <input type="text" name="date" required placeholder="e.g. Friday, Oct 2" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] text-neutral-400 mb-1">Division</label>
-                    <input type="text" name="division" required placeholder="e.g. MET Police" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                    <label className="block text-[10px] text-neutral-400 mb-1">Start Time</label>
+                    <input type="text" name="startTime" required placeholder="e.g. 20:00" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-neutral-400 mb-1">Shift Lead</label>
-                    <input type="text" name="lead" placeholder="e.g. Insp. Harrison" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-neutral-400 mb-1">Date</label>
-                    <input type="text" name="date" placeholder="e.g. Friday, Oct 2" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-neutral-400 mb-1">Time</label>
-                    <input type="text" name="time" placeholder="e.g. 20:00 BST" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                    <label className="block text-[10px] text-neutral-400 mb-1">End Time</label>
+                    <input type="text" name="endTime" required placeholder="e.g. 22:00" className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-neutral-400 mb-1">Briefing Description</label>
-                  <textarea name="description" rows={2} placeholder="Briefing guidelines..." className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
+                  <label className="block text-[10px] text-neutral-400 mb-1">Patrol Description</label>
+                  <textarea name="description" rows={3} placeholder="Patrol description..." className="w-full bg-neutral-900 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
                 </div>
                 <button type="submit" className="w-full py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
-                  Publish & Dispatch Shift
+                  Create Organised Patrol
                 </button>
               </form>
             </div>
@@ -478,9 +472,8 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-bold text-neutral-400">{p.id}</span>
                           <span className="text-xs font-bold text-neutral-100">{p.title}</span>
-                          <span className="text-[10px] text-[#5865F2] uppercase">({p.division})</span>
                         </div>
-                        <div className="text-[11px] text-neutral-400">Lead: {p.lead} | Date: {p.date} ({p.time})</div>
+                        <div className="text-[11px] text-neutral-400">Date: {p.date} | Time: {p.time}</div>
                         <div className="text-[10px] text-emerald-400 mt-1">Booked On: {p.attending?.length || 0} | Absent: {p.unattending?.length || 0}</div>
                       </div>
                       <form action={actions.deletePatrol}>

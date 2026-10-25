@@ -5,10 +5,9 @@ import { useState, useEffect } from 'react';
 interface PatrolShift {
   id: string;
   title: string;
-  division: string;
   date: string;
-  time: string;
-  lead: string;
+  startTime: string;
+  endTime: string;
   status: 'UPCOMING' | 'ACTIVE' | 'CONCLUDED';
   description: string;
   attending?: string[];
@@ -151,10 +150,6 @@ export default function PatrolsPage() {
                       {patrol.id}
                     </span>
                     <span className="text-neutral-700">/</span>
-                    <span className="text-xs font-mono text-neutral-300 uppercase tracking-wider">
-                      {patrol.division}
-                    </span>
-                    <span className="text-neutral-700">/</span>
                     <span className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
                       {patrol.status}
                     </span>
@@ -201,7 +196,7 @@ export default function PatrolsPage() {
                       </p>
                     </div>
 
-                    {/* Redesigned Tactical Metadata Cards */}
+                    {/* Tactical Metadata Cards (Date, Start Time, End Time) */}
                     <div className="grid grid-cols-3 gap-3 pt-2 border-t border-neutral-800/80">
                       
                       {/* Date Card */}
@@ -215,25 +210,25 @@ export default function PatrolsPage() {
                         </span>
                       </div>
 
-                      {/* Time Card */}
+                      {/* Start Time Card */}
                       <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
                         <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
                         <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                          Time
+                          Start Time
                         </span>
                         <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
-                          {patrol.time}
+                          {patrol.startTime || 'N/A'}
                         </span>
                       </div>
 
-                      {/* Shift Lead Card */}
+                      {/* End Time Card */}
                       <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
                         <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
                         <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                          Shift Lead
+                          End Time
                         </span>
-                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide truncate">
-                          {patrol.lead}
+                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
+                          {patrol.endTime || 'N/A'}
                         </span>
                       </div>
 
