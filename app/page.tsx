@@ -71,11 +71,11 @@ export default function Home() {
 
         {/* Center/Right: Navigation Links & Login Button */}
         <div className="flex items-center gap-8">
-          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider uppercase text-neutral-400">
-            <a href="/" className="hover:text-white transition-colors">Main</a>
-            <a href="/about" className="hover:text-white transition-colors">About Us</a>
-            <a href="/tos" className="hover:text-white transition-colors">TOS</a>
-            <a href="/info" className="hover:text-white transition-colors">Additional Information</a>
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider uppercase">
+            <a href="/" className="text-neutral-100 font-bold transition-colors">Main</a>
+            <a href="/about" className="text-neutral-400 hover:text-white transition-colors">About Us</a>
+            <a href="/tos" className="text-neutral-400 hover:text-white transition-colors">TOS</a>
+            <a href="/info" className="text-neutral-400 hover:text-white transition-colors">Additional Information</a>
           </nav>
 
           <button
