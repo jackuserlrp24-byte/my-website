@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 
-const GUILD_ID = '1114227914842521630'; // Central Operations Discord Guild ID
-
-const LEADERSHIP_IDS = [
-  { id: '1268680281896910910', role: 'Ownership Team', title: 'Founder & Lead Developer' },
-  { id: '1431281945337397268', role: 'Ownership Team', title: 'Co-Owner' },
-  { id: '1229822710448918542', role: 'Ownership Team', title: 'Co-Owner' },
-  { id: '1258133730959298631', role: 'Management Team', title: 'Senior Management' },
+// Map your IDs to their exact desired display names and roles
+const LEADERSHIP_TEAM = [
+  { id: '1268680281896910910', role: 'Ownership Team', title: 'Founder & Lead Developer', defaultName: 'Jackus' },
+  { id: '1431281945337397268', role: 'Ownership Team', title: 'Co-Owner', defaultName: 'Dobbie' },
+  { id: '1229822710448918542', role: 'Ownership Team', title: 'Co-Owner', defaultName: 'OllieX' },
+  { id: '1258133730959298631', role: 'Management Team', title: 'Senior Management', defaultName: 'Management' },
 ];
 
 export async function GET() {
@@ -18,12 +17,12 @@ export async function GET() {
 
   try {
     const userProfiles = await Promise.all(
-      LEADERSHIP_IDS.map(async (item) => {
-        const res = await fetch(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${item.id}`, {
+      LEADERSHIP_TEAM.map(async (item) => {
+        const res = await fetch(`https://discord.com/api/v10/users/${item.id}`, {
           headers: {
             Authorization: `Bot ${botToken}`,
           },
-          next: { revalidate: 300 }, // Cache profiles for 5 minutes
+          next: { revalidate: 300 },
         });
 
         if (!res.ok) {
@@ -31,27 +30,22 @@ export async function GET() {
             id: item.id,
             role: item.role,
             title: item.title,
-            displayName: 'Team Member',
+            displayName: item.defaultName,
             avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png',
           };
         }
 
         const data = await res.json();
-        const user = data.user;
+        
+        // Use their global display name or fallback to your specified name
+        const displayName = data.global_name || data.username || item.defaultName;
 
-        // Prioritize server nickname -> global name -> username
-        const displayName = data.nick || user.global_name || user.username;
-
-        // Prioritize server-specific avatar -> global avatar -> default avatar
-        let avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
-        if (data.avatar) {
-          avatarUrl = `https://cdn.discordapp.com/guilds/${GUILD_ID}/users/${user.id}/avatars/${data.avatar}.png?size=128`;
-        } else if (user.avatar) {
-          avatarUrl = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
-        }
+        const avatarUrl = data.avatar
+          ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=128`
+          : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
         return {
-          id: user.id,
+          id: data.id,
           role: item.role,
           title: item.title,
           displayName,
@@ -62,7 +56,7 @@ export async function GET() {
 
     return NextResponse.json({ users: userProfiles });
   } catch (err) {
-    console.error('Error fetching Discord server nicknames:', err);
+    console.error('Error fetching Discord user profiles:', err);
     return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 });
   }
 }
