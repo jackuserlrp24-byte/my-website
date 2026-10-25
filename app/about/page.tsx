@@ -101,60 +101,63 @@ export default function AboutUsPage() {
           </p>
         </div>
 
-        {/* Core Departments Grid */}
+        {/* Core Pillars Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
+          {/* Pillar 1: vMenu Based */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
-                Metropolitan Police
+                vMenu Based Environment
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Tasked with maintaining public safety, responding to high-priority emergency incidents, and conducting professional tactical operations across Greater London.
+                We operate as a pure vMenu server, providing complete operational flexibility. Members enjoy direct control over loadouts, vehicle spawning, and character setup without unnecessary framework restrictions, keeping roleplay smooth and dynamic.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-neutral-800 text-[10px] font-mono text-neutral-500">
-              ESTABLISHED STANDARD
+              FRAMEWORK & FREEDOM
             </div>
           </div>
 
+          {/* Pillar 2: Senior Leadership & Staff */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
-                London Ambulance Service
+                Senior Leadership & Staff
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Providing critical pre-hospital clinical care, rapid trauma response, and dedicated patient transit across complex emergency scenarios.
+                Our Senior Leadership Team and Staff hold themselves to the highest standards of professional integrity. We take genuine pride in running a fair, transparent community where accountability comes first—always admitting when mistakes happen and working continuously to refine our operations.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-neutral-800 text-[10px] font-mono text-neutral-500">
-              ESTABLISHED STANDARD
+              LEADERSHIP & INTEGRITY
             </div>
           </div>
 
+          {/* Pillar 3: Development */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
-                London Fire Brigade
+                Custom Development
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Handling structural fires, hazardous materials, complex road traffic collisions, and specialized rescue operations throughout the capital.
+                We take extreme care and credibility in our technical development. From optimized standalone Lua resources to our proprietary custom MDT/CAD system tailored specifically for Central Operations, every feature is built ground-up exclusively for our community.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-neutral-800 text-[10px] font-mono text-neutral-500">
-              ESTABLISHED STANDARD
+              CUSTOM ENGINEERING
             </div>
           </div>
 
         </div>
 
-        {/* Development & Realism Focus */}
+        {/* Community Standards Footer Card */}
         <div className="bg-neutral-900/80 border border-neutral-800 p-8 shadow-xl backdrop-blur-md">
           <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-200 mb-3">
-            Custom Engineering & Professional Standards
+            Realism & Community Commitment
           </h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Our infrastructure is built on custom-developed resources, high-performance web applications, and meticulously configured UK emergency services equipment. We pride ourselves on creating an immersive, structured, and quality-driven roleplay environment for all members.
+            By pairing custom UK-tailored engineering with a grounded leadership team, Central Operations delivers a consistent, high-standard simulation environment for all UK emergency services and civilian roleplay enthusiasts.
           </p>
         </div>
 
