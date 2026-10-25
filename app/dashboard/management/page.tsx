@@ -109,14 +109,13 @@ export async function issueModeration(formData: FormData) {
 export async function createManagementPatrol(formData: FormData) {
   'use server';
   const title = formData.get('title') as string;
-  const division = formData.get('division') as string;
   const date = formData.get('date') as string;
-  const time = formData.get('time') as string;
-  const lead = formData.get('lead') as string;
+  const startTime = formData.get('startTime') as string;
+  const endTime = formData.get('endTime') as string;
   const description = formData.get('description') as string;
   const creator = formData.get('creator') as string;
 
-  if (!title || !division) return;
+  if (!title) return;
 
   const countRes = await supabase.from('patrols').select('id', { count: 'exact', head: true });
   const nextNum = (countRes.count || 0) + 1;
@@ -128,11 +127,10 @@ export async function createManagementPatrol(formData: FormData) {
     description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
     color: 5793266,
     fields: [
-      { name: 'Division', value: division, inline: true },
-      { name: 'Shift Lead', value: lead || creator || 'Unassigned', inline: true },
       { name: 'Shift ID', value: patrolId, inline: true },
       { name: 'Date', value: date || 'TBD', inline: true },
-      { name: 'Time', value: time || 'TBD', inline: true },
+      { name: 'Start Time', value: startTime || 'TBD', inline: true },
+      { name: 'End Time', value: endTime || 'TBD', inline: true },
       { name: 'Status', value: 'UPCOMING', inline: true },
       { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
       { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
@@ -160,10 +158,9 @@ export async function createManagementPatrol(formData: FormData) {
     id: patrolId,
     discord_message_id: discordMessageId,
     title,
-    division,
     date,
-    time,
-    lead,
+    start_time: startTime,
+    end_time: endTime,
     description,
     status: 'UPCOMING',
     attending: [],
