@@ -182,11 +182,11 @@ export default function AdditionalInfoPage() {
           </div>
         </div>
 
-        {/* Section 3: Live Leadership Team */}
+        {/* Section 3: Senior Leadership Team */}
         <div className="bg-neutral-900/80 border border-neutral-800 p-8 shadow-xl backdrop-blur-md flex flex-col gap-6">
           <div className="pb-3 border-b border-neutral-800 flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-200">
-              Ownership & Management Team
+              Senior Leadership Team
             </h3>
             <span className="text-[10px] font-mono text-neutral-500">COMMUNITY LEADERSHIP</span>
           </div>
@@ -197,12 +197,14 @@ export default function AdditionalInfoPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {leadership.map((user) => (
                 <div key={user.id} className="bg-neutral-950/80 border border-neutral-800/80 p-4 flex items-center gap-4">
-                  <div className="relative w-12 h-12 rounded-full border border-neutral-700 overflow-hidden shrink-0">
+                  <div className="w-12 h-12 rounded-full border border-neutral-700 overflow-hidden relative shrink-0 bg-neutral-900">
                     <Image
                       src={user.avatarUrl}
                       alt={user.global_name}
-                      fill
-                      className="object-cover"
+                      width={48}
+                      height={48}
+                      className="object-cover w-full h-full"
+                      unoptimized
                     />
                   </div>
                   <div className="flex flex-col min-w-0">
