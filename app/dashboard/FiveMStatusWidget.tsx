@@ -56,7 +56,7 @@ export default function FiveMStatusWidget() {
       </div>
 
       {/* Main Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Box: Prominent Logo, Server Title & Connect Button */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-between items-center text-center">
@@ -83,45 +83,47 @@ export default function FiveMStatusWidget() {
           </a>
         </div>
 
-        {/* Right Box: Adjusted down slightly to align with the left box */}
-        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col mt-2">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
-              Active Players In-Game ({players.length})
-            </h4>
-            <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
-          </div>
+        {/* Right Box: Matches left box height exactly */}
+        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
+                Active Players In-Game ({players.length})
+              </h4>
+              <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
+            </div>
 
-          {/* Tight compact player cards container */}
-          <div className="bg-neutral-900 border border-neutral-800 p-3 min-h-[110px] max-h-[150px] overflow-y-auto">
-            {loading ? (
-              <p className="text-xs text-neutral-500 italic py-8 text-center font-sans">
-                Querying server data...
-              </p>
-            ) : players.length > 0 ? (
-              <div className="flex flex-wrap gap-2.5">
-                {players.map((player, index) => (
-                  <div
-                    key={`${player.id}-${index}`}
-                    className="bg-neutral-950 border border-neutral-800/80 px-3 py-2 flex items-center gap-2 text-xs shrink-0"
-                  >
-                    <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
-                      ID: {player.id}
-                    </span>
-                    <span className="text-neutral-200 font-semibold">{player.name}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-6">
-                <p className="text-xs text-neutral-400 font-sans">
-                  No players currently connected to the server.
+            {/* Inner scroll container sized to fill the box height cleanly */}
+            <div className="bg-neutral-900 border border-neutral-800 p-3 min-h-[175px] max-h-[175px] overflow-y-auto">
+              {loading ? (
+                <p className="text-xs text-neutral-500 italic py-12 text-center font-sans">
+                  Querying server data...
                 </p>
-                <span className="text-[10px] text-neutral-500 font-mono mt-1">
-                  Server may be empty or restarting.
-                </span>
-              </div>
-            )}
+              ) : players.length > 0 ? (
+                <div className="flex flex-wrap gap-2.5">
+                  {players.map((player, index) => (
+                    <div
+                      key={`${player.id}-${index}`}
+                      className="bg-neutral-950 border border-neutral-800/80 px-3 py-2 flex items-center gap-2 text-xs shrink-0"
+                    >
+                      <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
+                        ID: {player.id}
+                      </span>
+                      <span className="text-neutral-200 font-semibold">{player.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-10">
+                  <p className="text-xs text-neutral-400 font-sans">
+                    No players currently connected to the server.
+                  </p>
+                  <span className="text-[10px] text-neutral-500 font-mono mt-1">
+                    Server may be empty or restarting.
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
