@@ -69,13 +69,21 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right: Login Button */}
-        <button
-          onClick={handleDiscordLogin}
-          className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors rounded-none cursor-pointer"
-        >
-          Login
-        </button>
+        {/* Center/Right: Navigation Links & Login Button */}
+        <div className="flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider uppercase text-neutral-400">
+            <a href="/about" className="hover:text-white transition-colors">About Us</a>
+            <a href="/tos" className="hover:text-white transition-colors">Server TOS</a>
+            <a href="/info" className="hover:text-white transition-colors">Additional Information</a>
+          </nav>
+
+          <button
+            onClick={handleDiscordLogin}
+            className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors rounded-none cursor-pointer"
+          >
+            Login
+          </button>
+        </div>
 
       </header>
 
