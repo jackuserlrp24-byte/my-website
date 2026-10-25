@@ -12,6 +12,7 @@ export default function FiveMStatusWidget() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [maxClients, setMaxClients] = useState(64);
   const [isOnline, setIsOnline] = useState(false);
+  const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const CONNECT_URI = 'fivem://connect/cfx.re/join/bddq8g4';
@@ -25,6 +26,7 @@ export default function FiveMStatusWidget() {
           setIsOnline(data.isOnline);
           setPlayers(data.players || []);
           setMaxClients(data.maxClients || 64);
+          setServerIcon(data.serverIcon || null);
         } else {
           setIsOnline(false);
         }
@@ -59,29 +61,24 @@ export default function FiveMStatusWidget() {
       {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        {/* Left Box: Centered Logo Header, Title, Description & Connect Button */}
-        <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-center items-center gap-4 text-center">
+        {/* Left Box: Logo, Title & Connect Button */}
+        <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-center items-center gap-5 text-center">
           
-          {/* Centered Large Logo Badge */}
-          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner">
-            {/* Replace text below with an <img> tag if using an image file */}
-            <span className="text-lg font-bold font-mono text-[#5865F2]">CO</span>
+          {/* Automatically Pulled FiveM Server Logo */}
+          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden">
+            {serverIcon ? (
+              <img src={serverIcon} alt="Server Logo" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-lg font-bold font-mono text-[#5865F2]">CO</span>
+            )}
           </div>
 
-          {/* Server Title & Subtitle */}
+          {/* Server Title */}
           <div>
             <h4 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
               Central Operations
             </h4>
-            <p className="text-[11px] font-mono text-neutral-400 mt-0.5">
-              UK Emergency Services Roleplay
-            </p>
           </div>
-
-          {/* Description */}
-          <p className="text-xs text-neutral-400 font-sans leading-relaxed text-left w-full">
-            Directly launch Grand Theft Auto V and connect to the Central Operations live roleplay server environment.
-          </p>
 
           {/* Connect Button */}
           <a
@@ -102,9 +99,9 @@ export default function FiveMStatusWidget() {
             <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 p-3 h-56 overflow-y-auto pr-1">
+          <div className="bg-neutral-900 border border-neutral-800 p-3 h-48 overflow-y-auto pr-1">
             {loading ? (
-              <p className="text-xs text-neutral-500 italic py-16 text-center font-sans">
+              <p className="text-xs text-neutral-500 italic py-12 text-center font-sans">
                 Querying server data...
               </p>
             ) : players.length > 0 ? (
@@ -127,7 +124,7 @@ export default function FiveMStatusWidget() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="flex flex-col items-center justify-center h-full text-center py-8">
                 <p className="text-xs text-neutral-400 font-sans">
                   No players currently connected to the server.
                 </p>

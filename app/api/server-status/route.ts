@@ -2,25 +2,24 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Global shared cache in memory
+const CFX_JOIN_CODE = 'bddq8g4';
+
 let liveCache = {
   isOnline: false,
   players: [] as Array<{ id: number; name: string; ping: number }>,
   maxClients: 64,
+  serverIcon: null as string | null,
   lastUpdated: 0
 };
 
-// 1. POST: Receives live player data directly from your FiveM server script
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    liveCache = {
-      isOnline: true,
-      players: Array.isArray(body.players) ? body.players : [],
-      maxClients: Number(body.maxClients || 64),
-      lastUpdated: Date.now()
-    };
+    liveCache.isOnline = true;
+    liveCache.players = Array.isArray(body.players) ? body.players : [];
+    liveCache.maxClients = Number(body.maxClients || 64);
+    liveCache.lastUpdated = Date.now();
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -28,16 +27,36 @@ export async function POST(req: Request) {
   }
 }
 
-// 2. GET: Serves the live player list to your dashboard widget
 export async function GET() {
-  // If no sync received from the server in the last 15 seconds, mark offline
   const isStale = Date.now() - liveCache.lastUpdated > 15000;
   const online = !isStale && liveCache.isOnline;
+
+  // Fetch server icon from Cfx.re if not already cached
+  let serverIcon = liveCache.serverIcon;
+  if (!serverIcon) {
+    try {
+      const cfxRes = await fetch(`https://frontend.cfx-services.net/api/servers/single/${CFX_JOIN_CODE}`, {
+        headers: { 'User-Agent': 'CentralOperationsPortal/1.0' },
+        cache: 'no-store'
+      });
+      if (cfxRes.ok) {
+        const json = await cfxRes.json();
+        const serverData = json.Data || json;
+        // Cfx.re provides the server icon as a base64 string or icon hash
+        if (serverData.icon) {
+          serverIcon = `data:image/png;base64,${serverData.icon}`;
+          liveCache.serverIcon = serverIcon;
+        }
+      }
+    } catch {
+      // Fallback if Cfx icon fetch fails
+    }
+  }
 
   return NextResponse.json({
     isOnline: online,
     players: online ? liveCache.players : [],
     maxClients: liveCache.maxClients,
-    error: online ? null : 'Waiting for server sync...'
+    serverIcon: serverIcon || null
   });
 }
