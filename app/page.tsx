@@ -89,15 +89,15 @@ export default function Home() {
       </header>
 
       {/* Center Hero Content / Main Menu */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-grow text-center px-4 max-w-2xl mx-auto">
+      <div className="relative z-10 flex flex-col items-center justify-center flex-grow text-center px-4 max-w-2xl mx-auto pt-12">
         
-        {/* Maximum Size Main Logo */}
-        <div className="relative w-48 h-48 md:w-56 md:h-56 mb-6">
+        {/* Larger Main Logo Positioned Slightly Lower */}
+        <div className="relative w-60 h-60 md:w-72 md:h-72 mb-6">
           <Image 
             src="/logo2.png" 
             alt="Central Operations Main Logo" 
             fill 
-            sizes="(max-width: 768px) 192px, 224px"
+            sizes="(max-width: 768px) 240px, 288px"
             className="object-contain drop-shadow-2xl" 
             priority
           />

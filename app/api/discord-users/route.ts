@@ -4,8 +4,8 @@ import { NextResponse } from 'next/server';
 const LEADERSHIP_TEAM = [
   { id: '1268680281896910910', name: 'J.Costin', role: 'Ownership Team', title: 'Server Founder' },
   { id: '1229822710448918542', name: 'O.Riley', role: 'Ownership Team', title: 'Server Co-Founder' },
-  { id: '1431281945337397268', name: 'J.Doyle', role: 'Ownership Team', title: 'Community Managment' },
-  { id: '1030984139081523310', name: 'W.Wray', role: 'Ownership Team', title: 'Community Managment' },
+  { id: '1431281945337397268', name: 'J.Doyle', role: 'Ownership Team', title: 'Community Management' },
+  { id: '1030984139081523310', name: 'W.Wray', role: 'Ownership Team', title: 'Community Management' },
   { id: '1258133730959298631', name: 'T.Wrap', role: 'Management Team', title: 'Community Support' },
 ];
 

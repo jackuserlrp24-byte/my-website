@@ -170,7 +170,7 @@ export default function AboutUsPage() {
         <div className="flex items-center gap-2 mt-2 sm:mt-0">
           <span className="text-neutral-500">Support / Comms:</span>
           <a
-            href="https://discord.gg/yourinvite"
+            href="https://discord.gg/centraloperationsfivem"
             target="_blank"
             rel="noopener noreferrer"
             className="text-neutral-200 hover:text-white font-medium tracking-wide underline underline-offset-4 transition-colors"
