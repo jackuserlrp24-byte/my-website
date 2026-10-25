@@ -14,35 +14,21 @@ export default function FiveMStatusWidget() {
   const [isOnline, setIsOnline] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Replace with your actual FiveM server IP and Port (or domain if proxied)
-  // Example: 'https://cfx.re/join/xxxxxx' or 'http://123.45.67.89:30120'
-// Set your RocketNode IP/Port for live player queries
-  const SERVER_ENDPOINT = 'http://194.164.96.98:40207'; 
-  
-  // Set your FiveM join link for the Connect Button
   const CONNECT_URI = 'fivem://connect/cfx.re/join/bddq8g4';
 
   useEffect(() => {
     async function fetchServerStatus() {
       try {
-        // Fetch online players
-        const playersRes = await fetch(`${SERVER_ENDPOINT}/players.json`, { cache: 'no-store' });
-        const dynamicRes = await fetch(`${SERVER_ENDPOINT}/dynamic.json`, { cache: 'no-store' });
-
-        if (playersRes.ok) {
-          const playerData = await playersRes.json();
-          setPlayers(playerData);
-          setIsOnline(true);
+        const res = await fetch('/api/server-status', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setIsOnline(data.isOnline);
+          setPlayers(data.players || []);
+          setMaxClients(data.maxClients || 32);
         } else {
           setIsOnline(false);
         }
-
-        if (dynamicRes.ok) {
-          const dynamicData = await dynamicRes.json();
-          setMaxClients(dynamicData.clients || 32);
-        }
       } catch (err) {
-        // Fallback state if offline or CORS blocked
         setIsOnline(false);
       } finally {
         setLoading(false);
