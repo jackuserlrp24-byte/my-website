@@ -61,30 +61,32 @@ export default function FiveMStatusWidget() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Left Box: Logo, Title & Connect Button */}
-        <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-center items-center gap-5 text-center">
+        <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-between items-center text-center">
           
-          {/* Logo from /public/logo.png */}
-          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden relative">
-            <Image 
-              src="/logo.png" 
-              alt="Central Operations Logo" 
-              fill 
-              className="object-contain p-1"
-              priority
-            />
+          <div className="flex flex-col items-center gap-5 w-full">
+            {/* Larger Logo without background box */}
+            <div className="w-24 h-24 relative flex items-center justify-center my-2">
+              <Image 
+                src="/logo.png" 
+                alt="Central Operations Logo" 
+                fill 
+                className="object-contain drop-shadow-md"
+                priority
+              />
+            </div>
+
+            {/* Server Title */}
+            <div>
+              <h4 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
+                Central Operations
+              </h4>
+            </div>
           </div>
 
-          {/* Server Title */}
-          <div>
-            <h4 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
-              Central Operations
-            </h4>
-          </div>
-
-          {/* Connect Button */}
+          {/* Connect Button pushed down */}
           <a
             href={CONNECT_URI}
-            className="w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer"
+            className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer mt-6"
           >
             Connect to Server
           </a>
@@ -100,9 +102,10 @@ export default function FiveMStatusWidget() {
             <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 p-3 h-48 overflow-y-auto pr-1">
+          {/* Taller player list container matching left box height */}
+          <div className="bg-neutral-900 border border-neutral-800 p-3 h-[254px] overflow-y-auto pr-1">
             {loading ? (
-              <p className="text-xs text-neutral-500 italic py-12 text-center font-sans">
+              <p className="text-xs text-neutral-500 italic py-20 text-center font-sans">
                 Querying server data...
               </p>
             ) : players.length > 0 ? (
@@ -125,7 +128,7 @@ export default function FiveMStatusWidget() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-8">
+              <div className="flex flex-col items-center justify-center h-full text-center py-16">
                 <p className="text-xs text-neutral-400 font-sans">
                   No players currently connected to the server.
                 </p>
