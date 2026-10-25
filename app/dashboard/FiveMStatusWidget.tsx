@@ -54,13 +54,14 @@ export default function FiveMStatusWidget() {
         </span>
       </div>
 
-      {/* Main Split Grid with increased gap separation */}
+      {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Box: Logo, Name & Connect Button */}
+        {/* Left Box: Prominent Logo, Server Title & Connect Button */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-center items-center text-center gap-6">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-20 h-20 relative flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            {/* Enlarged Logo Container */}
+            <div className="w-28 h-28 relative flex items-center justify-center">
               <Image 
                 src="/logo.png" 
                 alt="Central Operations Logo" 
@@ -82,7 +83,7 @@ export default function FiveMStatusWidget() {
           </a>
         </div>
 
-        {/* Right Box: Active Players Box with tighter height */}
+        {/* Right Box: Compact Side-by-Side Player Cards */}
         <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-3">
@@ -92,25 +93,26 @@ export default function FiveMStatusWidget() {
               <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
             </div>
 
+            {/* Scrollable Container with Side-by-Side Player Cards */}
             <div className="bg-neutral-900 border border-neutral-800 p-3 h-[140px] overflow-y-auto pr-1">
               {loading ? (
                 <p className="text-xs text-neutral-500 italic py-10 text-center font-sans">
                   Querying server data...
                 </p>
               ) : players.length > 0 ? (
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {players.map((player, index) => (
                     <div
                       key={`${player.id}-${index}`}
-                      className="w-full bg-neutral-950 border border-neutral-800/80 px-4 py-3 flex items-center justify-between text-xs"
+                      className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-between text-xs"
                     >
-                      <div className="flex items-center gap-3 truncate">
-                        <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-2 py-1 border border-neutral-800">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
                           ID: {player.id}
                         </span>
-                        <span className="text-neutral-200 font-semibold text-sm truncate">{player.name}</span>
+                        <span className="text-neutral-200 font-semibold truncate">{player.name}</span>
                       </div>
-                      <span className="text-xs font-mono text-neutral-400 shrink-0">
+                      <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-1">
                         {player.ping > 0 ? `${player.ping}ms` : 'Active'}
                       </span>
                     </div>
