@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 
 // Type your names and titles manually here! Avatars will sync automatically via Discord IDs.
 const LEADERSHIP_TEAM = [
-  { id: '1268680281896910910', name: 'Jackus', role: 'Ownership Team', title: 'Founder & Lead Developer' },
-  { id: '1431281945337397268', name: 'Dobbie', role: 'Ownership Team', title: 'Co-Owner' },
-  { id: '1229822710448918542', name: 'OllieX', role: 'Ownership Team', title: 'Co-Owner' },
-  { id: '1030984139081523310', name: 'Co-Owner', role: 'Ownership Team', title: 'Co-Owner' },
-  { id: '1258133730959298631', name: 'TT438596', role: 'Management Team', title: 'Senior Management' },
+  { id: '1268680281896910910', name: 'J.Costin', role: 'Ownership Team', title: 'Server Founder' },
+  { id: '1229822710448918542', name: 'O.Riley', role: 'Ownership Team', title: 'Server Co-Founder' },
+  { id: '1431281945337397268', name: 'J.Doyle', role: 'Ownership Team', title: 'Community Managment' },
+  { id: '1030984139081523310', name: 'W.Wray', role: 'Ownership Team', title: 'Community Managment' },
+  { id: '1258133730959298631', name: 'T.Wrap', role: 'Management Team', title: 'Community Support' },
 ];
 
 export async function GET() {
