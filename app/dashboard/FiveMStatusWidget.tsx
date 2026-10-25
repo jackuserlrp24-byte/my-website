@@ -10,9 +10,10 @@ interface Player {
 
 export default function FiveMStatusWidget() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [maxClients, setMaxClients] = useState(32);
+  const [maxClients, setMaxClients] = useState(64);
   const [isOnline, setIsOnline] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const CONNECT_URI = 'fivem://connect/cfx.re/join/bddq8g4';
 
@@ -24,19 +25,22 @@ export default function FiveMStatusWidget() {
           const data = await res.json();
           setIsOnline(data.isOnline);
           setPlayers(data.players || []);
-          setMaxClients(data.maxClients || 32);
+          setMaxClients(data.maxClients || 64);
+          setErrorMsg(data.error || null);
         } else {
           setIsOnline(false);
+          setErrorMsg('API route returned non-OK response');
         }
       } catch (err) {
         setIsOnline(false);
+        setErrorMsg('Failed to reach API route');
       } finally {
         setLoading(false);
       }
     }
 
     fetchServerStatus();
-    const interval = setInterval(fetchServerStatus, 5000); // Refresh every 5 seconds
+    const interval = setInterval(fetchServerStatus, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -56,10 +60,10 @@ export default function FiveMStatusWidget() {
         </span>
       </div>
 
-      {/* Main Split Grid (Left: Connect & Log | Right: Active Players) */}
+      {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        {/* Left Box: Connect Button & Server Diagnostics / Logs */}
+        {/* Left Box: Connect Button & Diagnostics Log */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between gap-4">
           <div>
             <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-2">
@@ -77,14 +81,13 @@ export default function FiveMStatusWidget() {
             </a>
           </div>
 
-          {/* Live Diagnostics Log Box */}
+          {/* Diagnostics Log Box */}
           <div className="bg-neutral-900 border border-neutral-800 p-3 font-mono text-[11px] text-neutral-400 space-y-1">
             <div className="text-neutral-500 text-[10px] uppercase border-b border-neutral-800 pb-1 mb-1">
               Diagnostics Log
             </div>
             <div>[FXServer]: Status &rarr; <span className={isOnline ? 'text-emerald-400' : 'text-red-400'}>{isOnline ? 'ONLINE' : 'UNREACHABLE'}</span></div>
-            <div>[Endpoint]: Active Query OK</div>
-            <div>[Protocol]: FiveM Native JSON</div>
+            <div>[Error]: <span className="text-amber-400 truncate block">{errorMsg || 'None'}</span></div>
           </div>
         </div>
 

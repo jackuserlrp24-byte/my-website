@@ -6,44 +6,58 @@ const SERVER_ENDPOINT = 'http://194.164.96.98:40207';
 
 export async function GET() {
   try {
-    const [playersRes, dynamicRes] = await Promise.all([
-      fetch(`${SERVER_ENDPOINT}/players.json`, { 
-        cache: 'no-store',
-        signal: AbortSignal.timeout(4000) 
-      }),
-      fetch(`${SERVER_ENDPOINT}/dynamic.json`, { 
-        cache: 'no-store',
-        signal: AbortSignal.timeout(4000) 
-      })
-    ]);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
 
-    let players = [];
+    const playersRes = await fetch(`${SERVER_ENDPOINT}/players.json`, { 
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!playersRes.ok) {
+      return NextResponse.json({ 
+        isOnline: false, 
+        players: [], 
+        maxClients: 64, 
+        error: `HTTP Error: ${playersRes.status}` 
+      });
+    }
+
+    const rawPlayers = await playersRes.json();
+    
     let maxClients = 64;
-    let isOnline = false;
-
-    if (playersRes.ok) {
-      const rawPlayers = await playersRes.json();
-      if (Array.isArray(rawPlayers)) {
-        players = rawPlayers.map((p: any) => ({
-          id: p.id ?? p.endpointId ?? 0,
-          name: p.name ?? 'Unknown Operator',
-          ping: p.ping ?? 0
-        }));
-        isOnline = true;
+    try {
+      const dynamicRes = await fetch(`${SERVER_ENDPOINT}/dynamic.json`, { 
+        cache: 'no-store',
+        signal: AbortSignal.timeout(2000) 
+      });
+      if (dynamicRes.ok) {
+        const dynamicData = await dynamicRes.json();
+        maxClients = dynamicData.clients || 64;
       }
+    } catch {
+      // Ignore dynamic.json failure if players.json worked
     }
 
-    if (dynamicRes.ok) {
-      const dynamicData = await dynamicRes.json();
-      maxClients = dynamicData.clients || 64;
-    }
+    const players = Array.isArray(rawPlayers) ? rawPlayers.map((p: any) => ({
+      id: p.id ?? p.endpointId ?? 0,
+      name: p.name ?? 'Unknown Operator',
+      ping: p.ping ?? 0
+    })) : [];
 
     return NextResponse.json({
-      isOnline,
+      isOnline: true,
       players,
-      maxClients
+      maxClients,
+      error: null
     });
-  } catch (err) {
-    return NextResponse.json({ isOnline: false, players: [], maxClients: 64 });
+  } catch (err: any) {
+    return NextResponse.json({ 
+      isOnline: false, 
+      players: [], 
+      maxClients: 64, 
+      error: err?.message || 'Connection timeout / blocked' 
+    });
   }
 }
