@@ -29,11 +29,11 @@ export default function FiveMStatusWidget() {
           setErrorMsg(data.error || null);
         } else {
           setIsOnline(false);
-          setErrorMsg('API route returned non-OK response');
+          setErrorMsg('API route returned non-OK status');
         }
-      } catch (err) {
+      } catch {
         setIsOnline(false);
-        setErrorMsg('Failed to reach API route');
+        setErrorMsg('Failed to reach local API proxy');
       } finally {
         setLoading(false);
       }
@@ -63,7 +63,7 @@ export default function FiveMStatusWidget() {
       {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        {/* Left Box: Connect Button & Diagnostics Log */}
+        {/* Left Box: Connect Button & Server Diagnostics / Logs */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between gap-4">
           <div>
             <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-2">
@@ -86,8 +86,18 @@ export default function FiveMStatusWidget() {
             <div className="text-neutral-500 text-[10px] uppercase border-b border-neutral-800 pb-1 mb-1">
               Diagnostics Log
             </div>
-            <div>[FXServer]: Status &rarr; <span className={isOnline ? 'text-emerald-400' : 'text-red-400'}>{isOnline ? 'ONLINE' : 'UNREACHABLE'}</span></div>
-            <div>[Error]: <span className="text-amber-400 truncate block">{errorMsg || 'None'}</span></div>
+            <div>
+              [FXServer]: Status &rarr;{' '}
+              <span className={isOnline ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                {isOnline ? 'ONLINE' : 'UNREACHABLE'}
+              </span>
+            </div>
+            <div>
+              [Endpoint]: <span className="text-neutral-300">bddq8g4</span>
+            </div>
+            <div>
+              [Status]: <span className="text-neutral-300">{errorMsg ? errorMsg : 'OK'}</span>
+            </div>
           </div>
         </div>
 
@@ -102,11 +112,16 @@ export default function FiveMStatusWidget() {
 
           <div className="bg-neutral-900 border border-neutral-800 p-3 h-48 overflow-y-auto pr-1">
             {loading ? (
-              <p className="text-xs text-neutral-500 italic py-12 text-center font-sans">Querying server data...</p>
+              <p className="text-xs text-neutral-500 italic py-12 text-center font-sans">
+                Querying server data...
+              </p>
             ) : players.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {players.map((player) => (
-                  <div key={player.id} className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-between text-xs">
+                {players.map((player, index) => (
+                  <div
+                    key={`${player.id}-${index}`}
+                    className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-between text-xs"
+                  >
                     <div className="flex items-center gap-2 truncate">
                       <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
                         ID: {player.id}
@@ -121,8 +136,12 @@ export default function FiveMStatusWidget() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center">
-                <p className="text-xs text-neutral-400 font-sans">No players currently connected to the server.</p>
-                <span className="text-[10px] text-neutral-500 font-mono mt-1">Server may be empty or restarting.</span>
+                <p className="text-xs text-neutral-400 font-sans">
+                  No players currently connected to the server.
+                </p>
+                <span className="text-[10px] text-neutral-500 font-mono mt-1">
+                  Server may be empty or restarting.
+                </span>
               </div>
             )}
           </div>
