@@ -2,37 +2,48 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+const SERVER_ENDPOINT = 'http://194.164.96.98:40207';
+
 export async function GET() {
   try {
-    const res = await fetch('https://frontend.cfx-services.net/api/servers/single/bddq8g4', {
-      headers: {
-        'User-Agent': 'CentralOperationsPortal/1.0'
-      },
-      cache: 'no-store'
-    });
+    const [playersRes, dynamicRes] = await Promise.all([
+      fetch(`${SERVER_ENDPOINT}/players.json`, { 
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000) 
+      }),
+      fetch(`${SERVER_ENDPOINT}/dynamic.json`, { 
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000) 
+      })
+    ]);
 
-    if (res.ok) {
-      const json = await res.json();
-      const serverData = json.Data || json;
-      
-      const rawPlayers = serverData.players || [];
-      const maxClients = Number(serverData.vars?.sv_maxclients || serverData.sv_maxclients || 32);
+    let players = [];
+    let maxClients = 64;
+    let isOnline = false;
 
-      const players = rawPlayers.map((p: any) => ({
-        id: p.id ?? 0,
-        name: p.name ?? 'Unknown',
-        ping: p.ping ?? 0
-      }));
-
-      return NextResponse.json({
-        isOnline: true,
-        players,
-        maxClients
-      });
+    if (playersRes.ok) {
+      const rawPlayers = await playersRes.json();
+      if (Array.isArray(rawPlayers)) {
+        players = rawPlayers.map((p: any) => ({
+          id: p.id ?? p.endpointId ?? 0,
+          name: p.name ?? 'Unknown Operator',
+          ping: p.ping ?? 0
+        }));
+        isOnline = true;
+      }
     }
 
-    return NextResponse.json({ isOnline: false, players: [], maxClients: 32 });
+    if (dynamicRes.ok) {
+      const dynamicData = await dynamicRes.json();
+      maxClients = dynamicData.clients || 64;
+    }
+
+    return NextResponse.json({
+      isOnline,
+      players,
+      maxClients
+    });
   } catch (err) {
-    return NextResponse.json({ isOnline: false, players: [], maxClients: 32 });
+    return NextResponse.json({ isOnline: false, players: [], maxClients: 64 });
   }
 }
