@@ -97,7 +97,7 @@ export default function AboutUsPage() {
             About Central Operations
           </h2>
           <p className="text-sm text-neutral-400 leading-relaxed font-normal">
-            Central Operations is a premier British-themed vMenu roleplay community set against the backdrop of London. We focus on high-standards simulation, operational realism, and dedicated emergency services teamwork.
+            Welcome to Central Operations! We&apos;re a London-based vMenu roleplay community specializing in Metropolitan Police, LAS, LFB, and authentic civilian operations.
           </p>
         </div>
 
@@ -167,7 +167,7 @@ export default function AboutUsPage() {
         <div className="flex items-center gap-2 mt-2 sm:mt-0">
           <span className="text-neutral-500">Support / Comms:</span>
           <a
-            href="https://discord.gg/centraloperationsfivem"
+            href="https://discord.gg/yourinvite"
             target="_blank"
             rel="noopener noreferrer"
             className="text-neutral-200 hover:text-white font-medium tracking-wide underline underline-offset-4 transition-colors"
