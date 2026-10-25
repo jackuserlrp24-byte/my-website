@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import FiveMStatusWidget from './FiveMStatusWidget'; // <-- Import component
 
 export const dynamic = 'force-dynamic';
 
@@ -142,6 +143,9 @@ export default async function DashboardPage() {
         </div>
 
       </div>
+
+      {/* NEW: FiveM Live Server Status & Player List Widget */}
+      <FiveMStatusWidget />
 
     </main>
   );
