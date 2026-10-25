@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { title, date, startTime, endTime, description, id } = body;
 
+    const timeString = `${startTime || 'TBD'} - ${endTime || 'TBD'}`;
     const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
 
     const embed = {
@@ -51,8 +52,7 @@ export async function POST(request: Request) {
       fields: [
         { name: 'Shift ID', value: id || 'PAT-001', inline: true },
         { name: 'Date', value: date || 'TBD', inline: true },
-        { name: 'Start Time', value: startTime || 'TBD', inline: true },
-        { name: 'End Time', value: endTime || 'TBD', inline: true },
+        { name: 'Time', value: timeString, inline: true },
         { name: 'Status', value: 'UPCOMING', inline: true },
         { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
         { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
@@ -78,9 +78,6 @@ export async function POST(request: Request) {
       if (response.ok) {
         const messageData = await response.json();
         discordMessageId = messageData.id;
-      } else {
-        const errorData = await response.text();
-        console.error('Failed to post Discord embed:', errorData);
       }
     }
 
@@ -90,8 +87,7 @@ export async function POST(request: Request) {
         discord_message_id: discordMessageId,
         title,
         date,
-        start_time: startTime,
-        end_time: endTime,
+        time: timeString,
         description,
         status: 'UPCOMING',
         attending: [],

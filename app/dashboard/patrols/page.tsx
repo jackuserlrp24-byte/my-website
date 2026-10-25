@@ -6,8 +6,7 @@ interface PatrolShift {
   id: string;
   title: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  time: string;
   status: 'UPCOMING' | 'ACTIVE' | 'CONCLUDED';
   description: string;
   attending?: string[];
@@ -196,8 +195,8 @@ export default function PatrolsPage() {
                       </p>
                     </div>
 
-                    {/* Tactical Metadata Cards (Date, Start Time, End Time) */}
-                    <div className="grid grid-cols-3 gap-3 pt-2 border-t border-neutral-800/80">
+                    {/* Tactical Metadata Cards */}
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-neutral-800/80">
                       
                       {/* Date Card */}
                       <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
@@ -210,25 +209,14 @@ export default function PatrolsPage() {
                         </span>
                       </div>
 
-                      {/* Start Time Card */}
+                      {/* Time Card */}
                       <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
                         <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
                         <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                          Start Time
+                          Time (Start - End)
                         </span>
                         <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
-                          {patrol.startTime || 'N/A'}
-                        </span>
-                      </div>
-
-                      {/* End Time Card */}
-                      <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                          End Time
-                        </span>
-                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
-                          {patrol.endTime || 'N/A'}
+                          {patrol.time}
                         </span>
                       </div>
 

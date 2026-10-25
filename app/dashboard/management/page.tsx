@@ -121,7 +121,9 @@ export async function createManagementPatrol(formData: FormData) {
   const nextNum = (countRes.count || 0) + 1;
   const patrolId = `PAT-${nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : nextNum}`;
 
+  const timeString = `${startTime || 'TBD'} - ${endTime || 'TBD'}`;
   const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
+
   const embed = {
     title: `New Event : ${title}`,
     description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
@@ -129,8 +131,7 @@ export async function createManagementPatrol(formData: FormData) {
     fields: [
       { name: 'Shift ID', value: patrolId, inline: true },
       { name: 'Date', value: date || 'TBD', inline: true },
-      { name: 'Start Time', value: startTime || 'TBD', inline: true },
-      { name: 'End Time', value: endTime || 'TBD', inline: true },
+      { name: 'Time', value: timeString, inline: true },
       { name: 'Status', value: 'UPCOMING', inline: true },
       { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
       { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
@@ -154,18 +155,21 @@ export async function createManagementPatrol(formData: FormData) {
     }
   }
 
-  await supabase.from('patrols').insert({
+  const { error } = await supabase.from('patrols').insert({
     id: patrolId,
     discord_message_id: discordMessageId,
     title,
     date,
-    start_time: startTime,
-    end_time: endTime,
+    time: timeString,
     description,
     status: 'UPCOMING',
     attending: [],
     unattending: []
   });
+
+  if (error) {
+    console.error('Supabase patrol insert error:', error.message);
+  }
 
   revalidatePath('/dashboard/management');
   revalidatePath('/dashboard/patrols');
