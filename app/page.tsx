@@ -88,11 +88,11 @@ export default function Home() {
 
       </header>
 
-      {/* Center Hero Content / Main Menu */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-grow text-center px-4 max-w-xl mx-auto gap-3">
+      {/* Center Hero Content / Main Menu (Perfectly Centered) */}
+      <div className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4 max-w-xl mx-auto gap-4">
         
         {/* Main Logo */}
-        <div className="relative w-44 h-44 md:w-52 md:h-52 mb-1">
+        <div className="relative w-44 h-44 md:w-52 md:h-52">
           <Image 
             src="/logo2.png" 
             alt="Central Operations Main Logo" 
@@ -103,18 +103,13 @@ export default function Home() {
           />
         </div>
 
-        {/* Title & Description Section */}
-        <div className="flex flex-col gap-1.5">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-neutral-100">
-            Central Operations
-          </h2>
-          <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-normal max-w-md mx-auto">
-            To access our portal and explore additional features, please log in with your Discord account below.
-          </p>
-        </div>
+        {/* Subtitle Description */}
+        <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-normal max-w-md">
+          To access our portal and explore additional features, please log in with your Discord account below.
+        </p>
 
         {/* Official Discord Login Button */}
-        <div className="w-full max-w-xs mt-2">
+        <div className="w-full max-w-xs mt-1">
           <button
             onClick={handleDiscordLogin}
             className="w-full px-5 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center rounded-none cursor-pointer flex items-center justify-center gap-2 shadow-lg"
