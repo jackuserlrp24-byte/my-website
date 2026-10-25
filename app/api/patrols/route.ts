@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const creatorName = session ? getDiscordDisplayName(session) : 'Server Staff';
 
     const body = await request.json();
-    const { title, division, date, time, lead, description, id } = body;
+    const { title, date, startTime, endTime, description, id } = body;
 
     const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
 
@@ -49,11 +49,10 @@ export async function POST(request: Request) {
       description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
       color: 5793266,
       fields: [
-        { name: 'Division', value: division || 'N/A', inline: true },
-        { name: 'Shift Lead', value: lead || creatorName || 'Unassigned', inline: true },
         { name: 'Shift ID', value: id || 'PAT-001', inline: true },
         { name: 'Date', value: date || 'TBD', inline: true },
-        { name: 'Time', value: time || 'TBD', inline: true },
+        { name: 'Start Time', value: startTime || 'TBD', inline: true },
+        { name: 'End Time', value: endTime || 'TBD', inline: true },
         { name: 'Status', value: 'UPCOMING', inline: true },
         { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
         { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
@@ -90,10 +89,9 @@ export async function POST(request: Request) {
         id,
         discord_message_id: discordMessageId,
         title,
-        division,
         date,
-        time,
-        lead,
+        start_time: startTime,
+        end_time: endTime,
         description,
         status: 'UPCOMING',
         attending: [],
