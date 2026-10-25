@@ -63,7 +63,7 @@ export default function FiveMStatusWidget() {
       {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        {/* Left Box: Connect Button & Server Diagnostics / Logs */}
+        {/* Left Box: Connect Button & Diagnostics Log */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between gap-4">
           <div>
             <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-2">
@@ -129,7 +129,7 @@ export default function FiveMStatusWidget() {
                       <span className="text-neutral-200 font-semibold truncate">{player.name}</span>
                     </div>
                     <span className="text-[10px] font-mono text-neutral-500 shrink-0">
-                      {player.ping}ms
+                      {player.ping > 0 ? `${player.ping}ms` : 'Active'}
                     </span>
                   </div>
                 ))}
