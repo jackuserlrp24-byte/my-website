@@ -10,17 +10,31 @@ const slides = [
 ];
 
 const socialLinks = [
-  { name: 'Discord Community', role: 'Support, Patrol Announcements & Comms', url: 'https://discord.gg/centraloperationsfivem', label: 'Join Discord' },
-  { name: 'TikTok Official', role: 'Promotional Media & Gameplay Highlights', url: 'https://www.tiktok.com/@centraloperationsfivem?lang=en-GB', label: 'Follow TikTok' },
-  { name: 'YouTube Channel', role: 'Community Showcases & Official Teasers', url: 'https://www.youtube.com/@CentralOperationsFivem', label: 'Subscribe YouTube' },
+  { 
+    name: 'Discord Community', 
+    role: 'Support, Patrol Announcements & Comms', 
+    url: 'https://discord.gg/centraloperationsfivem', 
+    label: 'Join Discord' 
+  },
+  { 
+    name: 'TikTok Official', 
+    role: 'Promotional Media & Gameplay Highlights', 
+    url: 'https://www.tiktok.com/@centraloperationsfivem?lang=en-GB', 
+    label: 'Follow TikTok' 
+  },
+  { 
+    name: 'YouTube Channel', 
+    role: 'Community Showcases & Official Teasers', 
+    url: 'https://www.youtube.com/@CentralOperationsFivem', 
+    label: 'Subscribe YouTube' 
+  },
 ];
 
 interface DiscordUser {
   id: string;
   role: string;
   title: string;
-  username: string;
-  global_name: string;
+  displayName: string;
   avatarUrl: string;
 }
 
@@ -200,7 +214,7 @@ export default function AdditionalInfoPage() {
                   <div className="w-12 h-12 rounded-full border border-neutral-700 overflow-hidden relative shrink-0 bg-neutral-900">
                     <Image
                       src={user.avatarUrl}
-                      alt={user.global_name}
+                      alt={user.displayName}
                       width={48}
                       height={48}
                       className="object-cover w-full h-full"
@@ -212,7 +226,7 @@ export default function AdditionalInfoPage() {
                       {user.role}
                     </span>
                     <h4 className="text-xs font-bold text-neutral-100 uppercase truncate">
-                      {user.global_name}
+                      {user.displayName}
                     </h4>
                     <p className="text-[11px] text-neutral-400 truncate">
                       {user.title}
