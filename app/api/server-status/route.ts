@@ -6,58 +6,75 @@ const SERVER_ENDPOINT = 'http://194.164.96.98:40207';
 
 export async function GET() {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s timeout
-
-    const playersRes = await fetch(`${SERVER_ENDPOINT}/players.json`, { 
-      cache: 'no-store',
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (!playersRes.ok) {
-      return NextResponse.json({ 
-        isOnline: false, 
-        players: [], 
-        maxClients: 64, 
-        error: `HTTP Error: ${playersRes.status}` 
-      });
-    }
-
-    const rawPlayers = await playersRes.json();
-    
+    let isOnline = false;
+    let players = [];
     let maxClients = 64;
+
+    // 1. Try querying the direct RocketNode IP first
     try {
-      const dynamicRes = await fetch(`${SERVER_ENDPOINT}/dynamic.json`, { 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch(`${SERVER_ENDPOINT}/players.json`, {
         cache: 'no-store',
-        signal: AbortSignal.timeout(2000) 
+        signal: controller.signal
       });
-      if (dynamicRes.ok) {
-        const dynamicData = await dynamicRes.json();
-        maxClients = dynamicData.clients || 64;
+      clearTimeout(timeoutId);
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        const raw = await res.json();
+        if (Array.isArray(raw)) {
+          players = raw.map((p: any) => ({
+            id: p.id ?? p.endpointId ?? 0,
+            name: p.name ?? 'Unknown Operator',
+            ping: p.ping ?? 0
+          }));
+          isOnline = true;
+        }
       }
     } catch {
-      // Ignore dynamic.json failure if players.json worked
+      // Direct IP blocked or returned HTML; will move to fallback
     }
 
-    const players = Array.isArray(rawPlayers) ? rawPlayers.map((p: any) => ({
-      id: p.id ?? p.endpointId ?? 0,
-      name: p.name ?? 'Unknown Operator',
-      ping: p.ping ?? 0
-    })) : [];
+    // 2. Fallback to official Cfx.re API if direct IP failed
+    if (!isOnline) {
+      try {
+        const cfxRes = await fetch('https://frontend.cfx-services.net/api/servers/single/bddq8g4', {
+          headers: { 'User-Agent': 'CentralOperationsPortal/1.0' },
+          cache: 'no-store'
+        });
+        const contentType = cfxRes.headers.get('content-type') || '';
+        if (cfxRes.ok && contentType.includes('application/json')) {
+          const json = await cfxRes.json();
+          const serverData = json.Data || json;
+          const rawPlayers = serverData.players || [];
+          maxClients = Number(serverData.vars?.sv_maxclients || serverData.sv_maxclients || 64);
+          
+          players = rawPlayers.map((p: any) => ({
+            id: p.id ?? 0,
+            name: p.name ?? 'Player',
+            ping: p.ping ?? 0
+          }));
+          isOnline = true;
+        }
+      } catch {
+        // Fallback failed
+      }
+    }
 
     return NextResponse.json({
-      isOnline: true,
+      isOnline,
       players,
       maxClients,
-      error: null
+      error: isOnline ? null : 'Server unreachable'
     });
+
   } catch (err: any) {
     return NextResponse.json({ 
       isOnline: false, 
       players: [], 
       maxClients: 64, 
-      error: err?.message || 'Connection timeout / blocked' 
+      error: err?.message || 'Unknown error' 
     });
   }
 }
