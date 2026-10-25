@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface Player {
   id: number;
@@ -12,7 +13,6 @@ export default function FiveMStatusWidget() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [maxClients, setMaxClients] = useState(64);
   const [isOnline, setIsOnline] = useState(false);
-  const [serverIcon, setServerIcon] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const CONNECT_URI = 'fivem://connect/cfx.re/join/bddq8g4';
@@ -26,9 +26,6 @@ export default function FiveMStatusWidget() {
           setIsOnline(data.isOnline);
           setPlayers(data.players || []);
           setMaxClients(data.maxClients || 64);
-          if (data.serverIcon) {
-            setServerIcon(data.serverIcon);
-          }
         } else {
           setIsOnline(false);
         }
@@ -66,13 +63,15 @@ export default function FiveMStatusWidget() {
         {/* Left Box: Logo, Title & Connect Button */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-center items-center gap-5 text-center">
           
-          {/* Automatically Pulled FiveM Server Logo */}
-          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden rounded-md">
-            {serverIcon ? (
-              <img src={serverIcon} alt="Central Operations Logo" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-lg font-bold font-mono text-[#5865F2]">CO</span>
-            )}
+          {/* Logo from /public/logo.png */}
+          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden relative">
+            <Image 
+              src="/logo.png" 
+              alt="Central Operations Logo" 
+              fill 
+              className="object-contain p-1"
+              priority
+            />
           </div>
 
           {/* Server Title */}
@@ -107,19 +106,19 @@ export default function FiveMStatusWidget() {
                 Querying server data...
               </p>
             ) : players.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2">
                 {players.map((player, index) => (
                   <div
                     key={`${player.id}-${index}`}
-                    className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-between text-xs"
+                    className="w-full bg-neutral-950 border border-neutral-800/80 px-4 py-3 flex items-center justify-between text-xs"
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
+                    <div className="flex items-center gap-3 truncate">
+                      <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-2 py-1 border border-neutral-800">
                         ID: {player.id}
                       </span>
-                      <span className="text-neutral-200 font-semibold truncate">{player.name}</span>
+                      <span className="text-neutral-200 font-semibold text-sm truncate">{player.name}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-neutral-500 shrink-0">
+                    <span className="text-xs font-mono text-neutral-400 shrink-0">
                       {player.ping > 0 ? `${player.ping}ms` : 'Active'}
                     </span>
                   </div>

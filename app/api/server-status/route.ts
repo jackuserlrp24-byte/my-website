@@ -6,22 +6,19 @@ let liveCache = {
   isOnline: false,
   players: [] as Array<{ id: number; name: string; ping: number }>,
   maxClients: 64,
-  serverIcon: null as string | null,
   lastUpdated: 0
 };
 
-// POST: Receives live player list and logo from CO-PortalSync
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    liveCache.isOnline = true;
-    liveCache.players = Array.isArray(body.players) ? body.players : [];
-    liveCache.maxClients = Number(body.maxClients || 64);
-    if (body.serverIcon) {
-      liveCache.serverIcon = body.serverIcon;
-    }
-    liveCache.lastUpdated = Date.now();
+    liveCache = {
+      isOnline: true,
+      players: Array.isArray(body.players) ? body.players : [],
+      maxClients: Number(body.maxClients || 64),
+      lastUpdated: Date.now()
+    };
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -29,7 +26,6 @@ export async function POST(req: Request) {
   }
 }
 
-// GET: Serves the live player list and logo to FiveMStatusWidget
 export async function GET() {
   const isStale = Date.now() - liveCache.lastUpdated > 15000;
   const online = !isStale && liveCache.isOnline;
@@ -37,7 +33,6 @@ export async function GET() {
   return NextResponse.json({
     isOnline: online,
     players: online ? liveCache.players : [],
-    maxClients: liveCache.maxClients,
-    serverIcon: online ? liveCache.serverIcon : null
+    maxClients: liveCache.maxClients
   });
 }
