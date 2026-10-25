@@ -83,8 +83,8 @@ export default function FiveMStatusWidget() {
           </a>
         </div>
 
-        {/* Right Box: Tight Compact Player Cards */}
-        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col">
+        {/* Right Box: Adjusted down slightly to align with the left box */}
+        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col mt-2">
           <div className="flex justify-between items-center mb-3">
             <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
               Active Players In-Game ({players.length})
@@ -92,7 +92,7 @@ export default function FiveMStatusWidget() {
             <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
           </div>
 
-          {/* Tight outer scroll container */}
+          {/* Tight compact player cards container */}
           <div className="bg-neutral-900 border border-neutral-800 p-3 min-h-[110px] max-h-[150px] overflow-y-auto">
             {loading ? (
               <p className="text-xs text-neutral-500 italic py-8 text-center font-sans">
