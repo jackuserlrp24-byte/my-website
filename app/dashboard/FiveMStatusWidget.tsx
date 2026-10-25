@@ -54,10 +54,10 @@ export default function FiveMStatusWidget() {
         </span>
       </div>
 
-      {/* Main Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Main Split Grid with increased gap separation */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Box: Nicely grouped logo, name, and connect button */}
+        {/* Left Box: Logo, Name & Connect Button */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-center items-center text-center gap-6">
           <div className="flex flex-col items-center gap-3">
             <div className="w-20 h-20 relative flex items-center justify-center">
@@ -82,49 +82,51 @@ export default function FiveMStatusWidget() {
           </a>
         </div>
 
-        {/* Right Box: Active Players Box */}
-        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col">
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
-              Active Players In-Game ({players.length})
-            </h4>
-            <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
-          </div>
+        {/* Right Box: Active Players Box with tighter height */}
+        <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
+                Active Players In-Game ({players.length})
+              </h4>
+              <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
+            </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 p-3 h-[212px] overflow-y-auto pr-1">
-            {loading ? (
-              <p className="text-xs text-neutral-500 italic py-16 text-center font-sans">
-                Querying server data...
-              </p>
-            ) : players.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {players.map((player, index) => (
-                  <div
-                    key={`${player.id}-${index}`}
-                    className="w-full bg-neutral-950 border border-neutral-800/80 px-4 py-3 flex items-center justify-between text-xs"
-                  >
-                    <div className="flex items-center gap-3 truncate">
-                      <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-2 py-1 border border-neutral-800">
-                        ID: {player.id}
-                      </span>
-                      <span className="text-neutral-200 font-semibold text-sm truncate">{player.name}</span>
-                    </div>
-                    <span className="text-xs font-mono text-neutral-400 shrink-0">
-                      {player.ping > 0 ? `${player.ping}ms` : 'Active'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <p className="text-xs text-neutral-400 font-sans">
-                  No players currently connected to the server.
+            <div className="bg-neutral-900 border border-neutral-800 p-3 h-[140px] overflow-y-auto pr-1">
+              {loading ? (
+                <p className="text-xs text-neutral-500 italic py-10 text-center font-sans">
+                  Querying server data...
                 </p>
-                <span className="text-[10px] text-neutral-500 font-mono mt-1">
-                  Server may be empty or restarting.
-                </span>
-              </div>
-            )}
+              ) : players.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {players.map((player, index) => (
+                    <div
+                      key={`${player.id}-${index}`}
+                      className="w-full bg-neutral-950 border border-neutral-800/80 px-4 py-3 flex items-center justify-between text-xs"
+                    >
+                      <div className="flex items-center gap-3 truncate">
+                        <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-2 py-1 border border-neutral-800">
+                          ID: {player.id}
+                        </span>
+                        <span className="text-neutral-200 font-semibold text-sm truncate">{player.name}</span>
+                      </div>
+                      <span className="text-xs font-mono text-neutral-400 shrink-0">
+                        {player.ping > 0 ? `${player.ping}ms` : 'Active'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center py-6">
+                  <p className="text-xs text-neutral-400 font-sans">
+                    No players currently connected to the server.
+                  </p>
+                  <span className="text-[10px] text-neutral-500 font-mono mt-1">
+                    Server may be empty or restarting.
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
