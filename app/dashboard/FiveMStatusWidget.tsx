@@ -57,10 +57,9 @@ export default function FiveMStatusWidget() {
       {/* Main Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
-        {/* Left Box: Logo, Title & Connect Button */}
-        <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-between items-center text-center">
-          
-          <div className="flex flex-col items-center gap-4 w-full pt-2">
+        {/* Left Box: Nicely grouped logo, name, and connect button */}
+        <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-center items-center text-center gap-6">
+          <div className="flex flex-col items-center gap-3">
             <div className="w-20 h-20 relative flex items-center justify-center">
               <Image 
                 src="/logo.png" 
@@ -77,11 +76,10 @@ export default function FiveMStatusWidget() {
 
           <a
             href={CONNECT_URI}
-            className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer mt-6"
+            className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer"
           >
             Connect to Server
           </a>
-
         </div>
 
         {/* Right Box: Active Players Box */}
@@ -93,9 +91,9 @@ export default function FiveMStatusWidget() {
             <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 p-3 h-[254px] overflow-y-auto pr-1">
+          <div className="bg-neutral-900 border border-neutral-800 p-3 h-[212px] overflow-y-auto pr-1">
             {loading ? (
-              <p className="text-xs text-neutral-500 italic py-20 text-center font-sans">
+              <p className="text-xs text-neutral-500 italic py-16 text-center font-sans">
                 Querying server data...
               </p>
             ) : players.length > 0 ? (
@@ -118,7 +116,7 @@ export default function FiveMStatusWidget() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center py-16">
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <p className="text-xs text-neutral-400 font-sans">
                   No players currently connected to the server.
                 </p>
