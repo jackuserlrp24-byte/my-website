@@ -103,7 +103,7 @@ export default function PatrolsPage() {
   return (
     <main className="flex flex-col px-8 mt-6 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none antialiased">
       
-      {/* Original Top Banner */}
+      {/* Top Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         
@@ -120,14 +120,14 @@ export default function PatrolsPage() {
         </div>
       </div>
 
-      {/* Redesigned Clean Patrol Cards Feed */}
+      {/* Patrol Cards Feed */}
       <div className="grid grid-cols-1 gap-6">
         {loading ? (
-          <div className="bg-neutral-900/60 border border-neutral-800 p-12 text-center text-xs font-mono text-neutral-500 uppercase tracking-widest">
+          <div className="bg-neutral-900 border border-neutral-800 p-12 text-center text-xs font-mono text-neutral-500 uppercase tracking-widest">
             Loading active operational deployments...
           </div>
         ) : patrols.length === 0 ? (
-          <div className="bg-neutral-900/60 border border-neutral-800 p-16 text-center flex flex-col items-center justify-center shadow-lg">
+          <div className="bg-neutral-900 border border-neutral-800 p-16 text-center flex flex-col items-center justify-center shadow-lg">
             <p className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-2">No active patrols scheduled in the last 24 hours</p>
             <p className="text-xs text-neutral-400 max-w-sm">Please check back later for upcoming community shift deployments.</p>
           </div>
@@ -142,58 +142,58 @@ export default function PatrolsPage() {
             return (
               <div 
                 key={patrol.id}
-                className="bg-neutral-900/90 border border-neutral-800 shadow-xl overflow-hidden flex flex-col"
+                className="bg-neutral-900 border border-neutral-800 shadow-xl overflow-hidden flex flex-col rounded-none"
               >
                 {/* Top Control Bar */}
-                <div className="bg-neutral-950/80 border-b border-neutral-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+                <div className="bg-neutral-950 border-b border-neutral-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-neutral-300">
+                    <span className="text-xs font-mono font-medium text-neutral-400">
                       {patrol.id}
                     </span>
-                    <span className="text-neutral-700">|</span>
-                    <span className="text-xs font-mono text-[#5865F2] font-semibold tracking-wider uppercase">
+                    <span className="text-neutral-700">/</span>
+                    <span className="text-xs font-mono text-neutral-300 uppercase tracking-wider">
                       {patrol.division}
                     </span>
-                    <span className="text-neutral-700">|</span>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-neutral-700">/</span>
+                    <span className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
                       {patrol.status}
                     </span>
                   </div>
 
-                  {/* Attendance Action Buttons */}
+                  {/* Clean Attendance Buttons */}
                   {isUpcoming && (
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => handleAttendanceToggle(patrol.id, 'attending')}
-                        className={`px-4 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer border ${
+                        className={`px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer border rounded-none ${
                           isUserAttending
-                            ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
-                            : 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-emerald-400'
+                            ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                            : 'bg-neutral-950 hover:bg-neutral-800 border-neutral-800 text-neutral-400'
                         }`}
                       >
-                        {isUserAttending ? '✓ Booked On' : 'Book On'}
+                        {isUserAttending ? '[ Booked On ]' : 'Book On'}
                       </button>
                       <button 
                         onClick={() => handleAttendanceToggle(patrol.id, 'unattending')}
-                        className={`px-4 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer border ${
+                        className={`px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider transition-colors cursor-pointer border rounded-none ${
                           isUserUnattending
-                            ? 'bg-red-600 border-red-500 text-white shadow-md'
-                            : 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-red-400'
+                            ? 'bg-neutral-800 border-neutral-600 text-neutral-100'
+                            : 'bg-neutral-950 hover:bg-neutral-800 border-neutral-800 text-neutral-400'
                         }`}
                       >
-                        {isUserUnattending ? '✕ Not Attending' : 'Not Attending'}
+                        {isUserUnattending ? '[ Not Attending ]' : 'Not Attending'}
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Main Content Details */}
+                {/* Main Content Area */}
                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   
-                  {/* Left Area: Title, Briefing, Meta Grid */}
+                  {/* Left Column: Title & Briefing */}
                   <div className="lg:col-span-2 flex flex-col gap-4">
                     <div>
-                      <h3 className="text-lg font-bold text-neutral-100 tracking-tight mb-1.5">
+                      <h3 className="text-base font-semibold text-neutral-200 tracking-tight mb-1.5">
                         {patrol.title}
                       </h3>
                       <p className="text-xs text-neutral-400 leading-relaxed font-normal">
@@ -201,33 +201,33 @@ export default function PatrolsPage() {
                       </p>
                     </div>
 
-                    {/* Meta Info Bar */}
+                    {/* Metadata Grid */}
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t border-neutral-800/80">
                       <div>
                         <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Date</span>
-                        <span className="text-xs font-mono text-neutral-200">{patrol.date}</span>
+                        <span className="text-xs font-mono text-neutral-300">{patrol.date}</span>
                       </div>
                       <div>
                         <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Time</span>
-                        <span className="text-xs font-mono text-neutral-200">{patrol.time}</span>
+                        <span className="text-xs font-mono text-neutral-300">{patrol.time}</span>
                       </div>
                       <div>
                         <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Shift Lead</span>
-                        <span className="text-xs font-mono text-neutral-200">{patrol.lead}</span>
+                        <span className="text-xs font-mono text-neutral-300">{patrol.lead}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Area: Attendance Rosters */}
-                  <div className="flex flex-col gap-4 bg-neutral-950/60 border border-neutral-800/80 p-4">
+                  {/* Right Column: Rosters */}
+                  <div className="flex flex-col gap-4 bg-neutral-950 border border-neutral-800 p-4 rounded-none">
                     
-                    {/* Booked On Roster */}
+                    {/* Booked On */}
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80">
-                        <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800">
+                        <span className="text-[10px] font-mono font-medium text-neutral-400 uppercase tracking-wider">
                           Booked On
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-900/60 px-1.5 py-0.5">
+                        <span className="text-[10px] font-mono text-neutral-400">
                           {currentList.attending.length}
                         </span>
                       </div>
@@ -236,25 +236,24 @@ export default function PatrolsPage() {
                           currentList.attending.map((name: string, idx: number) => (
                             <span 
                               key={idx} 
-                              className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-[11px] font-mono text-neutral-300 flex items-center gap-1.5"
+                              className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-[11px] font-mono text-neutral-300 rounded-none"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                               {name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-[11px] font-mono text-neutral-600 italic">No personnel booked on.</span>
+                          <span className="text-[11px] font-mono text-neutral-600">No personnel booked on.</span>
                         )}
                       </div>
                     </div>
 
-                    {/* Not Attending Roster */}
-                    <div className="flex flex-col gap-2 pt-2 border-t border-neutral-800/80">
-                      <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80">
-                        <span className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-wider">
+                    {/* Not Attending */}
+                    <div className="flex flex-col gap-2 pt-2 border-t border-neutral-800">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800">
+                        <span className="text-[10px] font-mono font-medium text-neutral-400 uppercase tracking-wider">
                           Not Attending
                         </span>
-                        <span className="text-[10px] font-mono text-red-400 bg-red-950/60 border border-red-900/60 px-1.5 py-0.5">
+                        <span className="text-[10px] font-mono text-neutral-400">
                           {currentList.unattending.length}
                         </span>
                       </div>
@@ -263,14 +262,13 @@ export default function PatrolsPage() {
                           currentList.unattending.map((name: string, idx: number) => (
                             <span 
                               key={idx} 
-                              className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-[11px] font-mono text-neutral-300 flex items-center gap-1.5"
+                              className="px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-[11px] font-mono text-neutral-300 rounded-none"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
                               {name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-[11px] font-mono text-neutral-600 italic">No personnel marked absent.</span>
+                          <span className="text-[11px] font-mono text-neutral-600">No personnel marked absent.</span>
                         )}
                       </div>
                     </div>
