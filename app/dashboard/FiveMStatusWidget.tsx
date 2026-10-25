@@ -26,7 +26,9 @@ export default function FiveMStatusWidget() {
           setIsOnline(data.isOnline);
           setPlayers(data.players || []);
           setMaxClients(data.maxClients || 64);
-          setServerIcon(data.serverIcon || null);
+          if (data.serverIcon) {
+            setServerIcon(data.serverIcon);
+          }
         } else {
           setIsOnline(false);
         }
@@ -65,9 +67,9 @@ export default function FiveMStatusWidget() {
         <div className="bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-center items-center gap-5 text-center">
           
           {/* Automatically Pulled FiveM Server Logo */}
-          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden">
+          <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 flex items-center justify-center shadow-inner overflow-hidden rounded-md">
             {serverIcon ? (
-              <img src={serverIcon} alt="Server Logo" className="w-full h-full object-cover" />
+              <img src={serverIcon} alt="Central Operations Logo" className="w-full h-full object-cover" />
             ) : (
               <span className="text-lg font-bold font-mono text-[#5865F2]">CO</span>
             )}
