@@ -91,8 +91,8 @@ export default function Home() {
       {/* Center Hero Content / Main Menu */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto text-center px-4 max-w-xl mx-auto gap-2">
         
-        {/* Larger Main Logo */}
-        <div className="relative w-56 h-56 md:w-64 md:h-64 mb-1">
+        {/* Larger Main Logo pushed down */}
+        <div className="relative w-56 h-56 md:w-64 md:h-64 mt-5 mb-1">
           <Image 
             src="/logo2.png" 
             alt="Central Operations Main Logo" 
