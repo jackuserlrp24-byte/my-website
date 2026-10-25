@@ -24,7 +24,9 @@ export default function FiveMStatusWidget() {
         if (res.ok) {
           const data = await res.json();
           setIsOnline(data.isOnline);
-          setPlayers(data.players || []);
+          // Sort players numerically by ID
+          const sortedPlayers = (data.players || []).sort((a: Player, b: Player) => a.id - b.id);
+          setPlayers(sortedPlayers);
           setMaxClients(data.maxClients || 64);
         } else {
           setIsOnline(false);
@@ -82,7 +84,7 @@ export default function FiveMStatusWidget() {
           </a>
         </div>
 
-        {/* Right Box: Extended Active Players Container */}
+        {/* Right Box: Compact Active Players Container */}
         <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-3">
@@ -92,10 +94,10 @@ export default function FiveMStatusWidget() {
               <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
             </div>
 
-            {/* Extended height player box matching the red box annotation */}
-            <div className="bg-neutral-900 border border-neutral-800 p-3 h-[210px] overflow-y-auto pr-1">
+            {/* Reduced height player box matching tighter spacing */}
+            <div className="bg-neutral-900 border border-neutral-800 p-3 h-[145px] overflow-y-auto pr-1">
               {loading ? (
-                <p className="text-xs text-neutral-500 italic py-16 text-center font-sans">
+                <p className="text-xs text-neutral-500 italic py-10 text-center font-sans">
                   Querying server data...
                 </p>
               ) : players.length > 0 ? (
@@ -103,7 +105,7 @@ export default function FiveMStatusWidget() {
                   {players.map((player, index) => (
                     <div
                       key={`${player.id}-${index}`}
-                      className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-between text-xs"
+                      className="bg-neutral-950 border border-neutral-800/80 p-2.5 flex items-center justify-start text-xs"
                     >
                       <div className="flex items-center gap-2 truncate">
                         <span className="text-[10px] font-mono text-[#5865F2] bg-neutral-900 px-1.5 py-0.5 border border-neutral-800">
@@ -111,14 +113,11 @@ export default function FiveMStatusWidget() {
                         </span>
                         <span className="text-neutral-200 font-semibold truncate">{player.name}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-neutral-500 shrink-0 ml-1">
-                        {player.ping > 0 ? `${player.ping}ms` : 'Active'}
-                      </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="flex flex-col items-center justify-center h-full text-center py-6">
                   <p className="text-xs text-neutral-400 font-sans">
                     No players currently connected to the server.
                   </p>
