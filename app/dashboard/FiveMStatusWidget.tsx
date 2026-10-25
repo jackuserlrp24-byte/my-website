@@ -46,12 +46,9 @@ export default function FiveMStatusWidget() {
       
       {/* Section Header */}
       <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
-        <div className="flex items-center gap-3">
-          <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-neutral-600'}`} />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">
-            Central Operations Live Server Status
-          </h3>
-        </div>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">
+          Server Status
+        </h3>
         <span className="text-[10px] font-mono text-[#5865F2]">
           {isOnline ? `${players.length} / ${maxClients} PLAYERS ONLINE` : 'SERVER OFFLINE / CONNECTING'}
         </span>
@@ -63,9 +60,8 @@ export default function FiveMStatusWidget() {
         {/* Left Box: Logo, Title & Connect Button */}
         <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-between items-center text-center">
           
-          <div className="flex flex-col items-center gap-5 w-full">
-            {/* Larger Logo without background box */}
-            <div className="w-24 h-24 relative flex items-center justify-center my-2">
+          <div className="flex flex-col items-center gap-4 w-full pt-2">
+            <div className="w-20 h-20 relative flex items-center justify-center">
               <Image 
                 src="/logo.png" 
                 alt="Central Operations Logo" 
@@ -74,16 +70,11 @@ export default function FiveMStatusWidget() {
                 priority
               />
             </div>
-
-            {/* Server Title */}
-            <div>
-              <h4 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
-                Central Operations
-              </h4>
-            </div>
+            <h4 className="text-sm font-bold text-neutral-200 uppercase tracking-wider">
+              Central Operations
+            </h4>
           </div>
 
-          {/* Connect Button pushed down */}
           <a
             href={CONNECT_URI}
             className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer mt-6"
@@ -93,7 +84,7 @@ export default function FiveMStatusWidget() {
 
         </div>
 
-        {/* Right Box: Active Players Long Box */}
+        {/* Right Box: Active Players Box */}
         <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col">
           <div className="flex justify-between items-center mb-3">
             <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider">
@@ -102,7 +93,6 @@ export default function FiveMStatusWidget() {
             <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
           </div>
 
-          {/* Taller player list container matching left box height */}
           <div className="bg-neutral-900 border border-neutral-800 p-3 h-[254px] overflow-y-auto pr-1">
             {loading ? (
               <p className="text-xs text-neutral-500 italic py-20 text-center font-sans">
