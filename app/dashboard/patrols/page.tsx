@@ -160,7 +160,7 @@ export default function PatrolsPage() {
                     </span>
                   </div>
 
-                  {/* Clean Attendance Buttons */}
+                  {/* Attendance Buttons */}
                   {isUpcoming && (
                     <div className="flex items-center gap-2">
                       <button 
@@ -201,20 +201,42 @@ export default function PatrolsPage() {
                       </p>
                     </div>
 
-                    {/* Metadata Grid */}
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-neutral-800/80">
-                      <div>
-                        <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Date</span>
-                        <span className="text-xs font-mono text-neutral-300">{patrol.date}</span>
+                    {/* Redesigned Tactical Metadata Cards */}
+                    <div className="grid grid-cols-3 gap-3 pt-2 border-t border-neutral-800/80">
+                      
+                      {/* Date Card */}
+                      <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                          Date
+                        </span>
+                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
+                          {patrol.date}
+                        </span>
                       </div>
-                      <div>
-                        <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Time</span>
-                        <span className="text-xs font-mono text-neutral-300">{patrol.time}</span>
+
+                      {/* Time Card */}
+                      <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                          Time
+                        </span>
+                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide">
+                          {patrol.time}
+                        </span>
                       </div>
-                      <div>
-                        <span className="block text-[10px] font-mono uppercase text-neutral-500 mb-0.5">Shift Lead</span>
-                        <span className="text-xs font-mono text-neutral-300">{patrol.lead}</span>
+
+                      {/* Shift Lead Card */}
+                      <div className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-[#5865F2]" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                          Shift Lead
+                        </span>
+                        <span className="text-xs font-mono font-bold text-neutral-200 tracking-wide truncate">
+                          {patrol.lead}
+                        </span>
                       </div>
+
                     </div>
                   </div>
 
