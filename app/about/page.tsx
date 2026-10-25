@@ -104,11 +104,11 @@ export default function AboutUsPage() {
         {/* Core Pillars Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Pillar 1: vMenu Based */}
+          {/* Pillar 1: vMenu Based Server */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
-                vMenu Based
+                vMenu Based Server
               </h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
                 We operate as a pure vMenu server, providing complete operational flexibility. Members enjoy direct control over loadouts, vehicle spawning, and character setup without unnecessary framework restrictions, keeping roleplay smooth and dynamic.
@@ -134,7 +134,7 @@ export default function AboutUsPage() {
             </div>
           </div>
 
-          {/* Pillar 3: Development */}
+          {/* Pillar 3: Custom Development */}
           <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between shadow-xl backdrop-blur-md">
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-[#5865F2] mb-2">
@@ -151,13 +151,13 @@ export default function AboutUsPage() {
 
         </div>
 
-        {/* Community Standards Footer Card */}
+        {/* Our Community Footer Card */}
         <div className="bg-neutral-900/80 border border-neutral-800 p-8 shadow-xl backdrop-blur-md">
           <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-200 mb-3">
-            Realism & Community Commitment
+            Our Community
           </h3>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            By pairing custom UK-tailored engineering with a grounded leadership team, Central Operations delivers a consistent, high-standard simulation environment for all UK emergency services and civilian roleplay enthusiasts.
+            We handle all incidents with impartial judgment and treat every member with equal respect. From Command to individual players, we foster an engaging, fun, and inclusive environment enforced by clear rules. We ensure Central Operations remains a safe, welcoming space for everyone, regardless of background, disability, or support needs.
           </p>
         </div>
 
