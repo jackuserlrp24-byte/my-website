@@ -58,10 +58,9 @@ export default function FiveMStatusWidget() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Box: Prominent Logo, Server Title & Connect Button */}
-        <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-center items-center text-center gap-6">
-          <div className="flex flex-col items-center gap-4">
-            {/* Enlarged Logo Container */}
-            <div className="w-28 h-28 relative flex items-center justify-center">
+        <div className="bg-neutral-950/80 border border-neutral-800 p-6 flex flex-col justify-between items-center text-center">
+          <div className="flex flex-col items-center gap-4 w-full pt-2">
+            <div className="w-24 h-24 relative flex items-center justify-center">
               <Image 
                 src="/logo.png" 
                 alt="Central Operations Logo" 
@@ -77,13 +76,13 @@ export default function FiveMStatusWidget() {
 
           <a
             href={CONNECT_URI}
-            className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer"
+            className="w-full py-3.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider uppercase transition-colors text-center block shadow-lg cursor-pointer mt-6"
           >
             Connect to Server
           </a>
         </div>
 
-        {/* Right Box: Compact Side-by-Side Player Cards */}
+        {/* Right Box: Extended Active Players Container */}
         <div className="lg:col-span-2 bg-neutral-950/80 border border-neutral-800 p-5 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center mb-3">
@@ -93,10 +92,10 @@ export default function FiveMStatusWidget() {
               <span className="text-[10px] font-mono text-neutral-500">Auto-refreshing (5s)</span>
             </div>
 
-            {/* Scrollable Container with Side-by-Side Player Cards */}
-            <div className="bg-neutral-900 border border-neutral-800 p-3 h-[140px] overflow-y-auto pr-1">
+            {/* Extended height player box matching the red box annotation */}
+            <div className="bg-neutral-900 border border-neutral-800 p-3 h-[210px] overflow-y-auto pr-1">
               {loading ? (
-                <p className="text-xs text-neutral-500 italic py-10 text-center font-sans">
+                <p className="text-xs text-neutral-500 italic py-16 text-center font-sans">
                   Querying server data...
                 </p>
               ) : players.length > 0 ? (
@@ -119,7 +118,7 @@ export default function FiveMStatusWidget() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center py-6">
+                <div className="flex flex-col items-center justify-center h-full text-center py-12">
                   <p className="text-xs text-neutral-400 font-sans">
                     No players currently connected to the server.
                   </p>
