@@ -32,9 +32,9 @@ const MASTER_ROLE_ID = '1497557905275224149'; // Command / Bronze Commander Role
 const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
-async function checkUserAccess(userId: string) {
+async function checkUserAccessAndFetchDetails(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true, isCommand: true };
+    return { inGuild: true, hasAccess: true, isManagement: true, isCommand: true, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 
   try {
@@ -49,11 +49,11 @@ async function checkUserAccess(userId: string) {
         .delete()
         .eq('discord_id', userId);
 
-      return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false };
+      return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false, isCommand: false };
+      return { inGuild: true, hasAccess: false, isManagement: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     const member = await res.json();
@@ -63,15 +63,25 @@ async function checkUserAccess(userId: string) {
     const hasAltManagementRole = roles.includes(MANAGEMENT_ROLE_ALT);
     const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
 
+    // Live display name resolution (Server Nickname -> Global Name -> Username)
+    const displayName = member.nick || member.user?.global_name || member.user?.username || 'Operator';
+    
+    // Live avatar resolution
+    const avatarUrl = member.user?.avatar 
+      ? `https://cdn.discordapp.com/avatars/${userId}/${member.user.avatar}.png` 
+      : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
     return {
       inGuild: true,
       hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole,
       isManagement: hasMasterRole || hasAltManagementRole,
-      isCommand: hasMasterRole // Locks Command access specifically to 1497557905275224149
+      isCommand: hasMasterRole,
+      displayName,
+      avatarUrl
     };
   } catch (err) {
     console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false };
+    return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 }
 
@@ -83,22 +93,17 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('discord_user')?.value;
   
-  const user = userCookie ? JSON.parse(userCookie) : { username: 'Operator', nickname: 'Operator', id: '0000', avatar: null };
+  const user = userCookie ? JSON.parse(userCookie) : { id: '0000' };
 
   if (!user.id || user.id === '0000') {
     redirect('/');
   }
 
-  const access = await checkUserAccess(user.id);
+  const access = await checkUserAccessAndFetchDetails(user.id);
 
   if (!access.inGuild || !access.hasAccess) {
     redirect('/whitelistprocess');
   }
-
-  const displayName = user.nickname || user.username;
-  const avatarUrl = user.avatar 
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
-    : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
   return (
     <div className="min-h-screen w-full text-neutral-100 flex flex-col justify-between select-none antialiased relative overflow-x-hidden">
@@ -148,12 +153,12 @@ export default async function DashboardLayout({
           <details className="relative group ml-2">
             <summary className="flex items-center gap-2.5 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 px-3 py-1.5 cursor-pointer list-none transition-colors">
               <img 
-                src={avatarUrl} 
+                src={access.avatarUrl} 
                 alt="User Avatar" 
                 className="w-6 h-6 rounded-full border border-neutral-700 object-cover" 
               />
               <span className="text-xs font-semibold text-neutral-200 tracking-wider">
-                {displayName}
+                {access.displayName}
               </span>
               <svg className="w-3.5 h-3.5 text-neutral-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -163,7 +168,7 @@ export default async function DashboardLayout({
             <div className="absolute right-0 mt-2 w-48 bg-neutral-900 border border-neutral-800 shadow-2xl py-1 z-40">
               <div className="px-4 py-2 border-b border-neutral-800 mb-1">
                 <p className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest">Signed in as</p>
-                <p className="text-xs font-semibold text-neutral-200 truncate">{displayName}</p>
+                <p className="text-xs font-semibold text-neutral-200 truncate">{access.displayName}</p>
               </div>
 
               <Link
