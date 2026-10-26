@@ -41,17 +41,24 @@ const frontlineFiles = [
   {
     name: 'CO | MPS - IPP Training Slides',
     type: 'Google Slides Presentation',
-    url: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/edit?usp=drive_link'
+    editUrl: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/edit?usp=drive_link',
+    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
+    // Fallback direct web view URL converted for preview iframe if needed
+    previewUrl: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/preview'
   },
   {
     name: 'CO | MPS - Response Driving Training Slides',
     type: 'Google Slides Presentation',
-    url: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/edit?usp=drive_link'
+    editUrl: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/edit?usp=drive_link',
+    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
+    previewUrl: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/preview'
   },
   {
     name: 'CO | MPS - CED Training Slides',
     type: 'Google Slides Presentation',
-    url: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/edit?usp=drive_link'
+    editUrl: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/edit?usp=drive_link',
+    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
+    previewUrl: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/preview'
   }
 ];
 
@@ -72,6 +79,9 @@ export default function MetPoliceClient({
   // Custom Drive Navigation State
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
   const [activeSubFolder, setActiveSubFolder] = useState<string | null>(null);
+
+  // Modal Preview State
+  const [previewFile, setPreviewFile] = useState<{ name: string; previewUrl: string; editUrl: string } | null>(null);
 
   const handleCopy = (text: string, label: string) => {
     if (!text) return;
@@ -96,7 +106,7 @@ export default function MetPoliceClient({
   const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
 
   return (
-    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
+    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased relative">
       
       {/* Header Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -526,20 +536,17 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeSubFolder === 'fp-frontline' ? (
-            /* Inside Frontline Policing: Display the 3 Training Slides */
+            /* Inside Frontline Policing: Display the 3 Training Slides with Preview Button */
             <div className="space-y-4">
               <div className="bg-blue-500/10 border border-blue-500/30 p-4 text-xs text-blue-300 font-mono">
-                Official training presentations and operational slides for Frontline Policing. Click any slide deck to open it directly in a new tab.
+                Official training presentations and operational slides for Frontline Policing. Click any slide deck to preview it right inside the portal.
               </div>
 
               <div className="grid grid-cols-1 gap-3">
                 {frontlineFiles.map((file, idx) => (
-                  <a
+                  <div
                     key={idx}
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md cursor-pointer"
+                    className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md"
                   >
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 rounded shrink-0">
@@ -555,10 +562,15 @@ export default function MetPoliceClient({
                       </div>
                     </div>
 
-                    <span className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-blue-600 group-hover:border-blue-500 group-hover:text-white text-neutral-300 text-xs font-semibold tracking-wider transition-colors">
-                      Open Slide &rarr;
-                    </span>
-                  </a>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPreviewFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                      >
+                        Preview Slide
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -586,6 +598,50 @@ export default function MetPoliceClient({
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* SLIDE PREVIEW MODAL */}
+      {previewFile && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl relative">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" />
+                <h3 className="text-sm font-bold text-neutral-100">{previewFile.name}</h3>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <a
+                  href={previewFile.editUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+                >
+                  Open in New Tab ↗
+                </a>
+                <button
+                  onClick={() => setPreviewFile(null)}
+                  className="px-3 py-1.5 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-xs font-bold uppercase transition-colors cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body / Iframe Viewer */}
+            <div className="flex-1 w-full bg-neutral-950 p-2 flex items-center justify-center relative">
+              <iframe
+                src={previewFile.previewUrl}
+                className="w-full h-full border border-neutral-800"
+                title={previewFile.name}
+                allowFullScreen={true}
+              />
+            </div>
+
+          </div>
         </div>
       )}
 
