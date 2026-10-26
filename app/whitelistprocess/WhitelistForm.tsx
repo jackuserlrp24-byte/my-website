@@ -86,7 +86,10 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
     // Validate Roleplay Name format like J.Costin (Initial, dot, Surname)
     const rpNameRegex = /^[A-Z]\.\s?[A-Za-z]+$/;
     if (!rpNameRegex.test(rpName)) {
-      alert('Incorrect roleplay name format. Please use format like J.Costin');
+      const suggestedInitial = forename ? forename.charAt(0).toUpperCase() : 'J';
+      const suggestedSurname = surname ? surname : 'Costin';
+      const dynamicExample = `${suggestedInitial}.${suggestedSurname}`;
+      alert(`Incorrect roleplay name format. Please use format like ${dynamicExample}`);
       return;
     }
 
@@ -329,12 +332,14 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               <input
                 type="text"
                 required
-                placeholder="e.g. J.Costin"
+                placeholder={`e.g. ${forename ? forename.charAt(0).toUpperCase() : 'J'}.${surname || 'Costin'}`}
                 value={rpName}
                 onChange={(e) => setRpName(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 transition-colors"
               />
-              <p className="text-[10px] text-neutral-500 mt-1 font-mono">Format required: Initial followed by a dot and surname (e.g., J.Costin)</p>
+              <p className="text-[10px] text-neutral-500 mt-1 font-mono">
+                Format required: Initial followed by a dot and surname (e.g., {forename ? forename.charAt(0).toUpperCase() : 'J'}.{surname || 'Costin'})
+              </p>
             </div>
 
             <div>
