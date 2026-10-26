@@ -42,22 +42,18 @@ const frontlineFiles = [
     name: 'CO | MPS - IPP Training Slides',
     type: 'Google Slides Presentation',
     editUrl: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/edit?usp=drive_link',
-    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
-    // Fallback direct web view URL converted for preview iframe if needed
     previewUrl: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/preview'
   },
   {
     name: 'CO | MPS - Response Driving Training Slides',
     type: 'Google Slides Presentation',
     editUrl: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/edit?usp=drive_link',
-    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
     previewUrl: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/preview'
   },
   {
     name: 'CO | MPS - CED Training Slides',
     type: 'Google Slides Presentation',
     editUrl: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/edit?usp=drive_link',
-    embedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000',
     previewUrl: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/preview'
   }
 ];
@@ -80,8 +76,8 @@ export default function MetPoliceClient({
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
   const [activeSubFolder, setActiveSubFolder] = useState<string | null>(null);
 
-  // Modal Preview State
-  const [previewFile, setPreviewFile] = useState<{ name: string; previewUrl: string; editUrl: string } | null>(null);
+  // In-Screen Viewer State (replaces modal)
+  const [viewingFile, setViewingFile] = useState<{ name: string; previewUrl: string; editUrl: string } | null>(null);
 
   const handleCopy = (text: string, label: string) => {
     if (!text) return;
@@ -106,7 +102,7 @@ export default function MetPoliceClient({
   const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
 
   return (
-    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased relative">
+    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
       
       {/* Header Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -160,7 +156,7 @@ export default function MetPoliceClient({
         </button>
 
         <button
-          onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); setActiveSubFolder(null); }}
+          onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); setActiveSubFolder(null); setViewingFile(null); }}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'drive'
               ? 'bg-blue-600 border-blue-600 text-white shadow-md'
@@ -444,7 +440,9 @@ export default function MetPoliceClient({
                 Met Police Google Drive Directory
               </h3>
               <p className="text-xs text-neutral-400 font-sans mt-0.5">
-                {activeSubFolder 
+                {viewingFile
+                  ? `Viewing Slide: ${viewingFile.name}`
+                  : activeSubFolder 
                   ? `Browsing: ${currentFolderObj?.name} > ${currentSubFolderObj?.name}`
                   : activeDriveFolder 
                   ? `Browsing folder: ${currentFolderObj?.name}` 
@@ -452,23 +450,55 @@ export default function MetPoliceClient({
               </p>
             </div>
 
-            {(activeDriveFolder || activeSubFolder) && (
-              <button
-                onClick={() => {
-                  if (activeSubFolder) {
-                    setActiveSubFolder(null);
-                  } else {
-                    setActiveDriveFolder(null);
-                  }
-                }}
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider transition-colors cursor-pointer"
-              >
-                &larr; Back
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {viewingFile ? (
+                <button
+                  onClick={() => setViewingFile(null)}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                >
+                  &larr; Back to Files
+                </button>
+              ) : (activeDriveFolder || activeSubFolder) && (
+                <button
+                  onClick={() => {
+                    if (activeSubFolder) {
+                      setActiveSubFolder(null);
+                    } else {
+                      setActiveDriveFolder(null);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                >
+                  &larr; Back
+                </button>
+              )}
+            </div>
           </div>
 
-          {!activeDriveFolder ? (
+          {viewingFile ? (
+            /* In-Screen Google Slides Viewer */
+            <div className="w-full bg-neutral-950 border border-neutral-800 flex flex-col items-center shadow-2xl">
+              <div className="w-full bg-neutral-900 px-4 py-3 border-b border-neutral-800 flex items-center justify-between text-xs">
+                <span className="text-neutral-200 font-bold">{viewingFile.name}</span>
+                <a
+                  href={viewingFile.editUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  Open in New Tab ↗
+                </a>
+              </div>
+              <div className="w-full h-[650px] bg-neutral-950 flex items-center justify-center p-2">
+                <iframe
+                  src={viewingFile.previewUrl}
+                  className="w-full h-full border border-neutral-800"
+                  title={viewingFile.name}
+                  allowFullScreen={true}
+                />
+              </div>
+            </div>
+          ) : !activeDriveFolder ? (
             /* Root Folder Grid (All 11 Folders) */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {metFolders.map((folder) => (
@@ -536,7 +566,7 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeSubFolder === 'fp-frontline' ? (
-            /* Inside Frontline Policing: Display the 3 Training Slides with Preview Button */
+            /* Inside Frontline Policing: Display the 3 Training Slides */
             <div className="space-y-4">
               <div className="bg-blue-500/10 border border-blue-500/30 p-4 text-xs text-blue-300 font-mono">
                 Official training presentations and operational slides for Frontline Policing. Click any slide deck to preview it right inside the portal.
@@ -564,7 +594,7 @@ export default function MetPoliceClient({
 
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setPreviewFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
+                        onClick={() => setViewingFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
                       >
                         Preview Slide
@@ -598,50 +628,6 @@ export default function MetPoliceClient({
             </div>
           )}
 
-        </div>
-      )}
-
-      {/* SLIDE PREVIEW MODAL */}
-      {previewFile && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-neutral-900 border border-neutral-800 w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl relative">
-            
-            {/* Modal Header */}
-            <div className="px-6 py-4 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" />
-                <h3 className="text-sm font-bold text-neutral-100">{previewFile.name}</h3>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <a
-                  href={previewFile.editUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-                >
-                  Open in New Tab ↗
-                </a>
-                <button
-                  onClick={() => setPreviewFile(null)}
-                  className="px-3 py-1.5 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-xs font-bold uppercase transition-colors cursor-pointer"
-                >
-                  ✕ Close
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body / Iframe Viewer */}
-            <div className="flex-1 w-full bg-neutral-950 p-2 flex items-center justify-center relative">
-              <iframe
-                src={previewFile.previewUrl}
-                className="w-full h-full border border-neutral-800"
-                title={previewFile.name}
-                allowFullScreen={true}
-              />
-            </div>
-
-          </div>
         </div>
       )}
 
