@@ -10,6 +10,7 @@ interface Props {
   trainingRecords: any[];
   actions: {
     submitRoleRequest: (formData: FormData) => Promise<void>;
+    handleRoleRequestDecision: (formData: FormData) => Promise<void>;
     logTrainingRecord: (formData: FormData) => Promise<void>;
   };
 }
@@ -73,6 +74,12 @@ export default function MetPoliceClient({
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Dynamic Role Request User Selection
+  const [requestTargetSearch, setRequestTargetSearch] = useState('');
+  const [requestSelectedUserId, setRequestSelectedUserId] = useState<string | null>(
+    allUsers.length > 0 ? allUsers[0].discord_id : ''
+  );
+
   // Custom Drive Navigation State
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
   const [activeSubFolder, setActiveSubFolder] = useState<string | null>(null);
@@ -98,7 +105,19 @@ export default function MetPoliceClient({
     return name.includes(q) || rpName.includes(q) || discordId.includes(q) || email.includes(q) || collar.includes(q);
   });
 
+  const requestFilteredUsers = allUsers.filter((u) => {
+    const q = requestTargetSearch.toLowerCase();
+    const name = `${u.forename || ''} ${u.surname || ''}`.toLowerCase();
+    const rpName = (u.rp_name || '').toLowerCase();
+    const discordId = (u.discord_id || '').toLowerCase();
+    const collar = String(u.collar_number || '');
+
+    return name.includes(q) || rpName.includes(q) || discordId.includes(q) || collar.includes(q);
+  });
+
   const selectedUser = allUsers.find((u) => u.discord_id === selectedUserId);
+  const requestSelectedUser = allUsers.find((u) => u.discord_id === requestSelectedUserId);
+
   const currentFolderObj = metFolders.find(f => f.id === activeDriveFolder);
   const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
 
@@ -107,7 +126,6 @@ export default function MetPoliceClient({
       
       {/* Header Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Met Police Blue Accent Line */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#00247D]" />
         
         <div>
@@ -119,7 +137,6 @@ export default function MetPoliceClient({
           </h2>
         </div>
 
-        {/* Larger Unbordered Met Police Logo */}
         <div className="flex items-center">
           <Image 
             src="/met-logo.png" 
@@ -153,7 +170,7 @@ export default function MetPoliceClient({
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Role Adding Requests ({roleRequests.length})
+          Role Adding Requests ({roleRequests.filter(r => r.status === 'pending').length})
         </button>
 
         <button
@@ -247,30 +264,25 @@ export default function MetPoliceClient({
 
               {/* Officer Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                
                 <div className="bg-neutral-950 border border-neutral-800 p-4 flex flex-col justify-between">
                   <span className="text-[10px] text-neutral-500 uppercase">Email Address</span>
                   <span className="text-neutral-200 font-semibold mt-1 truncate">{selectedUser.email || 'N/A'}</span>
                 </div>
-
                 <div className="bg-neutral-950 border border-neutral-800 p-4 flex flex-col justify-between">
                   <span className="text-[10px] text-neutral-500 uppercase">Collar Number</span>
                   <span className="text-neutral-200 font-semibold mt-1">#{selectedUser.collar_number || 'N/A'}</span>
                 </div>
-
                 <div className="bg-neutral-950 border border-neutral-800 p-4 flex flex-col justify-between">
                   <span className="text-[10px] text-neutral-500 uppercase">Discord ID</span>
                   <span className="text-neutral-200 font-semibold mt-1">{selectedUser.discord_id}</span>
                 </div>
-
                 <div className="bg-neutral-950 border border-neutral-800 p-4 flex flex-col justify-between">
                   <span className="text-[10px] text-neutral-500 uppercase">Date of Birth</span>
                   <span className="text-neutral-200 font-semibold mt-1">{selectedUser.dob || 'N/A'}</span>
                 </div>
-
               </div>
 
-              {/* Active Discord Roles (Ordered by Server Hierarchy) & Training Logged */}
+              {/* Active Discord Roles & History */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 <div className="bg-neutral-950 border border-neutral-800 p-6">
@@ -299,24 +311,40 @@ export default function MetPoliceClient({
 
                 <div className="bg-neutral-950 border border-neutral-800 p-6">
                   <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
-                    Attended Trainings & Role History
+                    Role Requests & Training History
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {trainingRecords.filter(t => t.target_discord_id === selectedUser.discord_id).length > 0 ? (
-                      trainingRecords
-                        .filter(t => t.target_discord_id === selectedUser.discord_id)
-                        .map((t) => (
-                          <div key={t.id} className="bg-neutral-900 border border-neutral-800 p-3 text-xs">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="font-bold text-neutral-200">{t.training_name}</span>
-                              <span className="text-[10px] text-neutral-500">{new Date(t.created_at).toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-neutral-400 font-sans text-xs">{t.notes || 'Completed successfully.'}</p>
-                            <span className="text-[10px] text-neutral-500 mt-1 block">Added by: {t.issuer_name}</span>
+                    {/* Approved Role Requests */}
+                    {roleRequests
+                      .filter(r => r.target_discord_id === selectedUser.discord_id && r.status === 'accepted')
+                      .map((r) => (
+                        <div key={`rr-${r.id}`} className="bg-neutral-900 border border-emerald-500/30 p-3 text-xs">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-emerald-400">Role Added: @{r.role_name}</span>
+                            <span className="text-[10px] text-neutral-500">{new Date(r.updated_at || r.created_at).toLocaleDateString()}</span>
                           </div>
-                        ))
-                    ) : (
-                      <span className="text-xs text-neutral-500 italic font-sans">No training logs recorded for this officer yet.</span>
+                          <p className="text-neutral-300 font-sans text-xs">{r.reason}</p>
+                          <span className="text-[10px] text-neutral-500 mt-1 block">Requested by: {r.issuer_name} | Approved by: {r.reviewer_name || 'Command'}</span>
+                        </div>
+                      ))}
+
+                    {/* Logged Trainings */}
+                    {trainingRecords
+                      .filter(t => t.target_discord_id === selectedUser.discord_id)
+                      .map((t) => (
+                        <div key={`tr-${t.id}`} className="bg-neutral-900 border border-neutral-800 p-3 text-xs">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-neutral-200">{t.training_name}</span>
+                            <span className="text-[10px] text-neutral-500">{new Date(t.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-neutral-400 font-sans text-xs">{t.notes || 'Completed successfully.'}</p>
+                          <span className="text-[10px] text-neutral-500 mt-1 block">Added by: {t.issuer_name}</span>
+                        </div>
+                      ))}
+
+                    {roleRequests.filter(r => r.target_discord_id === selectedUser.discord_id && r.status === 'accepted').length === 0 &&
+                     trainingRecords.filter(t => t.target_discord_id === selectedUser.discord_id).length === 0 && (
+                      <span className="text-xs text-neutral-500 italic font-sans">No training or added roles recorded for this officer yet.</span>
                     )}
                   </div>
                 </div>
@@ -336,49 +364,162 @@ export default function MetPoliceClient({
       {activeTab === 'roles' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
+          {/* Request Form */}
           <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
             <h3 className="text-xs font-bold text-neutral-200 tracking-wider mb-4 pb-2 border-b border-neutral-800">
-              Request Role Addition
+              Submit Role Addition Request
             </h3>
             <form action={actions.submitRoleRequest} className="space-y-4">
               <input type="hidden" name="issuerName" value={currentCommandName} />
+              <input type="hidden" name="targetDiscordId" value={requestSelectedUserId || ''} />
+              <input type="hidden" name="targetName" value={requestSelectedUser ? (requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`) : ''} />
+              <input type="hidden" name="collarNumber" value={requestSelectedUser?.collar_number || ''} />
+
+              {/* 1. Select User Search & Dropdown */}
               <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Target Officer Discord ID</label>
-                <input type="text" name="targetDiscordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
+                <label className="block text-[11px] text-neutral-400 mb-1">Select User (Search & Pick)</label>
+                <input
+                  type="text"
+                  placeholder="Type to filter users..."
+                  value={requestTargetSearch}
+                  onChange={(e) => setRequestTargetSearch(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] mb-1.5"
+                />
+                <select
+                  value={requestSelectedUserId || ''}
+                  onChange={(e) => setRequestSelectedUserId(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] cursor-pointer"
+                  required
+                >
+                  {requestFilteredUsers.length > 0 ? (
+                    requestFilteredUsers.map((u) => (
+                      <option key={u.discord_id} value={u.discord_id}>
+                        [#{u.collar_number || '000'}] {u.rp_name || `${u.forename} ${u.surname}`}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No matching personnel found</option>
+                  )}
+                </select>
               </div>
+
+              {/* 2. Auto-Populated User's Name and Collar Box */}
+              <div className="bg-neutral-950 border border-neutral-800 p-3 space-y-1">
+                <span className="text-[10px] text-neutral-500 uppercase font-mono block">Auto-Detected Officer Details</span>
+                {requestSelectedUser ? (
+                  <div className="text-xs space-y-0.5">
+                    <div className="text-neutral-200 font-bold">
+                      RP Name: <span className="text-blue-400">{requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`}</span>
+                    </div>
+                    <div className="text-neutral-400">
+                      Collar: <span className="font-mono text-neutral-200">#{requestSelectedUser.collar_number || 'N/A'}</span> | Discord ID: <span className="font-mono text-neutral-200">{requestSelectedUser.discord_id}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-neutral-500 italic">Select an officer above...</span>
+                )}
+              </div>
+
+              {/* 3. Roles to Request */}
               <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Target Officer Name / Collar</label>
-                <input type="text" name="targetName" required placeholder="e.g. J.Costin (#042)" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
+                <label className="block text-[11px] text-neutral-400 mb-1">Roles to Request</label>
+                <input 
+                  type="text" 
+                  name="roleName" 
+                  required 
+                  placeholder="e.g. ARV Qualified, Sergeant" 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" 
+                />
               </div>
+
+              {/* 4. Reason */}
               <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Role(s) Requested to Add</label>
-                <input type="text" name="roleName" required placeholder="e.g. ARV Qualified / Sergeant" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
+                <label className="block text-[11px] text-neutral-400 mb-1">Reason for Request</label>
+                <textarea 
+                  name="reason" 
+                  rows={3} 
+                  required 
+                  placeholder="Justification for granting role assignment..." 
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] resize-none" 
+                />
               </div>
-              <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Reason / Justification</label>
-                <textarea name="reason" rows={3} required placeholder="Reason for adding this role..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] resize-none" />
-              </div>
-              <button type="submit" className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
+
+              <button 
+                type="submit" 
+                disabled={!requestSelectedUserId}
+                className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+              >
                 Submit Role Request
               </button>
             </form>
           </div>
 
+          {/* Active Requests Audit Trail with Accept / Deny Buttons */}
           <div className="lg:col-span-2 bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
             <h3 className="text-xs font-bold text-neutral-200 tracking-wider mb-4 pb-2 border-b border-neutral-800">
-              Active Role Requests Audit Trail ({roleRequests.length})
+              Active Role Requests ({roleRequests.length})
             </h3>
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+            
+            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
               {roleRequests.length > 0 ? (
                 roleRequests.map((req) => (
-                  <div key={req.id} className="bg-neutral-950 border border-neutral-800 p-4 text-xs flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-neutral-100">Officer: {req.target_name} ({req.target_discord_id})</span>
-                      <span className="text-[10px] text-neutral-500">{new Date(req.created_at).toLocaleString('en-GB')}</span>
+                  <div key={req.id} className="bg-neutral-950 border border-neutral-800 p-4 text-xs flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-neutral-100">{req.target_name}</span>
+                        <span className="text-neutral-400 font-mono text-[11px]">(#{req.collar_number || 'N/A'})</span>
+                        <span className="text-[10px] text-neutral-500 font-mono">[{req.target_discord_id}]</span>
+                      </div>
+                      
+                      <span className={`px-2 py-0.5 text-[10px] font-bold border rounded-sm uppercase ${
+                        req.status === 'accepted' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
+                        req.status === 'declined' ? 'text-red-400 bg-red-500/10 border-red-500/30' :
+                        'text-amber-400 bg-amber-500/10 border-amber-500/30'
+                      }`}>
+                        {req.status || 'pending'}
+                      </span>
                     </div>
-                    <div className="text-blue-400 font-semibold">Requested Role: @{req.role_name}</div>
+
+                    <div className="text-blue-400 font-semibold text-xs">Requested Role: @{req.role_name}</div>
                     <p className="text-neutral-300 font-sans">{req.reason}</p>
-                    <span className="text-[10px] text-neutral-500 pt-1 border-t border-neutral-900 block">Requested by Bronze Commander: {req.issuer_name}</span>
+                    
+                    <div className="pt-2 border-t border-neutral-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <span className="text-[10px] text-neutral-500">
+                        Requested by: <span className="text-neutral-300">{req.issuer_name}</span> &bull; {new Date(req.created_at).toLocaleString('en-GB')}
+                      </span>
+
+                      {req.status === 'pending' || !req.status ? (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <form action={actions.handleRoleRequestDecision}>
+                            <input type="hidden" name="requestId" value={req.id} />
+                            <input type="hidden" name="decision" value="accepted" />
+                            <input type="hidden" name="reviewerName" value={currentCommandName} />
+                            <button
+                              type="submit"
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                            >
+                              Accept Request
+                            </button>
+                          </form>
+
+                          <form action={actions.handleRoleRequestDecision}>
+                            <input type="hidden" name="requestId" value={req.id} />
+                            <input type="hidden" name="decision" value="declined" />
+                            <input type="hidden" name="reviewerName" value={currentCommandName} />
+                            <button
+                              type="submit"
+                              className="px-3 py-1 bg-red-700 hover:bg-red-800 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                            >
+                              Decline / Deny
+                            </button>
+                          </form>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-neutral-400 italic">
+                          Reviewed by {req.reviewer_name || 'Command'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (
@@ -393,7 +534,6 @@ export default function MetPoliceClient({
       {/* TAB 3: TRAINING RECORDS & HOSTING */}
       {activeTab === 'training' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
           <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
             <h3 className="text-xs font-bold text-neutral-200 tracking-wider mb-4 pb-2 border-b border-neutral-800">
               Host / Log Training Session
@@ -440,14 +580,12 @@ export default function MetPoliceClient({
               )}
             </div>
           </div>
-
         </div>
       )}
 
       {/* TAB 4: CUSTOM GOOGLE DRIVE FOLDERS & SLIDES */}
       {activeTab === 'drive' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
-          
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-neutral-800">
             <div>
               <h3 className="text-sm font-bold tracking-wider text-neutral-100">
@@ -490,7 +628,6 @@ export default function MetPoliceClient({
           </div>
 
           {viewingFile ? (
-            /* In-Screen Google Slides Viewer */
             <div className="w-full bg-neutral-950 border border-neutral-800 flex flex-col items-center shadow-2xl">
               <div className="w-full bg-neutral-900 px-4 py-3 border-b border-neutral-800 flex items-center justify-between text-xs">
                 <span className="text-neutral-200 font-bold">{viewingFile.name}</span>
@@ -513,7 +650,6 @@ export default function MetPoliceClient({
               </div>
             </div>
           ) : !activeDriveFolder ? (
-            /* Root Folder Grid (All 11 Folders) */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {metFolders.map((folder) => (
                 <div
@@ -548,7 +684,6 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeDriveFolder === 'fp' && !activeSubFolder ? (
-            /* Sub-Folders inside Emergency Response & Panel Team */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentFolderObj?.subFolders?.map((sub) => (
                 <div
@@ -580,7 +715,6 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeSubFolder === 'fp-frontline' ? (
-            /* Inside Frontline Policing: Display the 3 Training Slides */
             <div className="space-y-3">
               {frontlineFiles.map((file, idx) => (
                 <div
@@ -613,7 +747,6 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : (
-            /* Generic Folder Contents View */
             <div className="bg-neutral-950 border border-neutral-800 p-8 flex flex-col items-center justify-center text-center gap-4">
               <div className="w-16 h-16 bg-[#00247D]/20 border border-[#00247D]/40 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

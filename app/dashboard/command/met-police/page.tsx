@@ -9,6 +9,24 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+const DISCORD_AUDIT_CHANNEL_ID = '1564285919564136711';
+
+// Helper to log audit actions directly to your Discord channel
+async function sendDiscordAuditLog(content: string) {
+  if (!DISCORD_BOT_TOKEN || !DISCORD_AUDIT_CHANNEL_ID) return;
+  try {
+    await fetch(`https://discord.com/api/v10/channels/${DISCORD_AUDIT_CHANNEL_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content }),
+    });
+  } catch (err) {
+    console.error('Failed to send Discord audit log:', err);
+  }
+}
 
 // --- SERVER ACTIONS ---
 
@@ -16,6 +34,7 @@ export async function submitRoleRequest(formData: FormData) {
   'use server';
   const targetDiscordId = formData.get('targetDiscordId') as string;
   const targetName = formData.get('targetName') as string;
+  const collarNumber = formData.get('collarNumber') as string;
   const roleName = formData.get('roleName') as string;
   const reason = formData.get('reason') as string;
   const issuerName = formData.get('issuerName') as string;
@@ -24,10 +43,59 @@ export async function submitRoleRequest(formData: FormData) {
 
   try {
     await supabase.from('met_role_requests').insert([
-      { target_discord_id: targetDiscordId, target_name: targetName, role_name: roleName, reason, issuer_name: issuerName }
+      { 
+        target_discord_id: targetDiscordId, 
+        target_name: targetName, 
+        collar_number: collarNumber, 
+        role_name: roleName, 
+        reason, 
+        issuer_name: issuerName,
+        status: 'pending' 
+      }
     ]);
+
+    // Send Audit Log to Discord Channel 1564285919564136711
+    await sendDiscordAuditLog(
+      `📝 **NEW ROLE REQUEST SUBMITTED**\n` +
+      `**Officer:** ${targetName} (Collar: #${collarNumber || 'N/A'}) [${targetDiscordId}]\n` +
+      `**Requested Role:** \`@${roleName}\`\n` +
+      `**Reason:** ${reason}\n` +
+      `**Requested By:** ${issuerName}`
+    );
   } catch (err) {
     console.error('Failed to submit role request:', err);
+  }
+
+  revalidatePath('/dashboard/command/met-police');
+}
+
+export async function handleRoleRequestDecision(formData: FormData) {
+  'use server';
+  const requestId = formData.get('requestId') as string;
+  const decision = formData.get('decision') as string; // 'accepted' or 'declined'
+  const reviewerName = formData.get('reviewerName') as string;
+
+  if (!requestId || !decision) return;
+
+  try {
+    const { data: request } = await supabase
+      .from('met_role_requests')
+      .update({ status: decision, reviewer_name: reviewerName, updated_at: new Date().toISOString() })
+      .eq('id', requestId)
+      .select()
+      .single();
+
+    if (request) {
+      const emoji = decision === 'accepted' ? '✅' : '❌';
+      await sendDiscordAuditLog(
+        `${emoji} **ROLE REQUEST ${decision.toUpperCase()}**\n` +
+        `**Officer:** ${request.target_name} [${request.target_discord_id}]\n` +
+        `**Role:** \`@${request.role_name}\`\n` +
+        `**Reviewed By:** ${reviewerName}`
+      );
+    }
+  } catch (err) {
+    console.error('Failed to update role request decision:', err);
   }
 
   revalidatePath('/dashboard/command/met-police');
@@ -46,6 +114,14 @@ export async function logTrainingRecord(formData: FormData) {
     await supabase.from('met_training_records').insert([
       { training_name: trainingName, target_discord_id: targetDiscordId, notes, issuer_name: issuerName }
     ]);
+
+    await sendDiscordAuditLog(
+      `🎓 **TRAINING SESSION RECORDED**\n` +
+      `**Course:** ${trainingName}\n` +
+      `**Attendee Discord ID:** ${targetDiscordId}\n` +
+      `**Notes:** ${notes}\n` +
+      `**Logged By:** ${issuerName}`
+    );
   } catch (err) {
     console.error('Failed to log training:', err);
   }
@@ -112,8 +188,8 @@ export default async function MetPoliceCommandPage() {
 
   try {
     const [reqsRes, trainingRes, whitelistsRes] = await Promise.all([
-      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }).limit(20),
-      supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(20),
+      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200)
     ]);
 
@@ -142,6 +218,7 @@ export default async function MetPoliceCommandPage() {
       trainingRecords={trainingRecords}
       actions={{
         submitRoleRequest,
+        handleRoleRequestDecision,
         logTrainingRecord
       }}
     />
