@@ -18,15 +18,19 @@ interface DiscordUser {
 
 export default function WhitelistForm({ initialUser }: { initialUser: DiscordUser | null }) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1: Welcome & Rules, 2: Account Register, 3: Whitelist Process
   const discordUser = initialUser;
 
-  // Form Fields
+  // Rules & TOS Acceptance
+  const [acceptedRules, setAcceptedRules] = useState(false);
+
+  // Form Fields - Step 2 (Account Register)
   const [forename, setForename] = useState('');
   const [surname, setSurname] = useState('');
   const [dob, setDob] = useState('');
   const [email, setEmail] = useState('');
 
+  // Form Fields - Step 3 (Whitelist Process)
   const [rpName, setRpName] = useState('');
   const [referralSource, setReferralSource] = useState('');
   const [rpExperience, setRpExperience] = useState('');
@@ -46,6 +50,15 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
     ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
     : 'https://cdn.discordapp.com/embed/avatars/0.png';
 
+  const handleStartApplication = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!acceptedRules) {
+      alert('You must accept the community rules and Terms of Service to proceed.');
+      return;
+    }
+    setStep(2);
+  };
+
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!discordUser) {
@@ -56,7 +69,7 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
       alert('Please fill in all account registration fields.');
       return;
     }
-    setStep(2);
+    setStep(3);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,11 +151,11 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
           <div>
             <h2 className="text-sm font-mono tracking-widest uppercase text-neutral-400">Central Operations Portal</h2>
             <h1 className="text-xl font-bold tracking-wider uppercase text-neutral-100 mt-1">
-              {step === 1 ? 'Step 1: Account Register' : 'Step 2: Whitelist Process'}
+              {step === 1 ? 'Welcome & Guidelines' : step === 2 ? 'Step 2: Account Register' : 'Step 3: Whitelist Process'}
             </h1>
           </div>
           <div className="text-right font-mono text-xs text-neutral-400">
-            STEP <span className="text-neutral-100 font-bold">{step}</span> OF 2
+            STEP <span className="text-neutral-100 font-bold">{step}</span> OF 3
           </div>
         </div>
 
@@ -192,7 +205,48 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
             </a>
           </div>
         ) : step === 1 ? (
-          /* STEP 1 FORM */
+          /* STEP 1: WELCOME & RULES */
+          <form onSubmit={handleStartApplication} className="space-y-5">
+            <div className="bg-neutral-950 border border-neutral-800 p-5 space-y-4 font-mono text-xs">
+              <h3 className="text-neutral-100 font-bold uppercase tracking-wider text-sm mb-1">
+                Welcome to Central Operations!
+              </h3>
+              <p className="text-neutral-300 leading-relaxed font-sans text-xs">
+                We are happy to see you have joined us! A couple of things are needed before you can proceed with your whitelist application.
+              </p>
+
+              {/* Highlighted 2FA Recommendation Notice */}
+              <div className="bg-[#5865F2]/10 border border-[#5865F2]/40 p-3 text-indigo-300 text-xs font-mono">
+                <span className="font-bold uppercase tracking-wider block mb-1 text-indigo-400">Security Recommendation</span>
+                We recommend you enable 2FA (Two-Factor Authentication) when using our portal.
+              </div>
+
+              <div className="pt-2 border-t border-neutral-800">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptedRules}
+                    onChange={(e) => setAcceptedRules(e.target.checked)}
+                    className="mt-0.5 accent-[#5865F2] w-4 h-4 rounded cursor-pointer"
+                  />
+                  <span className="text-neutral-300 text-xs font-sans leading-relaxed">
+                    I agree to abide by all Central Operations community rules, policies, and Terms of Service (TOS) before proceeding.
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!acceptedRules}
+              className="w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Proceed to Account Register &rarr;
+            </button>
+          </form>
+        ) : step === 2 ? (
+          /* STEP 2 FORM: ACCOUNT REGISTER */
           <form onSubmit={handleNextStep} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -243,15 +297,24 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full mt-6 py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
-            >
-              Continue to Whitelist Process &rarr;
-            </button>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-1/3 py-3 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                &larr; Back
+              </button>
+              <button
+                type="submit"
+                className="w-2/3 py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Continue to Whitelist &rarr;
+              </button>
+            </div>
           </form>
         ) : (
-          /* STEP 2 FORM */
+          /* STEP 3 FORM: WHITELIST PROCESS */
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Roleplay Name</label>
@@ -292,7 +355,7 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
             <div className="flex items-center gap-3 mt-6">
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => setStep(2)}
                 className="w-1/3 py-3 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
               >
                 &larr; Back
