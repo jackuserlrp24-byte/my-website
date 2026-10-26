@@ -37,6 +37,7 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Background Slideshow Timer
   useEffect(() => {
@@ -52,8 +53,9 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
 
   const handleStartApplication = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!acceptedRules) {
-      alert('You must accept the community rules and Terms of Service to proceed.');
+      setErrorMessage('You must accept the community rules and Terms of Service to proceed.');
       return;
     }
     setStep(2);
@@ -61,12 +63,13 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!discordUser) {
-      alert('Please connect your Discord account first.');
+      setErrorMessage('Please connect your Discord account first.');
       return;
     }
     if (!forename || !surname || !dob || !email) {
-      alert('Please fill in all account registration fields.');
+      setErrorMessage('Please fill in all account registration fields.');
       return;
     }
     setStep(3);
@@ -74,19 +77,20 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
     if (!discordUser) {
-      alert('Please connect your Discord account first.');
+      setErrorMessage('Please connect your Discord account first.');
       return;
     }
     if (!rpName || !referralSource || !rpExperience) {
-      alert('Please fill in all whitelist process fields.');
+      setErrorMessage('Please fill in all whitelist process fields.');
       return;
     }
 
-    // Check if the input already matches the required J.Costin / T.Froud format
+    // Check if the input matches the required J.Costin / T.Froud format
     const rpNameRegex = /^[A-Z]\.[A-Za-z]+$/;
     if (!rpNameRegex.test(rpName.trim())) {
-      // Split what the user typed to derive their initial and surname
       const nameParts = rpName.trim().split(/\s+/);
       let suggestedInitial = '';
       let suggestedSurname = '';
@@ -94,7 +98,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
       if (nameParts.length >= 2) {
         suggestedInitial = nameParts[0].charAt(0).toUpperCase();
         suggestedSurname = nameParts[nameParts.length - 1];
-        // Capitalize first letter of surname if typed lowercase
         suggestedSurname = suggestedSurname.charAt(0).toUpperCase() + suggestedSurname.slice(1);
       } else if (nameParts.length === 1 && nameParts[0].length > 0) {
         suggestedInitial = nameParts[0].charAt(0).toUpperCase();
@@ -105,7 +108,7 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
       }
 
       const formattedExample = `${suggestedInitial}.${suggestedSurname}`;
-      alert(`Use ${formattedExample}`);
+      setErrorMessage(`Incorrect roleplay name format. Please use format like ${formattedExample}`);
       return;
     }
 
@@ -135,11 +138,11 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
           window.location.assign('/dashboard');
         }, 1200);
       } else {
-        alert(data.error || 'An error occurred.');
+        setErrorMessage(data.error || 'An error occurred.');
         setLoading(false);
       }
     } catch (err) {
-      alert('Failed to submit application. Please try again.');
+      setErrorMessage('Failed to submit application. Please try again.');
       setLoading(false);
     }
   };
@@ -184,6 +187,19 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
             STEP <span className="text-neutral-100 font-bold">{step}</span> OF 3
           </div>
         </div>
+
+        {/* Inline Custom Error Banner */}
+        {errorMessage && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/40 p-3.5 text-red-400 text-xs font-mono flex items-center justify-between gap-3">
+            <span>{errorMessage}</span>
+            <button 
+              onClick={() => setErrorMessage(null)} 
+              className="text-red-400 hover:text-red-200 text-xs font-bold px-1.5 py-0.5 bg-red-950/50 border border-red-800 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Connected Discord Account Info Banner */}
         <div className="flex items-center justify-between bg-neutral-950 border border-neutral-800 px-4 py-3 mb-6">
@@ -251,7 +267,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    required
                     checked={acceptedRules}
                     onChange={(e) => setAcceptedRules(e.target.checked)}
                     className="mt-0.5 accent-[#5865F2] w-4 h-4 rounded cursor-pointer"
@@ -265,8 +280,7 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
 
             <button
               type="submit"
-              disabled={!acceptedRules}
-              className="w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+              className="w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
             >
               Proceed to Account Register &rarr;
             </button>
@@ -279,7 +293,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                 <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Forename</label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. James"
                   value={forename}
                   onChange={(e) => setForename(e.target.value)}
@@ -290,7 +303,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                 <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Surname</label>
                 <input
                   type="text"
-                  required
                   placeholder="e.g. Costin"
                   value={surname}
                   onChange={(e) => setSurname(e.target.value)}
@@ -304,7 +316,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                 <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Date of Birth</label>
                 <input
                   type="date"
-                  required
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   style={{ colorScheme: 'dark' }}
@@ -315,7 +326,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                 <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">EMAIL ADDRESS (Documents use)</label>
                 <input
                   type="email"
-                  required
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -347,7 +357,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Roleplay Name</label>
               <input
                 type="text"
-                required
                 placeholder="e.g. J.Costin"
                 value={rpName}
                 onChange={(e) => setRpName(e.target.value)}
@@ -362,7 +371,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Where did you find out about us?</label>
               <input
                 type="text"
-                required
                 placeholder="e.g. TikTok, Friend, FiveM Server List"
                 value={referralSource}
                 onChange={(e) => setReferralSource(e.target.value)}
@@ -373,7 +381,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
             <div>
               <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Do you have any roleplay experience?</label>
               <textarea
-                required
                 rows={3}
                 placeholder="Describe your prior roleplay background..."
                 value={rpExperience}
