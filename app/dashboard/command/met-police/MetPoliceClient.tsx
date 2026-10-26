@@ -105,9 +105,10 @@ export default function MetPoliceClient({
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
       
-      {/* Header Banner with Real Met Police Logo */}
+      {/* Header Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
+        {/* Met Police Blue Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#00247D]" />
         
         <div>
           <span className="text-[10px] text-blue-400 tracking-widest uppercase block mb-1">
@@ -118,14 +119,14 @@ export default function MetPoliceClient({
           </h2>
         </div>
 
-        {/* Real Met Police Logo Image */}
-        <div className="bg-neutral-950 border border-neutral-800 p-1.5 shadow-md flex items-center">
+        {/* Larger Unbordered Met Police Logo */}
+        <div className="flex items-center">
           <Image 
             src="/met-logo.png" 
             alt="Metropolitan Police" 
-            width={240} 
-            height={60} 
-            className="h-10 w-auto object-contain"
+            width={320} 
+            height={80} 
+            className="h-12 w-auto object-contain"
             priority
           />
         </div>
@@ -137,7 +138,7 @@ export default function MetPoliceClient({
           onClick={() => setActiveTab('search')}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'search'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+              ? 'bg-[#00247D] border-[#00247D] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
@@ -148,7 +149,7 @@ export default function MetPoliceClient({
           onClick={() => setActiveTab('roles')}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'roles'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+              ? 'bg-[#00247D] border-[#00247D] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
@@ -159,7 +160,7 @@ export default function MetPoliceClient({
           onClick={() => setActiveTab('training')}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'training'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+              ? 'bg-[#00247D] border-[#00247D] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
@@ -170,7 +171,7 @@ export default function MetPoliceClient({
           onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); setActiveSubFolder(null); setViewingFile(null); }}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'drive'
-              ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+              ? 'bg-[#00247D] border-[#00247D] text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
@@ -197,12 +198,12 @@ export default function MetPoliceClient({
                 placeholder="Search personnel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 w-full sm:w-48"
+                className="bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] w-full sm:w-48"
               />
               <select
                 value={selectedUserId || ''}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 cursor-pointer w-full sm:w-64"
+                className="bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] cursor-pointer w-full sm:w-64"
               >
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((u) => (
@@ -238,7 +239,7 @@ export default function MetPoliceClient({
 
                 <button
                   onClick={() => handleCopy(`Email: ${selectedUser.email} | Collar: #${selectedUser.collar_number} | RP Name: ${selectedUser.rp_name}`, 'USER_SUMMARY')}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer border border-blue-500/50"
+                  className="px-4 py-2 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer border border-[#00247D]/50"
                 >
                   {copiedField === 'USER_SUMMARY' ? '✓ Summary Copied' : 'Copy Officer Summary'}
                 </button>
@@ -341,21 +342,21 @@ export default function MetPoliceClient({
               <input type="hidden" name="issuerName" value={currentCommandName} />
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Target Officer Discord ID</label>
-                <input type="text" name="targetDiscordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500" />
+                <input type="text" name="targetDiscordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
               </div>
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Target Officer Name / Collar</label>
-                <input type="text" name="targetName" required placeholder="e.g. J.Costin (#042)" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500" />
+                <input type="text" name="targetName" required placeholder="e.g. J.Costin (#042)" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
               </div>
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Role(s) Requested to Add</label>
-                <input type="text" name="roleName" required placeholder="e.g. ARV Qualified / Sergeant" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500" />
+                <input type="text" name="roleName" required placeholder="e.g. ARV Qualified / Sergeant" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
               </div>
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Reason / Justification</label>
-                <textarea name="reason" rows={3} required placeholder="Reason for adding this role..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none" />
+                <textarea name="reason" rows={3} required placeholder="Reason for adding this role..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] resize-none" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
+              <button type="submit" className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                 Submit Role Request
               </button>
             </form>
@@ -399,17 +400,17 @@ export default function MetPoliceClient({
               <input type="hidden" name="issuerName" value={currentCommandName} />
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Training Title / Course</label>
-                <input type="text" name="trainingName" required placeholder="e.g. Advanced Driving / Firearms Course" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500" />
+                <input type="text" name="trainingName" required placeholder="e.g. Advanced Driving / Firearms Course" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
               </div>
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Attendee Discord ID</label>
-                <input type="text" name="targetDiscordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500" />
+                <input type="text" name="targetDiscordId" required placeholder="e.g. 126868..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" />
               </div>
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Session Notes & Outcome</label>
-                <textarea name="notes" rows={3} required placeholder="Passed assessment with commendation..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none" />
+                <textarea name="notes" rows={3} required placeholder="Passed assessment with commendation..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] resize-none" />
               </div>
-              <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
+              <button type="submit" className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                 Record Training Attendance
               </button>
             </form>
@@ -465,7 +466,7 @@ export default function MetPoliceClient({
               {viewingFile ? (
                 <button
                   onClick={() => setViewingFile(null)}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                  className="px-3 py-1.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
                 >
                   &larr; Back to Files
                 </button>
@@ -519,10 +520,10 @@ export default function MetPoliceClient({
                     setActiveDriveFolder(folder.id);
                     setActiveSubFolder(null);
                   }}
-                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500/60 p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
+                  className="bg-neutral-950 border border-neutral-800 hover:border-[#00247D] p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-blue-500/20 transition-colors">
+                    <div className="w-10 h-10 bg-[#00247D]/20 border border-[#00247D]/40 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-[#00247D]/40 transition-colors">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
@@ -551,10 +552,10 @@ export default function MetPoliceClient({
                 <div
                   key={sub.id}
                   onClick={() => setActiveSubFolder(sub.id)}
-                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500/60 p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
+                  className="bg-neutral-950 border border-neutral-800 hover:border-[#00247D] p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-blue-500/20 transition-colors">
+                    <div className="w-10 h-10 bg-[#00247D]/20 border border-[#00247D]/40 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-[#00247D]/40 transition-colors">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                       </svg>
@@ -582,7 +583,7 @@ export default function MetPoliceClient({
               {frontlineFiles.map((file, idx) => (
                 <div
                   key={idx}
-                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md"
+                  className="bg-neutral-950 border border-neutral-800 hover:border-[#00247D] p-4 flex items-center justify-between transition-all group shadow-md"
                 >
                   <div className="flex items-center gap-3.5">
                     <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 rounded shrink-0">
@@ -601,7 +602,7 @@ export default function MetPoliceClient({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setViewingFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                      className="px-3.5 py-1.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
                     >
                       Preview Slide
                     </button>
@@ -612,7 +613,7 @@ export default function MetPoliceClient({
           ) : (
             /* Generic Folder Contents View */
             <div className="bg-neutral-950 border border-neutral-800 p-8 flex flex-col items-center justify-center text-center gap-4">
-              <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
+              <div className="w-16 h-16 bg-[#00247D]/20 border border-[#00247D]/40 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
