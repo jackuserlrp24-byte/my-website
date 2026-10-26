@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 interface Props {
   currentCommandName: string;
@@ -76,7 +77,7 @@ export default function MetPoliceClient({
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
   const [activeSubFolder, setActiveSubFolder] = useState<string | null>(null);
 
-  // In-Screen Viewer State (replaces modal)
+  // In-Screen Viewer State
   const [viewingFile, setViewingFile] = useState<{ name: string; previewUrl: string; editUrl: string } | null>(null);
 
   const handleCopy = (text: string, label: string) => {
@@ -104,19 +105,28 @@ export default function MetPoliceClient({
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
       
-      {/* Header Banner */}
+      {/* Header Banner with Met Police Crest/Logo */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
+        
         <div>
           <span className="text-[10px] text-blue-400 tracking-widest uppercase block mb-1">
-            Metropolitan Police Command Suite
+            METROPOLITAN POLICE COMMAND SUITE
           </span>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
             MET Police Command Portal
           </h2>
-          <p className="text-xs text-neutral-400 mt-1 font-sans">
-            Authorized for Bronze Commanders and above. Search officer dossiers, request role assignments, audit training logs, and explore departmental folders.
-          </p>
+        </div>
+
+        {/* Met Police Badge / Logo */}
+        <div className="flex items-center gap-3 bg-neutral-950 border border-neutral-800 px-4 py-2.5">
+          <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-xs shadow-inner">
+            MP
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase">Metropolitan Police</span>
+            <span className="text-xs font-bold text-neutral-200 tracking-wider">COMMAND SERVICE</span>
+          </div>
         </div>
       </div>
 
@@ -566,43 +576,37 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeSubFolder === 'fp-frontline' ? (
-            /* Inside Frontline Policing: Display the 3 Training Slides */
-            <div className="space-y-4">
-              <div className="bg-blue-500/10 border border-blue-500/30 p-4 text-xs text-blue-300 font-mono">
-                Official training presentations and operational slides for Frontline Policing. Click any slide deck to preview it right inside the portal.
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                {frontlineFiles.map((file, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 rounded shrink-0">
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-neutral-100 group-hover:text-blue-400 transition-colors">
-                          {file.name}
-                        </h4>
-                        <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{file.type}</span>
-                      </div>
+            /* Inside Frontline Policing: Display the 3 Training Slides (Instruction banner removed) */
+            <div className="space-y-3">
+              {frontlineFiles.map((file, idx) => (
+                <div
+                  key={idx}
+                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 rounded shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setViewingFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
-                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
-                      >
-                        Preview Slide
-                      </button>
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-100 group-hover:text-blue-400 transition-colors">
+                        {file.name}
+                      </h4>
+                      <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{file.type}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setViewingFile({ name: file.name, previewUrl: file.previewUrl, editUrl: file.editUrl })}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+                    >
+                      Preview Slide
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             /* Generic Folder Contents View */
