@@ -83,6 +83,13 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
       return;
     }
 
+    // Validate Roleplay Name format like J.Costin (Initial, dot, Surname)
+    const rpNameRegex = /^[A-Z]\.\s?[A-Za-z]+$/;
+    if (!rpNameRegex.test(rpName)) {
+      alert('Incorrect roleplay name format. Please use format like J.Costin');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -281,11 +288,12 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
                   required
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
+                  style={{ colorScheme: 'dark' }}
                   className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">Email Address</label>
+                <label className="block text-[11px] font-semibold uppercase text-neutral-400 mb-1.5 font-mono">EMAIL ADDRESS (Documents use)</label>
                 <input
                   type="email"
                   required
@@ -321,11 +329,12 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               <input
                 type="text"
                 required
-                placeholder="e.g. John Miller"
+                placeholder="e.g. J.Costin"
                 value={rpName}
                 onChange={(e) => setRpName(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 transition-colors"
               />
+              <p className="text-[10px] text-neutral-500 mt-1 font-mono">Format required: Initial followed by a dot and surname (e.g., J.Costin)</p>
             </div>
 
             <div>
