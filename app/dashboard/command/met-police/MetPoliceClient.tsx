@@ -69,16 +69,12 @@ export default function MetPoliceClient({
 }: Props) {
   const [activeTab, setActiveTab] = useState<'search' | 'roles' | 'training' | 'drive'>('search');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(
-    allUsers.length > 0 ? allUsers[0].discord_id : null
-  );
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Dynamic Role Request User Selection
+  // Multi-Select Role Request User State (Starts completely empty)
   const [requestTargetSearch, setRequestTargetSearch] = useState('');
-  const [requestSelectedUserId, setRequestSelectedUserId] = useState<string>(
-    allUsers.length > 0 ? allUsers[0].discord_id : ''
-  );
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [roleNameInput, setRoleNameInput] = useState('');
   const [reasonInput, setReasonInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,29 +115,43 @@ export default function MetPoliceClient({
   });
 
   const selectedUser = allUsers.find((u) => u.discord_id === selectedUserId);
-  const requestSelectedUser = allUsers.find((u) => u.discord_id === requestSelectedUserId);
+  const selectedUsersList = allUsers.filter((u) => selectedUserIds.includes(u.discord_id));
 
   const currentFolderObj = metFolders.find(f => f.id === activeDriveFolder);
   const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
 
-  // Client-side submit handler that guarantees all dynamic fields get populated in FormData
+  // Toggle multiple user selections
+  const toggleUserSelection = (discordId: string) => {
+    if (selectedUserIds.includes(discordId)) {
+      setSelectedUserIds(selectedUserIds.filter(id => id !== discordId));
+    } else {
+      setSelectedUserIds([...selectedUserIds, discordId]);
+    }
+  };
+
+  // Submit multiple users sequentially or formatted
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!requestSelectedUserId || !roleNameInput || !reasonInput || isSubmitting) return;
+    if (selectedUserIds.length === 0 || !roleNameInput || !reasonInput || isSubmitting) return;
 
     setIsSubmitting(true);
-    const formData = new FormData();
-    formData.append('targetDiscordId', requestSelectedUserId);
-    formData.append('targetName', requestSelectedUser ? (requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`) : 'Unknown Officer');
-    formData.append('collarNumber', String(requestSelectedUser?.collar_number || 'N/A'));
-    formData.append('roleName', roleNameInput);
-    formData.append('reason', reasonInput);
-    formData.append('issuerName', currentCommandName);
-
     try {
-      await actions.submitRoleRequest(formData);
+      for (const userId of selectedUserIds) {
+        const targetUser = allUsers.find(u => u.discord_id === userId);
+        const formData = new FormData();
+        formData.append('targetDiscordId', userId);
+        formData.append('targetName', targetUser ? (targetUser.rp_name || `${targetUser.forename} ${targetUser.surname}`) : 'Unknown Officer');
+        formData.append('collarNumber', String(targetUser?.collar_number || 'N/A'));
+        formData.append('roleName', roleNameInput);
+        formData.append('reason', reasonInput);
+        formData.append('issuerName', currentCommandName);
+
+        await actions.submitRoleRequest(formData);
+      }
+      setSelectedUserIds([]);
       setRoleNameInput('');
       setReasonInput('');
+      setRequestTargetSearch('');
     } catch (err) {
       console.error('Submission error:', err);
     } finally {
@@ -165,13 +175,14 @@ export default function MetPoliceClient({
           </h2>
         </div>
 
+        {/* Bigger Met Police Logo */}
         <div className="flex items-center">
           <Image 
             src="/met-logo.png" 
             alt="Metropolitan Police" 
-            width={320} 
-            height={80} 
-            className="h-12 w-auto object-contain"
+            width={400} 
+            height={100} 
+            className="h-16 w-auto object-contain"
             priority
           />
         </div>
@@ -250,15 +261,12 @@ export default function MetPoliceClient({
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 className="bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] cursor-pointer w-full sm:w-64"
               >
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((u) => (
-                    <option key={u.discord_id} value={u.discord_id}>
-                      [#{u.collar_number || '000'}] {u.rp_name || `${u.forename} ${u.surname}`}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">No personnel found</option>
-                )}
+                <option value="">-- Select Officer --</option>
+                {filteredUsers.map((u) => (
+                  <option key={u.discord_id} value={u.discord_id}>
+                    [#{u.collar_number || '000'}] {u.rp_name || `${u.forename} ${u.surname}`}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -396,48 +404,63 @@ export default function MetPoliceClient({
             </h3>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               
-              {/* 1. Select User Search & Dropdown */}
+              {/* 1. Multi-Select User Filter & Checkbox List */}
               <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Select User (Search & Pick)</label>
+                <label className="block text-[11px] text-neutral-400 mb-1">
+                  Select User(s) ({selectedUserIds.length} Selected)
+                </label>
                 <input
                   type="text"
-                  placeholder="Type to filter users..."
+                  placeholder="Type to filter officers..."
                   value={requestTargetSearch}
                   onChange={(e) => setRequestTargetSearch(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] mb-1.5"
+                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] mb-2"
                 />
-                <select
-                  value={requestSelectedUserId}
-                  onChange={(e) => setRequestSelectedUserId(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] cursor-pointer"
-                  required
-                >
+
+                {/* Multi-Select Scrollable Checkbox List */}
+                <div className="bg-neutral-950 border border-neutral-800 max-h-40 overflow-y-auto p-2 space-y-1">
                   {requestFilteredUsers.length > 0 ? (
-                    requestFilteredUsers.map((u) => (
-                      <option key={u.discord_id} value={u.discord_id}>
-                        [#{u.collar_number || '000'}] {u.rp_name || `${u.forename} ${u.surname}`}
-                      </option>
-                    ))
+                    requestFilteredUsers.map((u) => {
+                      const isChecked = selectedUserIds.includes(u.discord_id);
+                      return (
+                        <div
+                          key={u.discord_id}
+                          onClick={() => toggleUserSelection(u.discord_id)}
+                          className={`flex items-center gap-2 p-1.5 rounded cursor-pointer text-xs transition-colors ${
+                            isChecked ? 'bg-[#00247D]/30 border border-[#00247D]/50 text-white' : 'hover:bg-neutral-900 text-neutral-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // handled by parent onClick
+                            className="accent-[#00247D] cursor-pointer"
+                          />
+                          <span className="font-bold">[#{u.collar_number || '000'}]</span>
+                          <span className="truncate">{u.rp_name || `${u.forename} ${u.surname}`}</span>
+                        </div>
+                      );
+                    })
                   ) : (
-                    <option value="">No matching personnel found</option>
+                    <div className="text-xs text-neutral-500 italic p-2 text-center">No matching personnel found</div>
                   )}
-                </select>
+                </div>
               </div>
 
-              {/* 2. Auto-Populated User Details Box */}
+              {/* 2. Auto-Populated Selected Users Box */}
               <div className="bg-neutral-950 border border-neutral-800 p-3 space-y-1">
-                <span className="text-[10px] text-neutral-500 uppercase font-mono block">Auto-Detected Officer Details</span>
-                {requestSelectedUser ? (
-                  <div className="text-xs space-y-0.5">
-                    <div className="text-neutral-200 font-bold">
-                      RP Name: <span className="text-blue-400">{requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`}</span>
-                    </div>
-                    <div className="text-neutral-400">
-                      Collar: <span className="font-mono text-neutral-200">#{requestSelectedUser.collar_number || 'N/A'}</span> | Discord ID: <span className="font-mono text-neutral-200">{requestSelectedUser.discord_id}</span>
-                    </div>
+                <span className="text-[10px] text-neutral-500 uppercase font-mono block">Selected Officers ({selectedUsersList.length})</span>
+                {selectedUsersList.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pt-1">
+                    {selectedUsersList.map(u => (
+                      <span key={u.discord_id} className="bg-neutral-900 border border-neutral-700 px-2 py-0.5 text-[11px] text-blue-300 rounded flex items-center gap-1">
+                        #{u.collar_number || '000'} {u.rp_name || u.forename}
+                        <button type="button" onClick={() => toggleUserSelection(u.discord_id)} className="text-neutral-500 hover:text-red-400 font-bold ml-1">×</button>
+                      </span>
+                    ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-neutral-500 italic">Select an officer above...</span>
+                  <span className="text-xs text-neutral-500 italic">No officers selected yet. Tick one or more above...</span>
                 )}
               </div>
 
@@ -469,10 +492,10 @@ export default function MetPoliceClient({
 
               <button 
                 type="submit" 
-                disabled={!requestSelectedUserId || isSubmitting}
+                disabled={selectedUserIds.length === 0 || isSubmitting}
                 className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Role Request'}
+                {isSubmitting ? 'Submitting Requests...' : `Submit Role Request for ${selectedUserIds.length} Officer(s)`}
               </button>
             </form>
           </div>
