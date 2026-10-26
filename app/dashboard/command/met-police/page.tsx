@@ -24,7 +24,7 @@ async function sendDiscordEmbedLog(title: string, description: string, fields: {
         embeds: [{
           title: title,
           description: description,
-          color: 36941, // Authentic Met Police Blue decimal
+          color: 36941, // Met Police Blue
           fields: fields,
           timestamp: new Date().toISOString()
         }]
@@ -49,21 +49,21 @@ export async function submitRoleRequest(formData: FormData) {
   if (!targetDiscordId || !roleName) return;
 
   try {
+    // Insert into Supabase
     const { error } = await supabase.from('met_role_requests').insert([
       { 
         target_discord_id: targetDiscordId, 
         target_name: targetName, 
         collar_number: collarNumber, 
         role_name: roleName, 
-        reason, 
+        reason: reason, 
         issuer_name: issuerName,
         status: 'pending' 
       }
     ]);
 
     if (error) {
-      console.error('Supabase Insert Error:', error);
-      return;
+      console.error('Supabase Insert Error:', error.message, error.details);
     }
 
     // Send Discord Embed Log
@@ -88,7 +88,7 @@ export async function submitRoleRequest(formData: FormData) {
 export async function handleRoleRequestDecision(formData: FormData) {
   'use server';
   const requestId = formData.get('requestId') as string;
-  const decision = formData.get('decision') as string; // 'accepted' or 'declined'
+  const decision = formData.get('decision') as string;
   const reviewerName = formData.get('reviewerName') as string;
 
   if (!requestId || !decision) return;
@@ -210,7 +210,7 @@ export default async function MetPoliceCommandPage() {
 
   try {
     const [reqsRes, trainingRes, whitelistsRes] = await Promise.all([
-      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }),
       supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200)
     ]);
