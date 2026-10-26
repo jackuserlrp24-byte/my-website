@@ -14,19 +14,27 @@ const REQUIRED_ROLE_ID = '1497557905275224149';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-async function checkUserHasRequiredRole(userId: string): Promise<boolean> {
-  if (!userId || !DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) return false;
+async function checkUserAccessAndFetchDetails(userId: string) {
+  if (!userId || !DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
+    return { hasAccess: false, displayName: 'Operator' };
+  }
   try {
     const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
       headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
       cache: 'no-store'
     });
-    if (!res.ok) return false;
+    if (!res.ok) return { hasAccess: false, displayName: 'Operator' };
+    
     const member = await res.json();
-    return member.roles && member.roles.includes(REQUIRED_ROLE_ID);
+    const hasAccess = member.roles && member.roles.includes(REQUIRED_ROLE_ID);
+    
+    // Prioritize server nickname, then global name, then discord username
+    const displayName = member.nick || member.user?.global_name || member.user?.username || 'Operator';
+
+    return { hasAccess, displayName };
   } catch (err) {
-    console.error('Failed to check user role:', err);
-    return false;
+    console.error('Failed to check user role and details:', err);
+    return { hasAccess: false, displayName: 'Operator' };
   }
 }
 
@@ -36,12 +44,10 @@ export default async function DashboardPage() {
   
   const user = userCookie 
     ? JSON.parse(userCookie) 
-    : { username: 'Operator', nickname: 'Operator', id: '0000', avatar: null };
-  
-  const displayName = user.nickname || user.username;
+    : { username: 'Operator', id: '0000' };
 
-  // Check if user has the required role
-  const hasAccess = await checkUserHasRequiredRole(user.id);
+  // Fetch live display name and role access directly from Discord API
+  const { hasAccess, displayName } = await checkUserAccessAndFetchDetails(user.id);
 
   // Fetch live notices from Supabase
   let notices: any[] = [];

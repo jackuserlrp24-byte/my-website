@@ -211,10 +211,9 @@ export async function POST(req: Request) {
                   '**Collar Number:**',
                   `\`\`\`[${collarNumber}] ${rpName}\`\`\``,
                   '',
-                  '**Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p',
+                  '**Open Application:** You can find open applications here https://discord.com/channels/1497557904704671808/1497557905753378889',
                   '',
-                  'Best regards,',
-                  '-# Central Operations Team ┃ :COLogoTrans:'
+                  '**Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p'
                 ].join('\n'),
                 color: 3092790
               }
