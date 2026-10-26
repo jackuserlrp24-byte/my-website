@@ -7,22 +7,31 @@ interface Props {
   allUsers: any[];
   roleRequests: any[];
   trainingRecords: any[];
-  googleDriveLinks: {
-    folderUrl: string;
-    slidesEmbedUrl: string;
-  };
   actions: {
     submitRoleRequest: (formData: FormData) => Promise<void>;
     logTrainingRecord: (formData: FormData) => Promise<void>;
   };
 }
 
+const metFolders = [
+  { id: 'fp', name: '[1] FP | Emergency Response & Patrol Team', desc: 'Standard response policing guidelines, shift procedures, and patrol logs.' },
+  { id: 'mo2', name: '[2] MO2 | Criminal Investigation Department', desc: 'CID case files, detective SOPs, suspect interviews, and evidence lockers.' },
+  { id: 'mo3', name: '[3] MO3 | Covert Policing', desc: 'Surveillance directives, undercover protocols, and sensitive operations.' },
+  { id: 'mo4', name: '[4] MO4 | Forensic Services', Crime: 'Crime scene examination protocols, fingerprinting, and digital forensics.', desc: 'Crime scene examination protocols and forensic evidence submission.' },
+  { id: 'mo6', name: '[5] MO6 | Public Order Planning', desc: 'Public order event planning, protest response tactics, and PSU deployments.' },
+  { id: 'mo7', name: '[6] MO7 | Taskforce', desc: 'Specialist proactive taskforce operations, warrants, and high-risk entries.' },
+  { id: 'mo8', name: '[7] MO8 | Roads Transport Policing Command', desc: 'RTPC vehicle pursuits, ANPR tactics, motorway protocols, and traffic legislation.' },
+  { id: 'mo9', name: '[8] MO9 | Met Detention', desc: 'Custody suite management, PACE codes of practice, and prisoner processing.' },
+  { id: 'mo12', name: '[9] MO12 | MetCC', desc: 'Met Police Control Centre dispatch logs, radio procedures, and CAD protocols.' },
+  { id: 'mo19', name: '[10] MO19 | Firearms Command', desc: 'Authorized Firearms Officer (AFO) SOPs, ARV loadouts, and tactical firearms directives.' },
+  { id: 'met-cmd', name: '[11] MET | Command Team', desc: 'Senior leadership briefs, rank policies, disciplinary frameworks, and strategic documentation.' },
+];
+
 export default function MetPoliceClient({
   currentCommandName,
   allUsers,
   roleRequests,
   trainingRecords,
-  googleDriveLinks,
   actions
 }: Props) {
   const [activeTab, setActiveTab] = useState<'search' | 'roles' | 'training' | 'drive'>('search');
@@ -31,6 +40,9 @@ export default function MetPoliceClient({
     allUsers.length > 0 ? allUsers[0].discord_id : null
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Custom Drive Folder State
+  const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
 
   const handleCopy = (text: string, label: string) => {
     if (!text) return;
@@ -51,6 +63,7 @@ export default function MetPoliceClient({
   });
 
   const selectedUser = allUsers.find((u) => u.discord_id === selectedUserId);
+  const currentFolderObj = metFolders.find(f => f.id === activeDriveFolder);
 
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
@@ -66,7 +79,7 @@ export default function MetPoliceClient({
             MET Police Command Portal
           </h2>
           <p className="text-xs text-neutral-400 mt-1 font-sans">
-            Authorized for Bronze Commanders and above. Search officer dossiers, request role assignments, audit training logs, and review operational slides.
+            Authorized for Bronze Commanders and above. Search officer dossiers, request role assignments, audit training logs, and explore departmental folders.
           </p>
         </div>
       </div>
@@ -107,14 +120,14 @@ export default function MetPoliceClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('drive')}
+          onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); }}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'drive'
               ? 'bg-blue-600 border-blue-600 text-white shadow-md'
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Google Drive & Slides
+          Department Google Drive
         </button>
       </div>
 
@@ -381,32 +394,92 @@ export default function MetPoliceClient({
         </div>
       )}
 
-{/* TAB 4: GOOGLE DRIVE & SLIDES */}
+      {/* TAB 4: CUSTOM GOOGLE DRIVE FOLDERS */}
       {activeTab === 'drive' && (
-        <div className="bg-neutral-900 border border-neutral-800 p-8 shadow-lg flex flex-col items-center text-center gap-6 max-w-2xl mx-auto my-6">
-          <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
+        <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-neutral-800">
+            <div>
+              <h3 className="text-sm font-bold tracking-wider text-neutral-100">
+                Met Police Google Drive Directory
+              </h3>
+              <p className="text-xs text-neutral-400 font-sans mt-0.5">
+                {activeDriveFolder 
+                  ? `Browsing folder: ${currentFolderObj?.name}` 
+                  : 'Select an operational department folder below to inspect division files and SOPs.'}
+              </p>
+            </div>
+
+            {activeDriveFolder && (
+              <button
+                onClick={() => setActiveDriveFolder(null)}
+                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider transition-colors cursor-pointer"
+              >
+                &larr; Back to Root Folders
+              </button>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <h3 className="text-base font-bold tracking-wider text-neutral-100">
-              Metropolitan Police Google Drive Repository
-            </h3>
-            <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-              Access the official shared Google Drive folder to browse, open, and manage departmental training presentations, SOPs, documents, and slides directly in your browser.
-            </p>
-          </div>
+          {!activeDriveFolder ? (
+            /* Root Folder Grid (All 11 Folders) */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {metFolders.map((folder) => (
+                <div
+                  key={folder.id}
+                  onClick={() => setActiveDriveFolder(folder.id)}
+                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500/60 p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-blue-500/20 transition-colors">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-200 group-hover:text-blue-400 transition-colors">
+                        {folder.name}
+                      </h4>
+                      <p className="text-[11px] text-neutral-400 font-sans mt-1 line-clamp-2">
+                        {folder.desc}
+                      </p>
+                    </div>
+                  </div>
 
-          <a
-            href={googleDriveLinks.folderUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer"
-          >
-            Open Google Drive Folder &rarr;
-          </a>
+                  <div className="pt-2 border-t border-neutral-900 flex justify-between items-center text-[10px] text-neutral-500">
+                    <span>SECURE DIRECTORY</span>
+                    <span className="text-blue-400 group-hover:translate-x-1 transition-transform">Open Folder &rarr;</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Inside Selected Folder View */
+            <div className="bg-neutral-950 border border-neutral-800 p-8 flex flex-col items-center justify-center text-center gap-4">
+              <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-neutral-100">{currentFolderObj?.name}</h4>
+                <p className="text-xs text-neutral-400 font-sans max-w-md">{currentFolderObj?.desc}</p>
+              </div>
+
+              <div className="p-6 bg-neutral-900 border border-neutral-800 w-full max-w-lg mt-4 text-left space-y-2">
+                <span className="text-[10px] text-neutral-500 uppercase tracking-widest block mb-2">Folder Contents</span>
+                <div className="py-2.5 px-3 bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 flex items-center justify-between">
+                  <span className="flex items-center gap-2">📄 Operational_SOP_Guidelines.pdf</span>
+                  <span className="text-[10px] text-blue-400">READY</span>
+                </div>
+                <div className="py-2.5 px-3 bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 flex items-center justify-between">
+                  <span className="flex items-center gap-2">📊 Department_Briefing_Slides.pptx</span>
+                  <span className="text-[10px] text-blue-400">READY</span>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 

@@ -127,19 +127,12 @@ export default async function MetPoliceCommandPage() {
     console.error('Met Police command page fetch error:', err);
   }
 
-  // Updated Google Drive folder link
-  const googleDriveLinks = {
-    folderUrl: 'https://drive.google.com/drive/folders/1xVl9w9wAORm8NMxqrlGxeAL_WMmvLff9',
-    slidesEmbedUrl: ''
-  };
-
   return (
     <MetPoliceClient
       currentCommandName={currentCommandName}
       allUsers={allWhitelistedUsers}
       roleRequests={roleRequests}
       trainingRecords={trainingRecords}
-      googleDriveLinks={googleDriveLinks}
       actions={{
         submitRoleRequest,
         logTrainingRecord
