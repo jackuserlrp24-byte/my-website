@@ -127,10 +127,10 @@ export default async function MetPoliceCommandPage() {
     console.error('Met Police command page fetch error:', err);
   }
 
-  // Google Drive & Slides links integrated
+  // Updated Google Drive folder link
   const googleDriveLinks = {
-    folderUrl: 'https://drive.google.com/drive/folders/1YeiDqlZgBKForCO49LZLgX7FbewhaMvs',
-    slidesEmbedUrl: 'https://docs.google.com/presentation/d/e/2PACX-1vQ.../embed?start=false&loop=false&delayms=3000'
+    folderUrl: 'https://drive.google.com/drive/folders/1xVl9w9wAORm8NMxqrlGxeAL_WMmvLff9',
+    slidesEmbedUrl: ''
   };
 
   return (

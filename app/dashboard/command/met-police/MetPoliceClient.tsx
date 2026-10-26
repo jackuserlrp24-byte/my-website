@@ -381,43 +381,32 @@ export default function MetPoliceClient({
         </div>
       )}
 
-      {/* TAB 4: GOOGLE DRIVE & SLIDES */}
+{/* TAB 4: GOOGLE DRIVE & SLIDES */}
       {activeTab === 'drive' && (
-        <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-neutral-800">
-            <div>
-              <h3 className="text-sm font-bold tracking-wider text-neutral-100">
-                Met Police Google Drive & Operational Slides
-              </h3>
-              <p className="text-xs text-neutral-400 font-sans mt-0.5">
-                Access official training presentations, SOP slides, and shared departmental documentation.
-              </p>
-            </div>
-
-            <a
-              href={googleDriveLinks.folderUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider transition-colors flex items-center gap-2"
-            >
-              Open Google Drive Folder &rarr;
-            </a>
+        <div className="bg-neutral-900 border border-neutral-800 p-8 shadow-lg flex flex-col items-center text-center gap-6 max-w-2xl mx-auto my-6">
+          <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
           </div>
 
-          <div className="w-full bg-neutral-950 border border-neutral-800 overflow-hidden shadow-2xl flex flex-col items-center">
-            <div className="w-full bg-neutral-900 px-4 py-2.5 border-b border-neutral-800 flex items-center justify-between text-xs text-neutral-400">
-              <span>Embedded Google Slides Presentation Viewer</span>
-              <span className="text-[10px] text-blue-400 font-mono">LIVE SYNC</span>
-            </div>
-            <div className="w-full h-[600px] flex items-center justify-center">
-              <iframe
-                src={googleDriveLinks.slidesEmbedUrl}
-                className="w-full h-full border-0"
-                allowFullScreen={true}
-                title="Met Police Google Slides"
-              />
-            </div>
+          <div className="space-y-2">
+            <h3 className="text-base font-bold tracking-wider text-neutral-100">
+              Metropolitan Police Google Drive Repository
+            </h3>
+            <p className="text-xs text-neutral-400 font-sans leading-relaxed">
+              Access the official shared Google Drive folder to browse, open, and manage departmental training presentations, SOPs, documents, and slides directly in your browser.
+            </p>
           </div>
+
+          <a
+            href={googleDriveLinks.folderUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold tracking-wider uppercase transition-colors flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+          >
+            Open Google Drive Folder &rarr;
+          </a>
         </div>
       )}
 
