@@ -14,10 +14,20 @@ interface Props {
 }
 
 const metFolders = [
-  { id: 'fp', name: '[1] FP | Emergency Response & Patrol Team', desc: 'Standard response policing guidelines, shift procedures, and patrol logs.' },
+  { 
+    id: 'fp', 
+    name: '[1] FP | Emergency Response & Patrol Team', 
+    desc: 'Standard response policing guidelines, shift procedures, and patrol logs.',
+    subFolders: [
+      { id: 'fp-frontline', name: '[1] FP | Frontline Policing', desc: 'Frontline operational resources and training slides.' },
+      { id: 'fp-area-driver', name: '[2] FP | Area Driver', desc: 'Area driver qualifications and pursuit protocols.' },
+      { id: 'fp-snt', name: '[3] FP | Safer Neighbourhoods Team', desc: 'SNT community engagement and local policing strategies.' },
+      { id: 'fp-vsu', name: '[4] FP | Violence Suppression Unit', desc: 'VSU proactive operations and targeted intervention directives.' },
+    ]
+  },
   { id: 'mo2', name: '[2] MO2 | Criminal Investigation Department', desc: 'CID case files, detective SOPs, suspect interviews, and evidence lockers.' },
   { id: 'mo3', name: '[3] MO3 | Covert Policing', desc: 'Surveillance directives, undercover protocols, and sensitive operations.' },
-  { id: 'mo4', name: '[4] MO4 | Forensic Services', Crime: 'Crime scene examination protocols, fingerprinting, and digital forensics.', desc: 'Crime scene examination protocols and forensic evidence submission.' },
+  { id: 'mo4', name: '[4] MO4 | Forensic Services', desc: 'Crime scene examination protocols and forensic evidence submission.' },
   { id: 'mo6', name: '[5] MO6 | Public Order Planning', desc: 'Public order event planning, protest response tactics, and PSU deployments.' },
   { id: 'mo7', name: '[6] MO7 | Taskforce', desc: 'Specialist proactive taskforce operations, warrants, and high-risk entries.' },
   { id: 'mo8', name: '[7] MO8 | Roads Transport Policing Command', desc: 'RTPC vehicle pursuits, ANPR tactics, motorway protocols, and traffic legislation.' },
@@ -25,6 +35,24 @@ const metFolders = [
   { id: 'mo12', name: '[9] MO12 | MetCC', desc: 'Met Police Control Centre dispatch logs, radio procedures, and CAD protocols.' },
   { id: 'mo19', name: '[10] MO19 | Firearms Command', desc: 'Authorized Firearms Officer (AFO) SOPs, ARV loadouts, and tactical firearms directives.' },
   { id: 'met-cmd', name: '[11] MET | Command Team', desc: 'Senior leadership briefs, rank policies, disciplinary frameworks, and strategic documentation.' },
+];
+
+const frontlineFiles = [
+  {
+    name: 'CO | MPS - IPP Training Slides',
+    type: 'Google Slides Presentation',
+    url: 'https://docs.google.com/presentation/d/1AJzjfOaaN8sw4N0aYFy6wAnOJ-PDWHDXk4vJyACSLPo/edit?usp=drive_link'
+  },
+  {
+    name: 'CO | MPS - Response Driving Training Slides',
+    type: 'Google Slides Presentation',
+    url: 'https://docs.google.com/presentation/d/1u6QZLTkeB9NZc0xGYzgN_cLy8CDam24odGnuTDGiTy0/edit?usp=drive_link'
+  },
+  {
+    name: 'CO | MPS - CED Training Slides',
+    type: 'Google Slides Presentation',
+    url: 'https://docs.google.com/presentation/d/1JJp0WZ_XJIcX0eAZMmfITBMK7xgk3M1xRLKJxJIHMwI/edit?usp=drive_link'
+  }
 ];
 
 export default function MetPoliceClient({
@@ -41,8 +69,9 @@ export default function MetPoliceClient({
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Custom Drive Folder State
+  // Custom Drive Navigation State
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
+  const [activeSubFolder, setActiveSubFolder] = useState<string | null>(null);
 
   const handleCopy = (text: string, label: string) => {
     if (!text) return;
@@ -64,6 +93,7 @@ export default function MetPoliceClient({
 
   const selectedUser = allUsers.find((u) => u.discord_id === selectedUserId);
   const currentFolderObj = metFolders.find(f => f.id === activeDriveFolder);
+  const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
 
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
@@ -120,7 +150,7 @@ export default function MetPoliceClient({
         </button>
 
         <button
-          onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); }}
+          onClick={() => { setActiveTab('drive'); setActiveDriveFolder(null); setActiveSubFolder(null); }}
           className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
             activeTab === 'drive'
               ? 'bg-blue-600 border-blue-600 text-white shadow-md'
@@ -394,7 +424,7 @@ export default function MetPoliceClient({
         </div>
       )}
 
-      {/* TAB 4: CUSTOM GOOGLE DRIVE FOLDERS */}
+      {/* TAB 4: CUSTOM GOOGLE DRIVE FOLDERS & SLIDES */}
       {activeTab === 'drive' && (
         <div className="bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col gap-6">
           
@@ -404,18 +434,26 @@ export default function MetPoliceClient({
                 Met Police Google Drive Directory
               </h3>
               <p className="text-xs text-neutral-400 font-sans mt-0.5">
-                {activeDriveFolder 
+                {activeSubFolder 
+                  ? `Browsing: ${currentFolderObj?.name} > ${currentSubFolderObj?.name}`
+                  : activeDriveFolder 
                   ? `Browsing folder: ${currentFolderObj?.name}` 
-                  : 'Select an operational department folder below to inspect division files and SOPs.'}
+                  : 'Select an operational department folder below to inspect division files and training slides.'}
               </p>
             </div>
 
-            {activeDriveFolder && (
+            {(activeDriveFolder || activeSubFolder) && (
               <button
-                onClick={() => setActiveDriveFolder(null)}
+                onClick={() => {
+                  if (activeSubFolder) {
+                    setActiveSubFolder(null);
+                  } else {
+                    setActiveDriveFolder(null);
+                  }
+                }}
                 className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider transition-colors cursor-pointer"
               >
-                &larr; Back to Root Folders
+                &larr; Back
               </button>
             )}
           </div>
@@ -426,7 +464,10 @@ export default function MetPoliceClient({
               {metFolders.map((folder) => (
                 <div
                   key={folder.id}
-                  onClick={() => setActiveDriveFolder(folder.id)}
+                  onClick={() => {
+                    setActiveDriveFolder(folder.id);
+                    setActiveSubFolder(null);
+                  }}
                   className="bg-neutral-950 border border-neutral-800 hover:border-blue-500/60 p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
                 >
                   <div className="flex items-start gap-3">
@@ -452,8 +493,77 @@ export default function MetPoliceClient({
                 </div>
               ))}
             </div>
+          ) : activeDriveFolder === 'fp' && !activeSubFolder ? (
+            /* Sub-Folders inside Emergency Response & Patrol Team */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {currentFolderObj?.subFolders?.map((sub) => (
+                <div
+                  key={sub.id}
+                  onClick={() => setActiveSubFolder(sub.id)}
+                  className="bg-neutral-950 border border-neutral-800 hover:border-blue-500/60 p-4 flex flex-col justify-between gap-4 cursor-pointer transition-all group shadow-md"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 rounded group-hover:bg-blue-500/20 transition-colors">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-200 group-hover:text-blue-400 transition-colors">
+                        {sub.name}
+                      </h4>
+                      <p className="text-[11px] text-neutral-400 font-sans mt-1">
+                        {sub.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-900 flex justify-between items-center text-[10px] text-neutral-500">
+                    <span>FP SUB-FOLDER</span>
+                    <span className="text-blue-400 group-hover:translate-x-1 transition-transform">Open Sub-Folder &rarr;</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : activeSubFolder === 'fp-frontline' ? (
+            /* Inside Frontline Policing: Display the 3 Training Slides */
+            <div className="space-y-4">
+              <div className="bg-blue-500/10 border border-blue-500/30 p-4 text-xs text-blue-300 font-mono">
+                Official training presentations and operational slides for Frontline Policing. Click any slide deck to open it directly in a new tab.
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {frontlineFiles.map((file, idx) => (
+                  <a
+                    key={idx}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-neutral-950 border border-neutral-800 hover:border-blue-500 p-4 flex items-center justify-between transition-all group shadow-md cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 rounded shrink-0">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-neutral-100 group-hover:text-blue-400 transition-colors">
+                          {file.name}
+                        </h4>
+                        <span className="text-[10px] text-neutral-500 font-mono block mt-0.5">{file.type}</span>
+                      </div>
+                    </div>
+
+                    <span className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 group-hover:bg-blue-600 group-hover:border-blue-500 group-hover:text-white text-neutral-300 text-xs font-semibold tracking-wider transition-colors">
+                      Open Slide &rarr;
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
           ) : (
-            /* Inside Selected Folder View */
+            /* Generic Folder Contents View */
             <div className="bg-neutral-950 border border-neutral-800 p-8 flex flex-col items-center justify-center text-center gap-4">
               <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 rounded-lg shadow-inner">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -470,10 +580,6 @@ export default function MetPoliceClient({
                 <span className="text-[10px] text-neutral-500 uppercase tracking-widest block mb-2">Folder Contents</span>
                 <div className="py-2.5 px-3 bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 flex items-center justify-between">
                   <span className="flex items-center gap-2">📄 Operational_SOP_Guidelines.pdf</span>
-                  <span className="text-[10px] text-blue-400">READY</span>
-                </div>
-                <div className="py-2.5 px-3 bg-neutral-950 border border-neutral-800 text-xs text-neutral-300 flex items-center justify-between">
-                  <span className="flex items-center gap-2">📊 Department_Briefing_Slides.pptx</span>
                   <span className="text-[10px] text-blue-400">READY</span>
                 </div>
               </div>
