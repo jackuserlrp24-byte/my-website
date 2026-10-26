@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import FiveMStatusWidget from './FiveMStatusWidget'; // <-- Import component
+import FiveMStatusWidget from './FiveMStatusWidget';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,26 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const REQUIRED_ROLE_ID = '1497557905275224149';
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+
+async function checkUserHasRequiredRole(userId: string): Promise<boolean> {
+  if (!userId || !DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) return false;
+  try {
+    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
+      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+      cache: 'no-store'
+    });
+    if (!res.ok) return false;
+    const member = await res.json();
+    return member.roles && member.roles.includes(REQUIRED_ROLE_ID);
+  } catch (err) {
+    console.error('Failed to check user role:', err);
+    return false;
+  }
+}
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
@@ -19,6 +39,9 @@ export default async function DashboardPage() {
     : { username: 'Operator', nickname: 'Operator', id: '0000', avatar: null };
   
   const displayName = user.nickname || user.username;
+
+  // Check if user has the required role
+  const hasAccess = await checkUserHasRequiredRole(user.id);
 
   // Fetch live notices from Supabase
   let notices: any[] = [];
@@ -99,52 +122,102 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Columns: The 3 Main Buttons / Cards */}
+        {/* Right Columns: The 3 Main Cards */}
         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
           
-          <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between hover:border-neutral-700 transition-colors backdrop-blur-md">
+          {/* Server Roster */}
+          <div className={`border p-6 flex flex-col justify-between backdrop-blur-md transition-colors ${
+            hasAccess 
+              ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
+              : 'bg-neutral-950/50 border-neutral-900 opacity-60'
+          }`}>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-2">Server Roster</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">Server Roster</h3>
+                {!hasAccess && <span className="text-[10px] font-mono text-neutral-500 uppercase">Locked</span>}
+              </div>
               <p className="text-xs text-neutral-400 leading-relaxed">View active department personnel, division assignments, ranks, and operational readiness statuses.</p>
             </div>
-            <button 
-              className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
-            >
-              View Roster
-            </button>
+            {hasAccess ? (
+              <button 
+                className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
+              >
+                View Roster
+              </button>
+            ) : (
+              <button 
+                disabled
+                className="mt-6 w-full py-3 bg-neutral-900 border border-neutral-800 text-neutral-600 text-xs font-semibold tracking-wider uppercase cursor-not-allowed"
+              >
+                Coming Soon
+              </button>
+            )}
           </div>
 
-          <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between hover:border-neutral-700 transition-colors backdrop-blur-md">
+          {/* Training Calendar */}
+          <div className={`border p-6 flex flex-col justify-between backdrop-blur-md transition-colors ${
+            hasAccess 
+              ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
+              : 'bg-neutral-950/50 border-neutral-900 opacity-60'
+          }`}>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-2">Training Calendar</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">Training Calendar</h3>
+                {!hasAccess && <span className="text-[10px] font-mono text-neutral-500 uppercase">Locked</span>}
+              </div>
               <p className="text-xs text-neutral-400 leading-relaxed">Check scheduled training sessions, departmental courses, and qualification timelines.</p>
             </div>
-            <button 
-              className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
-            >
-              View Calendar
-            </button>
+            {hasAccess ? (
+              <button 
+                className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
+              >
+                View Calendar
+              </button>
+            ) : (
+              <button 
+                disabled
+                className="mt-6 w-full py-3 bg-neutral-900 border border-neutral-800 text-neutral-600 text-xs font-semibold tracking-wider uppercase cursor-not-allowed"
+              >
+                Coming Soon
+              </button>
+            )}
           </div>
 
           {/* Server Organised Patrols Card */}
-          <div className="bg-neutral-900/80 border border-neutral-800 p-6 flex flex-col justify-between hover:border-neutral-700 transition-colors backdrop-blur-md">
+          <div className={`border p-6 flex flex-col justify-between backdrop-blur-md transition-colors ${
+            hasAccess 
+              ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
+              : 'bg-neutral-950/50 border-neutral-900 opacity-60'
+          }`}>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200 mb-2">Server Organised Patrols</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">Server Organised Patrols</h3>
+                {!hasAccess && <span className="text-[10px] font-mono text-neutral-500 uppercase">Locked</span>}
+              </div>
               <p className="text-xs text-neutral-400 leading-relaxed">Review upcoming community-wide shifts, special deployment schedules, and patrol briefings.</p>
             </div>
-            <Link 
-              href="/dashboard/patrols"
-              className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer text-center block"
-            >
-              View Patrols
-            </Link>
+            {hasAccess ? (
+              <Link 
+                href="/dashboard/patrols"
+                className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer text-center block"
+              >
+                View Patrols
+              </Link>
+            ) : (
+              <button 
+                disabled
+                className="mt-6 w-full py-3 bg-neutral-900 border border-neutral-800 text-neutral-600 text-xs font-semibold tracking-wider uppercase cursor-not-allowed"
+              >
+                Coming Soon
+              </button>
+            )}
           </div>
 
         </div>
 
       </div>
 
-      {/* NEW: FiveM Live Server Status & Player List Widget */}
+      {/* FiveM Live Server Status & Player List Widget */}
       <FiveMStatusWidget />
 
     </main>

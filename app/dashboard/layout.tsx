@@ -28,13 +28,13 @@ const WHITELISTED_ROLES = [
   '1546219971359543408'
 ];
 
-const MASTER_ROLE_ID = '1497557905275224149';
+const MASTER_ROLE_ID = '1497557905275224149'; // Command / Bronze Commander Role ID
 const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
 async function checkUserAccess(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true };
+    return { inGuild: true, hasAccess: true, isManagement: true, isCommand: true };
   }
 
   try {
@@ -49,11 +49,11 @@ async function checkUserAccess(userId: string) {
         .delete()
         .eq('discord_id', userId);
 
-      return { inGuild: false, hasAccess: false, isManagement: false };
+      return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false };
     }
 
     if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false };
+      return { inGuild: true, hasAccess: false, isManagement: false, isCommand: false };
     }
 
     const member = await res.json();
@@ -66,11 +66,12 @@ async function checkUserAccess(userId: string) {
     return {
       inGuild: true,
       hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole,
-      isManagement: hasMasterRole || hasAltManagementRole
+      isManagement: hasMasterRole || hasAltManagementRole,
+      isCommand: hasMasterRole // Locks Command access specifically to 1497557905275224149
     };
   } catch (err) {
     console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false };
+    return { inGuild: false, hasAccess: false, isManagement: false, isCommand: false };
   }
 }
 
@@ -133,12 +134,15 @@ export default async function DashboardLayout({
             </Link>
           )}
 
-          <Link
-            href="/dashboard/command"
-            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-          >
-            Command
-          </Link>
+          {/* Role-Locked Command Button */}
+          {access.isCommand && (
+            <Link
+              href="/dashboard/command"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Command
+            </Link>
+          )}
 
           {/* Profile Dropdown */}
           <details className="relative group ml-2">
