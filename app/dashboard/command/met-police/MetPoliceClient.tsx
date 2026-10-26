@@ -76,9 +76,12 @@ export default function MetPoliceClient({
 
   // Dynamic Role Request User Selection
   const [requestTargetSearch, setRequestTargetSearch] = useState('');
-  const [requestSelectedUserId, setRequestSelectedUserId] = useState<string | null>(
+  const [requestSelectedUserId, setRequestSelectedUserId] = useState<string>(
     allUsers.length > 0 ? allUsers[0].discord_id : ''
   );
+  const [roleNameInput, setRoleNameInput] = useState('');
+  const [reasonInput, setReasonInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Custom Drive Navigation State
   const [activeDriveFolder, setActiveDriveFolder] = useState<string | null>(null);
@@ -120,6 +123,31 @@ export default function MetPoliceClient({
 
   const currentFolderObj = metFolders.find(f => f.id === activeDriveFolder);
   const currentSubFolderObj = currentFolderObj?.subFolders?.find(sf => sf.id === activeSubFolder);
+
+  // Client-side submit handler that guarantees all dynamic fields get populated in FormData
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!requestSelectedUserId || !roleNameInput || !reasonInput || isSubmitting) return;
+
+    setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append('targetDiscordId', requestSelectedUserId);
+    formData.append('targetName', requestSelectedUser ? (requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`) : 'Unknown Officer');
+    formData.append('collarNumber', String(requestSelectedUser?.collar_number || 'N/A'));
+    formData.append('roleName', roleNameInput);
+    formData.append('reason', reasonInput);
+    formData.append('issuerName', currentCommandName);
+
+    try {
+      await actions.submitRoleRequest(formData);
+      setRoleNameInput('');
+      setReasonInput('');
+    } catch (err) {
+      console.error('Submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
@@ -170,7 +198,7 @@ export default function MetPoliceClient({
               : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
           }`}
         >
-          Role Adding Requests ({roleRequests.filter(r => r.status === 'pending').length})
+          Role Adding Requests ({roleRequests.length})
         </button>
 
         <button
@@ -284,7 +312,6 @@ export default function MetPoliceClient({
 
               {/* Active Discord Roles & History */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
                 <div className="bg-neutral-950 border border-neutral-800 p-6">
                   <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-wider pb-2 border-b border-neutral-800 mb-4">
                     Active Discord Roles ({selectedUser.discord?.roles?.length || 0})
@@ -314,7 +341,6 @@ export default function MetPoliceClient({
                     Role Requests & Training History
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {/* Approved Role Requests */}
                     {roleRequests
                       .filter(r => r.target_discord_id === selectedUser.discord_id && r.status === 'accepted')
                       .map((r) => (
@@ -328,7 +354,6 @@ export default function MetPoliceClient({
                         </div>
                       ))}
 
-                    {/* Logged Trainings */}
                     {trainingRecords
                       .filter(t => t.target_discord_id === selectedUser.discord_id)
                       .map((t) => (
@@ -369,12 +394,8 @@ export default function MetPoliceClient({
             <h3 className="text-xs font-bold text-neutral-200 tracking-wider mb-4 pb-2 border-b border-neutral-800">
               Submit Role Addition Request
             </h3>
-            <form action={actions.submitRoleRequest} className="space-y-4">
-              <input type="hidden" name="issuerName" value={currentCommandName} />
-              <input type="hidden" name="targetDiscordId" value={requestSelectedUserId || ''} />
-              <input type="hidden" name="targetName" value={requestSelectedUser ? (requestSelectedUser.rp_name || `${requestSelectedUser.forename} ${requestSelectedUser.surname}`) : ''} />
-              <input type="hidden" name="collarNumber" value={requestSelectedUser?.collar_number || ''} />
-
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              
               {/* 1. Select User Search & Dropdown */}
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Select User (Search & Pick)</label>
@@ -386,7 +407,7 @@ export default function MetPoliceClient({
                   className="w-full bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] mb-1.5"
                 />
                 <select
-                  value={requestSelectedUserId || ''}
+                  value={requestSelectedUserId}
                   onChange={(e) => setRequestSelectedUserId(e.target.value)}
                   className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D] cursor-pointer"
                   required
@@ -403,7 +424,7 @@ export default function MetPoliceClient({
                 </select>
               </div>
 
-              {/* 2. Auto-Populated User's Name and Collar Box */}
+              {/* 2. Auto-Populated User Details Box */}
               <div className="bg-neutral-950 border border-neutral-800 p-3 space-y-1">
                 <span className="text-[10px] text-neutral-500 uppercase font-mono block">Auto-Detected Officer Details</span>
                 {requestSelectedUser ? (
@@ -425,7 +446,8 @@ export default function MetPoliceClient({
                 <label className="block text-[11px] text-neutral-400 mb-1">Roles to Request</label>
                 <input 
                   type="text" 
-                  name="roleName" 
+                  value={roleNameInput}
+                  onChange={(e) => setRoleNameInput(e.target.value)}
                   required 
                   placeholder="e.g. ARV Qualified, Sergeant" 
                   className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#00247D]" 
@@ -436,7 +458,8 @@ export default function MetPoliceClient({
               <div>
                 <label className="block text-[11px] text-neutral-400 mb-1">Reason for Request</label>
                 <textarea 
-                  name="reason" 
+                  value={reasonInput}
+                  onChange={(e) => setReasonInput(e.target.value)}
                   rows={3} 
                   required 
                   placeholder="Justification for granting role assignment..." 
@@ -446,15 +469,15 @@ export default function MetPoliceClient({
 
               <button 
                 type="submit" 
-                disabled={!requestSelectedUserId}
+                disabled={!requestSelectedUserId || isSubmitting}
                 className="w-full py-2.5 bg-[#00247D] hover:bg-[#001b5c] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer disabled:opacity-50"
               >
-                Submit Role Request
+                {isSubmitting ? 'Submitting...' : 'Submit Role Request'}
               </button>
             </form>
           </div>
 
-          {/* Active Requests Audit Trail with Accept / Deny Buttons */}
+          {/* Active Requests Audit Trail */}
           <div className="lg:col-span-2 bg-neutral-900 border border-neutral-800 p-6 shadow-lg">
             <h3 className="text-xs font-bold text-neutral-200 tracking-wider mb-4 pb-2 border-b border-neutral-800">
               Active Role Requests ({roleRequests.length})
