@@ -8,11 +8,10 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_AUDIT_CHANNEL_ID = '1564285919564136711';
 
-// Helper to log audit actions directly to your Discord channel
-async function sendDiscordAuditLog(content: string) {
+// Helper to send Discord embed logs without emojis
+async function sendDiscordEmbedLog(title: string, description: string, fields: { name: string; value: string; inline?: boolean }[]) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_AUDIT_CHANNEL_ID) return;
   try {
     await fetch(`https://discord.com/api/v10/channels/${DISCORD_AUDIT_CHANNEL_ID}/messages`, {
@@ -21,10 +20,18 @@ async function sendDiscordAuditLog(content: string) {
         Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({
+        embeds: [{
+          title: title,
+          description: description,
+          color: 36941, // Authentic Met Police Blue decimal
+          fields: fields,
+          timestamp: new Date().toISOString()
+        }]
+      }),
     });
   } catch (err) {
-    console.error('Failed to send Discord audit log:', err);
+    console.error('Failed to send Discord embed audit log:', err);
   }
 }
 
@@ -42,7 +49,7 @@ export async function submitRoleRequest(formData: FormData) {
   if (!targetDiscordId || !roleName) return;
 
   try {
-    await supabase.from('met_role_requests').insert([
+    const { error } = await supabase.from('met_role_requests').insert([
       { 
         target_discord_id: targetDiscordId, 
         target_name: targetName, 
@@ -54,13 +61,22 @@ export async function submitRoleRequest(formData: FormData) {
       }
     ]);
 
-    // Send Audit Log to Discord Channel 1564285919564136711
-    await sendDiscordAuditLog(
-      `📝 **NEW ROLE REQUEST SUBMITTED**\n` +
-      `**Officer:** ${targetName} (Collar: #${collarNumber || 'N/A'}) [${targetDiscordId}]\n` +
-      `**Requested Role:** \`@${roleName}\`\n` +
-      `**Reason:** ${reason}\n` +
-      `**Requested By:** ${issuerName}`
+    if (error) {
+      console.error('Supabase Insert Error:', error);
+      return;
+    }
+
+    // Send Discord Embed Log
+    await sendDiscordEmbedLog(
+      'NEW ROLE REQUEST SUBMITTED',
+      'A new department role addition request has been logged.',
+      [
+        { name: 'Officer', value: `${targetName} (Collar: #${collarNumber || 'N/A'})`, inline: true },
+        { name: 'Discord ID', value: targetDiscordId, inline: true },
+        { name: 'Requested Role', value: `@${roleName}`, inline: false },
+        { name: 'Reason', value: reason, inline: false },
+        { name: 'Requested By', value: issuerName, inline: true }
+      ]
     );
   } catch (err) {
     console.error('Failed to submit role request:', err);
@@ -86,12 +102,14 @@ export async function handleRoleRequestDecision(formData: FormData) {
       .single();
 
     if (request) {
-      const emoji = decision === 'accepted' ? '✅' : '❌';
-      await sendDiscordAuditLog(
-        `${emoji} **ROLE REQUEST ${decision.toUpperCase()}**\n` +
-        `**Officer:** ${request.target_name} [${request.target_discord_id}]\n` +
-        `**Role:** \`@${request.role_name}\`\n` +
-        `**Reviewed By:** ${reviewerName}`
+      await sendDiscordEmbedLog(
+        `ROLE REQUEST ${decision.toUpperCase()}`,
+        `A role addition request has been ${decision}.`,
+        [
+          { name: 'Officer', value: `${request.target_name} [${request.target_discord_id}]`, inline: true },
+          { name: 'Role', value: `@${request.role_name}`, inline: true },
+          { name: 'Reviewed By', value: reviewerName, inline: true }
+        ]
       );
     }
   } catch (err) {
@@ -115,12 +133,15 @@ export async function logTrainingRecord(formData: FormData) {
       { training_name: trainingName, target_discord_id: targetDiscordId, notes, issuer_name: issuerName }
     ]);
 
-    await sendDiscordAuditLog(
-      `🎓 **TRAINING SESSION RECORDED**\n` +
-      `**Course:** ${trainingName}\n` +
-      `**Attendee Discord ID:** ${targetDiscordId}\n` +
-      `**Notes:** ${notes}\n` +
-      `**Logged By:** ${issuerName}`
+    await sendDiscordEmbedLog(
+      'TRAINING SESSION RECORDED',
+      'An officer training attendance has been logged.',
+      [
+        { name: 'Course', value: trainingName, inline: true },
+        { name: 'Attendee ID', value: targetDiscordId, inline: true },
+        { name: 'Notes', value: notes, inline: false },
+        { name: 'Logged By', value: issuerName, inline: true }
+      ]
     );
   } catch (err) {
     console.error('Failed to log training:', err);
@@ -130,6 +151,7 @@ export async function logTrainingRecord(formData: FormData) {
 }
 
 async function fetchDiscordMemberInfo(userId: string) {
+  const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !userId) return null;
   try {
     const [memberRes, rolesRes] = await Promise.all([
