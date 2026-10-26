@@ -105,7 +105,7 @@ export default function MetPoliceClient({
   return (
     <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
       
-      {/* Header Banner with Met Police Crest/Logo */}
+      {/* Header Banner with Real Met Police Logo */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
         
@@ -118,15 +118,16 @@ export default function MetPoliceClient({
           </h2>
         </div>
 
-        {/* Met Police Badge / Logo */}
-        <div className="flex items-center gap-3 bg-neutral-950 border border-neutral-800 px-4 py-2.5">
-          <div className="w-8 h-8 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-xs shadow-inner">
-            MP
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase">Metropolitan Police</span>
-            <span className="text-xs font-bold text-neutral-200 tracking-wider">COMMAND SERVICE</span>
-          </div>
+        {/* Real Met Police Logo Image */}
+        <div className="bg-neutral-950 border border-neutral-800 p-1.5 shadow-md flex items-center">
+          <Image 
+            src="/met-logo.png" 
+            alt="Metropolitan Police" 
+            width={240} 
+            height={60} 
+            className="h-10 w-auto object-contain"
+            priority
+          />
         </div>
       </div>
 
@@ -576,7 +577,7 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeSubFolder === 'fp-frontline' ? (
-            /* Inside Frontline Policing: Display the 3 Training Slides (Instruction banner removed) */
+            /* Inside Frontline Policing: Display the 3 Training Slides */
             <div className="space-y-3">
               {frontlineFiles.map((file, idx) => (
                 <div
