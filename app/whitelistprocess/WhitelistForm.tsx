@@ -83,13 +83,29 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
       return;
     }
 
-    // Validate Roleplay Name format like J.Costin (Initial, dot, Surname)
-    const rpNameRegex = /^[A-Z]\.\s?[A-Za-z]+$/;
-    if (!rpNameRegex.test(rpName)) {
-      const suggestedInitial = forename ? forename.charAt(0).toUpperCase() : 'J';
-      const suggestedSurname = surname ? surname : 'Costin';
-      const dynamicExample = `${suggestedInitial}.${suggestedSurname}`;
-      alert(`Incorrect roleplay name format. Please use format like ${dynamicExample}`);
+    // Check if the input already matches the required J.Costin / T.Froud format
+    const rpNameRegex = /^[A-Z]\.[A-Za-z]+$/;
+    if (!rpNameRegex.test(rpName.trim())) {
+      // Split what the user typed to derive their initial and surname
+      const nameParts = rpName.trim().split(/\s+/);
+      let suggestedInitial = '';
+      let suggestedSurname = '';
+
+      if (nameParts.length >= 2) {
+        suggestedInitial = nameParts[0].charAt(0).toUpperCase();
+        suggestedSurname = nameParts[nameParts.length - 1];
+        // Capitalize first letter of surname if typed lowercase
+        suggestedSurname = suggestedSurname.charAt(0).toUpperCase() + suggestedSurname.slice(1);
+      } else if (nameParts.length === 1 && nameParts[0].length > 0) {
+        suggestedInitial = nameParts[0].charAt(0).toUpperCase();
+        suggestedSurname = surname ? surname : 'Surname';
+      } else {
+        suggestedInitial = forename ? forename.charAt(0).toUpperCase() : 'J';
+        suggestedSurname = surname ? surname : 'Costin';
+      }
+
+      const formattedExample = `${suggestedInitial}.${suggestedSurname}`;
+      alert(`Use ${formattedExample}`);
       return;
     }
 
@@ -332,13 +348,13 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
               <input
                 type="text"
                 required
-                placeholder={`e.g. ${forename ? forename.charAt(0).toUpperCase() : 'J'}.${surname || 'Costin'}`}
+                placeholder="e.g. J.Costin"
                 value={rpName}
                 onChange={(e) => setRpName(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 px-4 py-2.5 text-xs text-neutral-200 focus:outline-none focus:border-neutral-600 transition-colors"
               />
               <p className="text-[10px] text-neutral-500 mt-1 font-mono">
-                Format required: Initial followed by a dot and surname (e.g., {forename ? forename.charAt(0).toUpperCase() : 'J'}.{surname || 'Costin'})
+                Format required: Initial followed by a dot and surname (e.g., T.Froud)
               </p>
             </div>
 
