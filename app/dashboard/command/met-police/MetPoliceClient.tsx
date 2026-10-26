@@ -17,8 +17,8 @@ interface Props {
 const metFolders = [
   { 
     id: 'fp', 
-    name: '[1] FP | Emergency Response & Patrol Team', 
-    desc: 'Standard response policing guidelines, shift procedures, and patrol logs.',
+    name: '[1] FP | Emergency Response & Panel Team', 
+    desc: 'Standard response policing guidelines, shift procedures, and panel logs.',
     subFolders: [
       { id: 'fp-frontline', name: '[1] FP | Frontline Policing', desc: 'Frontline operational resources and training slides.' },
       { id: 'fp-area-driver', name: '[2] FP | Area Driver', desc: 'Area driver qualifications and pursuit protocols.' },
@@ -270,7 +270,7 @@ export default function MetPoliceClient({
 
               </div>
 
-              {/* Active Discord Roles & Training Logged */}
+              {/* Active Discord Roles (Ordered by Server Hierarchy) & Training Logged */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 <div className="bg-neutral-950 border border-neutral-800 p-6">
@@ -279,16 +279,18 @@ export default function MetPoliceClient({
                   </h4>
                   <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                     {selectedUser.discord?.roles?.length > 0 ? (
-                      selectedUser.discord.roles.map((role: any) => (
-                        <span 
-                          key={role.id}
-                          className="px-2.5 py-1 bg-neutral-900 border text-[11px] rounded-sm flex items-center gap-1.5"
-                          style={{ borderColor: `${role.color}40`, color: role.color }}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: role.color }} />
-                          @{role.name}
-                        </span>
-                      ))
+                      [...selectedUser.discord.roles]
+                        .sort((a: any, b: any) => (b.position || 0) - (a.position || 0))
+                        .map((role: any) => (
+                          <span 
+                            key={role.id}
+                            className="px-2.5 py-1 bg-neutral-900 border text-[11px] rounded-sm flex items-center gap-1.5"
+                            style={{ borderColor: `${role.color}40`, color: role.color }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: role.color }} />
+                            @{role.name}
+                          </span>
+                        ))
                     ) : (
                       <span className="text-xs text-neutral-500 italic font-sans">No live roles retrieved from Discord.</span>
                     )}
@@ -546,7 +548,7 @@ export default function MetPoliceClient({
               ))}
             </div>
           ) : activeDriveFolder === 'fp' && !activeSubFolder ? (
-            /* Sub-Folders inside Emergency Response & Patrol Team */
+            /* Sub-Folders inside Emergency Response & Panel Team */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentFolderObj?.subFolders?.map((sub) => (
                 <div

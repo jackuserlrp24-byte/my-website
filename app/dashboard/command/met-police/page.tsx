@@ -73,11 +73,18 @@ async function fetchDiscordMemberInfo(userId: string) {
     const guildRoles = await rolesRes.json();
 
     const roleMap = new Map();
-    guildRoles.forEach((r: { id: string; name: string; color: number }) => roleMap.set(r.id, { name: r.name, color: r.color }));
+    guildRoles.forEach((r: { id: string; name: string; color: number; position: number }) => 
+      roleMap.set(r.id, { name: r.name, color: r.color, position: r.position })
+    );
 
     const resolvedRoles = (member.roles || []).map((id: string) => {
       const r = roleMap.get(id);
-      return r ? { id, name: r.name, color: r.color !== 0 ? `#${r.color.toString(16).padStart(6, '0')}` : '#a3a3a3' } : null;
+      return r ? { 
+        id, 
+        name: r.name, 
+        position: r.position,
+        color: r.color !== 0 ? `#${r.color.toString(16).padStart(6, '0')}` : '#a3a3a3' 
+      } : null;
     }).filter(Boolean);
 
     return {
