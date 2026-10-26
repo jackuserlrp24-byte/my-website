@@ -200,7 +200,22 @@ export async function POST(req: Request) {
             embeds: [
               {
                 title: 'Central Operations ┃ Whitelist Complete',
-                description: `**Welcome to Central Operations!**\n\nYou have successfully been processed into our systems and are now fully cleared to access all server facilities and begin your roleplay experience. Please remember that we maintain exceptionally high standards for roleplay—any form of failRP, rule-breaking, or trolling will not be tolerated.\n\n**Roleplay Name:**\n\`\`\`${rpName}\`\`\`\n\n**Collar Number:**\n\`\`\`[${collarNumber}] ${rpName}\`\`\`\n\n- **Applications & Channels:** You can find our community channels and further applications here: https://discord.com/channels/1497557904704671808/1497557905753378889\n- **Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p\n\n-# Central Operations Team`,
+                description: [
+                  '**Welcome to Central Operations!**',
+                  '',
+                  'You have successfully been processed into our systems and are now fully cleared to access all server facilities and begin your roleplay experience. Please remember that we maintain exceptionally high standards for roleplay—any form of failRP, rule-breaking, or trolling will not be tolerated.',
+                  '',
+                  '**Roleplay Name:**',
+                  `\`\`\`${rpName}\`\`\``,
+                  '',
+                  '**Collar Number:**',
+                  `\`\`\`[${collarNumber}] ${rpName}\`\`\``,
+                  '',
+                  '**Getting Started:** Review everything you need to know about starting your journey in our booklet here: https://docs.google.com/presentation/d/1nY-VqqffYNStfZfAEs-fkHqQoTNJ0bnsxJp4gb2RP9I/edit?slide=id.p#slide=id.p',
+                  '',
+                  'Best regards,',
+                  '-# Central Operations Team ┃ :COLogoTrans:'
+                ].join('\n'),
                 color: 3092790
               }
             ]
