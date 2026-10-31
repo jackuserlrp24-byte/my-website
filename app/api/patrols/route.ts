@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getDiscordDisplayName, getDiscordSession } from '@/lib/discord-session';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -36,18 +35,15 @@ export async function GET() {
 // POST: Create a new patrol shift
 export async function POST(request: Request) {
   try {
-    const session = await getDiscordSession();
-    const creatorName = session ? getDiscordDisplayName(session) : 'Server Staff';
-
     const body = await request.json();
     const { title, date, startTime, endTime, description, id } = body;
 
-    const timeString = `${startTime || 'TBD'} - ${endTime || 'TBD'}`;
+    const timeString = `${startTime || 'TBD'}\n${endTime || 'TBD'}`;
     const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
 
     const embed = {
-      title: `New Event : ${title}`,
-      description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
+      title: title || 'Patrol Shift',
+      description: description || 'No additional details provided.',
       color: 5793266,
       fields: [
         { name: 'Shift ID', value: id || 'PAT-001', inline: true },
@@ -58,10 +54,37 @@ export async function POST(request: Request) {
         { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
       ],
       footer: {
-        text: `Central Operations Portal • Created by ${creatorName || 'Server Staff'}`
+        text: 'Central Operations Portal'
       },
       timestamp: new Date().toISOString()
     };
+
+    // Action Row Components (Buttons)
+    const components = [
+      {
+        type: 1, // ActionRow
+        components: [
+          {
+            type: 2, // Button
+            style: 3, // Success / Green
+            label: 'Book On',
+            custom_id: 'patrol_book_on'
+          },
+          {
+            type: 2, // Button
+            style: 4, // Danger / Red
+            label: 'Not Attending',
+            custom_id: 'patrol_not_attending'
+          },
+          {
+            type: 2, // Link Button
+            style: 5, // Link
+            label: 'View Portal',
+            url: portalLink
+          }
+        ]
+      }
+    ];
 
     let discordMessageId = null;
 
@@ -72,7 +95,7 @@ export async function POST(request: Request) {
           'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ embeds: [embed] }),
+        body: JSON.stringify({ embeds: [embed], components }),
       });
 
       if (response.ok) {
@@ -96,7 +119,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, createdBy: creatorName, discordMessageId });
+    return NextResponse.json({ success: true, discordMessageId });
   } catch (error) {
     console.error('Error handling patrol creation:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
