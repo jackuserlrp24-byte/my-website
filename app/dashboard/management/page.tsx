@@ -11,8 +11,6 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const TARGET_CHANNEL_ID = '1532786346920247398';
 
-// --- SERVER ACTIONS ---
-
 export async function postNotice(formData: FormData) {
   'use server';
   const title = formData.get('title') as string;
@@ -22,13 +20,9 @@ export async function postNotice(formData: FormData) {
   if (!title || !content) return;
 
   try {
-    const { error } = await supabase.from('community_notices').insert([
+    await supabase.from('community_notices').insert([
       { title, content, author_name: author || 'Central Operations Team' }
     ]);
-
-    if (error) {
-      console.error('Supabase insert error for notice:', error.message);
-    }
   } catch (err) {
     console.error('Failed to post notice:', err);
   }
@@ -46,14 +40,7 @@ export async function editNotice(formData: FormData) {
   if (!noticeId || !title || !content) return;
 
   try {
-    const { error } = await supabase
-      .from('community_notices')
-      .update({ title, content })
-      .eq('id', noticeId);
-
-    if (error) {
-      console.error('Supabase update error for notice:', error.message);
-    }
+    await supabase.from('community_notices').update({ title, content }).eq('id', noticeId);
   } catch (err) {
     console.error('Failed to edit notice:', err);
   }
@@ -65,18 +52,10 @@ export async function editNotice(formData: FormData) {
 export async function deleteNotice(formData: FormData) {
   'use server';
   const noticeId = formData.get('noticeId') as string;
-
   if (!noticeId) return;
 
   try {
-    const { error } = await supabase
-      .from('community_notices')
-      .delete()
-      .eq('id', noticeId);
-
-    if (error) {
-      console.error('Supabase delete error for notice:', error.message);
-    }
+    await supabase.from('community_notices').delete().eq('id', noticeId);
   } catch (err) {
     console.error('Failed to delete notice:', err);
   }
@@ -113,7 +92,6 @@ export async function createManagementPatrol(formData: FormData) {
   const startTime = formData.get('startTime') as string;
   const endTime = formData.get('endTime') as string;
   const description = formData.get('description') as string;
-  // creator parameter is kept for signature compatibility if passed from form, but removed from footer text per your instruction
 
   if (!title) return;
 
@@ -132,9 +110,9 @@ export async function createManagementPatrol(formData: FormData) {
       { name: 'Shift ID', value: patrolId, inline: true },
       { name: 'Date', value: date || 'TBD', inline: true },
       { name: 'Time', value: timeString, inline: true },
-      { name: 'Status', value: 'UPCOMING', inline: true },
-      { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
-      { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
+      { name: 'Status', value: 'UPCOMING', inline: false },
+      { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: true },
+      { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: true }
     ],
     footer: {
       text: 'Central Operations Portal'
@@ -142,26 +120,25 @@ export async function createManagementPatrol(formData: FormData) {
     timestamp: new Date().toISOString()
   };
 
-  // Action Row Components (Buttons)
   const components = [
     {
-      type: 1, // ActionRow
+      type: 1,
       components: [
         {
-          type: 2, // Button
-          style: 3, // Success / Green
+          type: 2,
+          style: 3,
           label: 'Book On',
           custom_id: 'patrol_book_on'
         },
         {
-          type: 2, // Button
-          style: 4, // Danger / Red
+          type: 2,
+          style: 4,
           label: 'Not Attending',
           custom_id: 'patrol_not_attending'
         },
         {
-          type: 2, // Link Button
-          style: 5, // Link
+          type: 2,
+          style: 5,
           label: 'View Portal',
           url: portalLink
         }
@@ -182,7 +159,7 @@ export async function createManagementPatrol(formData: FormData) {
     }
   }
 
-  const { error } = await supabase.from('patrols').insert({
+  await supabase.from('patrols').insert({
     id: patrolId,
     discord_message_id: discordMessageId,
     title,
@@ -193,10 +170,6 @@ export async function createManagementPatrol(formData: FormData) {
     attending: [],
     unattending: []
   });
-
-  if (error) {
-    console.error('Supabase patrol insert error:', error.message);
-  }
 
   revalidatePath('/dashboard/management');
   revalidatePath('/dashboard/patrols');
@@ -260,8 +233,6 @@ async function fetchDiscordMemberInfo(userId: string) {
     return null;
   }
 }
-
-// --- PAGE COMPONENT ---
 
 export default async function ManagementPage({
   searchParams,

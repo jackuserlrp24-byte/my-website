@@ -20,13 +20,11 @@ export async function POST(request: Request) {
 
     const { attending, unattending } = attendance;
 
-    // 1. Update Supabase
     await supabase
       .from('patrols')
       .update({ attending, unattending })
       .eq('id', patrolId);
 
-    // 2. Fetch Discord Message ID
     const { data: patrolRecord } = await supabase
       .from('patrols')
       .select('discord_message_id')
@@ -48,36 +46,35 @@ export async function POST(request: Request) {
         if (embed.fields) {
           embed.fields = embed.fields.map((field: { name: string; value: string; inline?: boolean }) => {
             if (field.name.startsWith('Booked On')) {
-              return { name: `Booked On (${attending.length})`, value: bookedOnList, inline: false };
+              return { name: `Booked On (${attending.length})`, value: bookedOnList, inline: true };
             }
             if (field.name.startsWith('Not Attending')) {
-              return { name: `Not Attending (${unattending.length})`, value: notAttendingList, inline: false };
+              return { name: `Not Attending (${unattending.length})`, value: notAttendingList, inline: true };
             }
             return field;
           });
         }
 
-        // Re-include components (buttons) so they don't get deleted on update
         const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
         const components = [
           {
-            type: 1, // ActionRow
+            type: 1,
             components: [
               {
-                type: 2, // Button
-                style: 3, // Success / Green
+                type: 2,
+                style: 3,
                 label: 'Book On',
                 custom_id: 'patrol_book_on'
               },
               {
-                type: 2, // Button
-                style: 4, // Danger / Red
+                type: 2,
+                style: 4,
                 label: 'Not Attending',
                 custom_id: 'patrol_not_attending'
               },
               {
-                type: 2, // Link Button
-                style: 5, // Link
+                type: 2,
+                style: 5,
                 label: 'View Portal',
                 url: portalLink
               }

@@ -9,7 +9,6 @@ const supabase = createClient(
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const TARGET_CHANNEL_ID = '1532786346920247398';
 
-// GET: Fetch active patrols created within the last 24 hours
 export async function GET() {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -32,7 +31,6 @@ export async function GET() {
   }
 }
 
-// POST: Create a new patrol shift
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -49,9 +47,9 @@ export async function POST(request: Request) {
         { name: 'Shift ID', value: id || 'PAT-001', inline: true },
         { name: 'Date', value: date || 'TBD', inline: true },
         { name: 'Time', value: timeString, inline: true },
-        { name: 'Status', value: 'UPCOMING', inline: true },
-        { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: false },
-        { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
+        { name: 'Status', value: 'UPCOMING', inline: false },
+        { name: 'Booked On (0)', value: 'No personnel booked on yet.', inline: true },
+        { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: true }
       ],
       footer: {
         text: 'Central Operations Portal'
@@ -59,26 +57,25 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString()
     };
 
-    // Action Row Components (Buttons)
     const components = [
       {
-        type: 1, // ActionRow
+        type: 1,
         components: [
           {
-            type: 2, // Button
-            style: 3, // Success / Green
+            type: 2,
+            style: 3,
             label: 'Book On',
             custom_id: 'patrol_book_on'
           },
           {
-            type: 2, // Button
-            style: 4, // Danger / Red
+            type: 2,
+            style: 4,
             label: 'Not Attending',
             custom_id: 'patrol_not_attending'
           },
           {
-            type: 2, // Link Button
-            style: 5, // Link
+            type: 2,
+            style: 5,
             label: 'View Portal',
             url: portalLink
           }
