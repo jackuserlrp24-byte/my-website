@@ -515,6 +515,10 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                   <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Content / Body</label>
                   <textarea name="content" rows={3} required placeholder="Enter notice details..." className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
                 </div>
+                <div>
+                  <label className="block text-[11px] tracking-wider text-neutral-400 mb-1">Banner Image URL (Optional)</label>
+                  <input type="url" name="imageUrl" placeholder="https://imgur.com/... or direct image link" className="w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
+                </div>
                 <button type="submit" className="w-full py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold tracking-wider transition-colors cursor-pointer">
                   Broadcast Notice
                 </button>
@@ -535,6 +539,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                           <input type="hidden" name="noticeId" value={n.id} />
                           <input type="text" name="title" defaultValue={n.title} required className="w-full bg-neutral-900 border border-neutral-700 px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                           <textarea name="content" defaultValue={n.content} rows={2} required className="w-full bg-neutral-900 border border-neutral-700 px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] resize-none" />
+                          <input type="url" name="imageUrl" defaultValue={n.image_url || ''} placeholder="Banner Image URL (Optional)" className="w-full bg-neutral-900 border border-neutral-700 px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]" />
                           <div className="flex gap-2 justify-end">
                             <button type="button" onClick={() => setEditingNoticeId(null)} className="px-2.5 py-1 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 text-[10px] uppercase">Cancel</button>
                             <button type="submit" className="px-2.5 py-1 bg-[#5865F2] text-white hover:bg-[#4752C4] text-[10px] uppercase font-semibold">Save Changes</button>
@@ -577,11 +582,16 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                             </div>
                           </div>
 
-                          {/* Expandable Text Body */}
+                          {/* Expandable Text Body & Banner Preview */}
                           {expandedNotices[n.id] && (
-                            <div className="mt-3 pt-3 border-t border-neutral-900 text-neutral-300 font-sans leading-relaxed text-xs">
-                              <p className="whitespace-pre-wrap">{n.content}</p>
-                              <span className="text-[10px] text-neutral-500 font-mono block mt-2">Author: {n.author_name || 'Central Operations Team'}</span>
+                            <div className="mt-3 pt-3 border-t border-neutral-900 flex flex-col gap-3">
+                              {n.image_url && (
+                                <div className="w-full h-36 overflow-hidden border border-neutral-800">
+                                  <img src={n.image_url} alt={n.title} className="w-full h-full object-cover" />
+                                </div>
+                              )}
+                              <p className="text-neutral-300 font-sans leading-relaxed text-xs whitespace-pre-wrap">{n.content}</p>
+                              <span className="text-[10px] text-neutral-500 font-mono block">Author: {n.author_name || 'Central Operations Team'}</span>
                             </div>
                           )}
                         </div>

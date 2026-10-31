@@ -16,13 +16,43 @@ export async function postNotice(formData: FormData) {
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const author = formData.get('author') as string;
+  const imageUrl = formData.get('imageUrl') as string; // Banner Image URL
 
   if (!title || !content) return;
 
   try {
+    // 1. Save to Supabase with image_url
     await supabase.from('community_notices').insert([
-      { title, content, author_name: author || 'Central Operations Team' }
+      { 
+        title, 
+        content, 
+        author_name: author || 'Central Operations Team',
+        image_url: imageUrl || null 
+      }
     ]);
+
+    // 2. Optional: If you also want posted notices to broadcast to Discord as an embed with an image banner
+    if (DISCORD_BOT_TOKEN) {
+      const noticeEmbed: any = {
+        title: title,
+        description: content,
+        color: 5793266,
+        footer: {
+          text: `Central Operations Portal • Published by ${author || 'Central Operations Team'}`
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      if (imageUrl) {
+        noticeEmbed.image = { url: imageUrl };
+      }
+
+      await fetch(`https://discord.com/api/v10/channels/1563506688798236743/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ embeds: [noticeEmbed] })
+      }).catch(() => {});
+    }
   } catch (err) {
     console.error('Failed to post notice:', err);
   }
@@ -36,11 +66,12 @@ export async function editNotice(formData: FormData) {
   const noticeId = formData.get('noticeId') as string;
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
+  const imageUrl = formData.get('imageUrl') as string;
 
   if (!noticeId || !title || !content) return;
 
   try {
-    await supabase.from('community_notices').update({ title, content }).eq('id', noticeId);
+    await supabase.from('community_notices').update({ title, content, image_url: imageUrl || null }).eq('id', noticeId);
   } catch (err) {
     console.error('Failed to edit notice:', err);
   }
@@ -95,7 +126,6 @@ export async function createManagementPatrol(formData: FormData) {
 
   if (!title) return;
 
-  // Automatically calculate the next sequential patrol ID
   const countRes = await supabase.from('patrols').select('id', { count: 'exact', head: true });
   const nextNum = (countRes.count || 0) + 1;
   const patrolId = `PAT-${nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : nextNum}`;
