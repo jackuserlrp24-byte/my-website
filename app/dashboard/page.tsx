@@ -189,34 +189,20 @@ export default async function DashboardPage() {
             )}
           </div>
 
-          {/* Server Organised Patrols Card */}
-          <div className={`border p-6 flex flex-col justify-between backdrop-blur-md transition-colors ${
-            hasAccess 
-              ? 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-700' 
-              : 'bg-neutral-950/50 border-neutral-900 opacity-60'
-          }`}>
+          {/* Server Organised Patrols Card (Unlocked for everyone) */}
+          <div className="bg-neutral-900/80 border border-neutral-800 hover:border-neutral-700 p-6 flex flex-col justify-between backdrop-blur-md transition-colors">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-200">Server Organised Patrols</h3>
-                {!hasAccess && <span className="text-[10px] font-mono text-neutral-500 uppercase">Locked</span>}
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">Review upcoming community-wide shifts, special deployment schedules, and patrol briefings.</p>
             </div>
-            {hasAccess ? (
-              <Link 
-                href="/dashboard/patrols"
-                className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer text-center block"
-              >
-                View Patrols
-              </Link>
-            ) : (
-              <button 
-                disabled
-                className="mt-6 w-full py-3 bg-neutral-900 border border-neutral-800 text-neutral-600 text-xs font-semibold tracking-wider uppercase cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            )}
+            <Link 
+              href="/dashboard/patrols"
+              className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer text-center block"
+            >
+              View Patrols
+            </Link>
           </div>
 
         </div>
