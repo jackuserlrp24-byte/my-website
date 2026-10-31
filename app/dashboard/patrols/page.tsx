@@ -29,14 +29,22 @@ export default function PatrolsPage() {
   useEffect(() => {
     async function loadInitialData() {
       try {
+        // Fetch session from multiple possible endpoints / cookies or local storage fallback
         const [sessionRes, patrolsRes] = await Promise.all([
-          fetch('/api/auth/discord/session'),
+          fetch('/api/auth/discord/session').catch(() => null),
           fetch('/api/patrols')
         ]);
 
-        if (sessionRes.ok) {
+        if (sessionRes && sessionRes.ok) {
           const sessionData = await sessionRes.json();
-          setUserNickname(sessionData?.user?.name || sessionData?.name || '');
+          setUserNickname(sessionData?.user?.name || sessionData?.name || sessionData?.displayName || '');
+        } else {
+          // Fallback: read document cookies if session endpoint is structured differently
+          const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
+          if (match) {
+            const cookieUser = JSON.parse(decodeURIComponent(match[2]));
+            setUserNickname(cookieUser.nickname || cookieUser.username || '');
+          }
         }
 
         if (patrolsRes.ok) {
