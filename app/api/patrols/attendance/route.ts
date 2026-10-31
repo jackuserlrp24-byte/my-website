@@ -57,13 +57,41 @@ export async function POST(request: Request) {
           });
         }
 
+        // Re-include components (buttons) so they don't get deleted on update
+        const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
+        const components = [
+          {
+            type: 1, // ActionRow
+            components: [
+              {
+                type: 2, // Button
+                style: 3, // Success / Green
+                label: 'Book On',
+                custom_id: 'patrol_book_on'
+              },
+              {
+                type: 2, // Button
+                style: 4, // Danger / Red
+                label: 'Not Attending',
+                custom_id: 'patrol_not_attending'
+              },
+              {
+                type: 2, // Link Button
+                style: 5, // Link
+                label: 'View Portal',
+                url: portalLink
+              }
+            ]
+          }
+        ];
+
         await fetch(`https://discord.com/api/v10/channels/${TARGET_CHANNEL_ID}/messages/${patrolRecord.discord_message_id}`, {
           method: 'PATCH',
           headers: {
             Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ embeds: [embed] })
+          body: JSON.stringify({ embeds: [embed], components })
         });
       }
     }
