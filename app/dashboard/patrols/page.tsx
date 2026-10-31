@@ -29,24 +29,20 @@ export default function PatrolsPage() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        // Fetch session from multiple possible endpoints / cookies or local storage fallback
-        const [sessionRes, patrolsRes] = await Promise.all([
-          fetch('/api/auth/discord/session').catch(() => null),
-          fetch('/api/patrols')
-        ]);
-
-        if (sessionRes && sessionRes.ok) {
-          const sessionData = await sessionRes.json();
-          setUserNickname(sessionData?.user?.name || sessionData?.name || sessionData?.displayName || '');
+        // Read user nickname directly from discord_user cookie or session endpoint
+        const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
+        if (match) {
+          const cookieUser = JSON.parse(decodeURIComponent(match[2]));
+          setUserNickname(cookieUser.nickname || cookieUser.username || '');
         } else {
-          // Fallback: read document cookies if session endpoint is structured differently
-          const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
-          if (match) {
-            const cookieUser = JSON.parse(decodeURIComponent(match[2]));
-            setUserNickname(cookieUser.nickname || cookieUser.username || '');
+          const sessionRes = await fetch('/api/auth/discord/session').catch(() => null);
+          if (sessionRes && sessionRes.ok) {
+            const sessionData = await sessionRes.json();
+            setUserNickname(sessionData?.user?.name || sessionData?.name || sessionData?.displayName || '');
           }
         }
 
+        const patrolsRes = await fetch('/api/patrols');
         if (patrolsRes.ok) {
           const patrolsData = await patrolsRes.json();
           if (patrolsData.success && Array.isArray(patrolsData.patrols)) {

@@ -113,7 +113,7 @@ export async function createManagementPatrol(formData: FormData) {
   const startTime = formData.get('startTime') as string;
   const endTime = formData.get('endTime') as string;
   const description = formData.get('description') as string;
-  const creator = formData.get('creator') as string;
+  // creator parameter is kept for signature compatibility if passed from form, but removed from footer text per your instruction
 
   if (!title) return;
 
@@ -121,12 +121,12 @@ export async function createManagementPatrol(formData: FormData) {
   const nextNum = (countRes.count || 0) + 1;
   const patrolId = `PAT-${nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : nextNum}`;
 
-  const timeString = `${startTime || 'TBD'} - ${endTime || 'TBD'}`;
+  const timeString = `${startTime || 'TBD'}\n${endTime || 'TBD'}`;
   const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
 
   const embed = {
-    title: `New Event : ${title}`,
-    description: `${description || 'No additional details provided.'}\n\n**Book Attendance:**\nYou can book on or update your status through the portal here:\n${portalLink}`,
+    title: title || 'Patrol Shift',
+    description: description || 'No additional details provided.',
     color: 5793266,
     fields: [
       { name: 'Shift ID', value: patrolId, inline: true },
@@ -137,17 +137,44 @@ export async function createManagementPatrol(formData: FormData) {
       { name: 'Not Attending (0)', value: 'No personnel marked absent.', inline: false }
     ],
     footer: {
-      text: `Central Operations Portal • Created by ${creator}`
+      text: 'Central Operations Portal'
     },
     timestamp: new Date().toISOString()
   };
+
+  // Action Row Components (Buttons)
+  const components = [
+    {
+      type: 1, // ActionRow
+      components: [
+        {
+          type: 2, // Button
+          style: 3, // Success / Green
+          label: 'Book On',
+          custom_id: 'patrol_book_on'
+        },
+        {
+          type: 2, // Button
+          style: 4, // Danger / Red
+          label: 'Not Attending',
+          custom_id: 'patrol_not_attending'
+        },
+        {
+          type: 2, // Link Button
+          style: 5, // Link
+          label: 'View Portal',
+          url: portalLink
+        }
+      ]
+    }
+  ];
 
   let discordMessageId = null;
   if (DISCORD_BOT_TOKEN) {
     const res = await fetch(`https://discord.com/api/v10/channels/${TARGET_CHANNEL_ID}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] })
+      body: JSON.stringify({ embeds: [embed], components })
     });
     if (res.ok) {
       const msgData = await res.json();
