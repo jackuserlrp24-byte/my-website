@@ -95,6 +95,7 @@ export async function createManagementPatrol(formData: FormData) {
 
   if (!title) return;
 
+  // Automatically calculate the next sequential patrol ID
   const countRes = await supabase.from('patrols').select('id', { count: 'exact', head: true });
   const nextNum = (countRes.count || 0) + 1;
   const patrolId = `PAT-${nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : nextNum}`;

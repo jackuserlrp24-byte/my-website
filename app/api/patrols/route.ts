@@ -34,7 +34,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, date, startTime, endTime, description, id } = body;
+    const { title, date, startTime, endTime, description } = body;
+
+    // Automatically calculate the next sequential patrol ID
+    const countRes = await supabase.from('patrols').select('id', { count: 'exact', head: true });
+    const nextNum = (countRes.count || 0) + 1;
+    const patrolId = `PAT-${nextNum < 10 ? `00${nextNum}` : nextNum < 100 ? `0${nextNum}` : nextNum}`;
 
     const timeString = `${startTime || 'TBD'}\n${endTime || 'TBD'}`;
     const portalLink = 'https://www.centraloperationsportal.com/dashboard/patrols';
@@ -44,7 +49,7 @@ export async function POST(request: Request) {
       description: description || 'No additional details provided.',
       color: 5793266,
       fields: [
-        { name: 'Shift ID', value: id || 'PAT-001', inline: true },
+        { name: 'Shift ID', value: patrolId, inline: true },
         { name: 'Date', value: date || 'TBD', inline: true },
         { name: 'Time', value: timeString, inline: true },
         { name: 'Status', value: 'UPCOMING', inline: false },
@@ -105,22 +110,20 @@ export async function POST(request: Request) {
       }
     }
 
-    if (id) {
-      await supabase.from('patrols').upsert({
-        id,
-        discord_message_id: discordMessageId,
-        title,
-        date,
-        time: timeString,
-        description,
-        status: 'UPCOMING',
-        attending: [],
-        unattending: [],
-        created_at: new Date().toISOString()
-      });
-    }
+    await supabase.from('patrols').upsert({
+      id: patrolId,
+      discord_message_id: discordMessageId,
+      title,
+      date,
+      time: timeString,
+      description,
+      status: 'UPCOMING',
+      attending: [],
+      unattending: [],
+      created_at: new Date().toISOString()
+    });
 
-    return NextResponse.json({ success: true, discordMessageId });
+    return NextResponse.json({ success: true, discordMessageId, patrolId });
   } catch (error) {
     console.error('Error handling patrol creation:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
