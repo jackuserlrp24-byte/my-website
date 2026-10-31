@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { verifyKey } from 'discord-interactions';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -8,17 +9,38 @@ const supabase = createClient(
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+const DISCORD_PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const signature = request.headers.get('x-signature-ed25519');
+    const timestamp = request.headers.get('x-signature-timestamp');
+    const rawBody = await request.text();
 
-    // 1. Handle Discord PING verification (required for Discord Interactions Endpoint setup)
+    // 1. Verify Request Signature from Discord
+    if (!signature || !timestamp || !DISCORD_PUBLIC_KEY) {
+      return new Response('Bad request signature', { status: 401 });
+    }
+
+    const isValidRequest = await verifyKey(
+      rawBody,
+      signature,
+      timestamp,
+      DISCORD_PUBLIC_KEY
+    );
+
+    if (!isValidRequest) {
+      return new Response('Invalid request signature', { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody);
+
+    // 2. Discord PING Verification (Returns Type 1 PONG)
     if (body.type === 1) {
       return NextResponse.json({ type: 1 });
     }
 
-    // 2. Handle Button Clicks (Interaction Type 3)
+    // 3. Handle Interactive Button Clicks (Type 3)
     if (body.type === 3) {
       const customId = body.data?.custom_id;
       if (!customId || (!customId.startsWith('patrol_book_on') && !customId.startsWith('patrol_not_attending'))) {
@@ -29,10 +51,10 @@ export async function POST(request: Request) {
       const discordId = discordUser?.id;
 
       if (!discordId) {
-        return NextResponse.json({ type: 4, data: { content: 'Could not resolve your Discord ID.', flags: 64 } });
+        return NextResponse.json({ type: 4, data: { content: 'Could not resolve Discord ID.', flags: 64 } });
       }
 
-      // 3. Resolve user's portal name / collar number from Supabase (user_whitelists)
+      // Resolve user's collar number and RP name from Supabase
       let userName = discordUser.global_name || discordUser.username;
 
       const { data: whitelistRecord } = await supabase
@@ -46,7 +68,6 @@ export async function POST(request: Request) {
         const name = whitelistRecord.rp_name || `${whitelistRecord.forename} ${whitelistRecord.surname}`;
         userName = `${collar}${name}`;
       } else if (DISCORD_BOT_TOKEN && DISCORD_GUILD_ID) {
-        // Fallback: fetch their server nickname via Discord API
         try {
           const memberRes = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${discordId}`, {
             headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` }
@@ -62,7 +83,7 @@ export async function POST(request: Request) {
         }
       }
 
-      // 4. Find the active patrol linked to this Discord message ID
+      // Find active patrol record
       const messageId = body.message?.id;
       const { data: patrol } = await supabase
         .from('patrols')
@@ -77,7 +98,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // 5. Update attendance lists
+      // Update attendance lists
       let attending: string[] = patrol.attending || [];
       let unattending: string[] = patrol.unattending || [];
 
@@ -91,13 +112,12 @@ export async function POST(request: Request) {
         unattending.push(userName);
       }
 
-      // Update Supabase database
       await supabase
         .from('patrols')
         .update({ attending, unattending })
         .eq('id', patrol.id);
 
-      // 6. Update Discord Embed Fields
+      // Rebuild Discord embed field lists
       const bookedOnList = attending.length > 0 ? attending.map((n: string) => `• ${n}`).join('\n') : 'No personnel booked on yet.';
       const notAttendingList = unattending.length > 0 ? unattending.map((n: string) => `• ${n}`).join('\n') : 'No personnel marked absent.';
 
@@ -114,7 +134,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // Type 7 = UPDATE_MESSAGE (modifies the Discord message instantly without timing out)
+      // Return UPDATE_MESSAGE response (Type 7) to Discord
       return NextResponse.json({
         type: 7,
         data: {
@@ -126,7 +146,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'Invalid interaction type' }, { status: 400 });
   } catch (err) {
-    console.error('Interaction error:', err);
+    console.error('Interaction verification error:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
