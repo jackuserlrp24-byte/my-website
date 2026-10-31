@@ -92,7 +92,11 @@ export async function POST(request: Request) {
           'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ embeds: [embed], components }),
+        body: JSON.stringify({
+          content: '@everyone',
+          embeds: [embed],
+          components
+        }),
       });
 
       if (response.ok) {

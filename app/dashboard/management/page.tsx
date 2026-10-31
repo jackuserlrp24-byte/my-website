@@ -151,7 +151,11 @@ export async function createManagementPatrol(formData: FormData) {
     const res = await fetch(`https://discord.com/api/v10/channels/${TARGET_CHANNEL_ID}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed], components })
+      body: JSON.stringify({
+        content: '@everyone',
+        embeds: [embed],
+        components
+      })
     });
     if (res.ok) {
       const msgData = await res.json();
