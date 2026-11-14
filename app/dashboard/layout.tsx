@@ -130,6 +130,20 @@ export default async function DashboardLayout({
             Dashboard
           </Link>
 
+          <Link
+            href="/dashboard/trainings"
+            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+          >
+            Trainings
+          </Link>
+
+          <Link
+            href="/dashboard/divisions"
+            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+          >
+            Divisions
+          </Link>
+
           {access.isManagement && (
             <Link
               href="/dashboard/management"

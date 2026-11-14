@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     });
 
     const tokenData = await tokenResponse.json();
-    if (!tokenResponse.ok) throw new Error('Failed to fetch token from Discord');
+    if (!tokenResponse.ok) {
+      console.error('Discord token exchange failed:', tokenResponse.status, tokenData);
+      throw new Error('Failed to fetch token from Discord');
+    }
 
     const userResponse = await fetch('https://discord.com/api/users/@me', {
       headers: {
@@ -34,7 +37,10 @@ export async function GET(request: Request) {
     });
 
     const userData = await userResponse.json();
-    if (!userResponse.ok) throw new Error('Failed to fetch user profile from Discord');
+    if (!userResponse.ok) {
+      console.error('Discord profile fetch failed:', userResponse.status, userData);
+      throw new Error('Failed to fetch user profile from Discord');
+    }
 
     const GUILD_ID = process.env.DISCORD_SERVER_ID;
     const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;

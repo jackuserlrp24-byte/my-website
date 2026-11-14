@@ -11,6 +11,13 @@ const slides = [
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('error');
+    if (code === 'auth_failed') setLoginError('Discord login failed. Please try again.');
+    else if (code === 'no_code') setLoginError('Login was cancelled or interrupted. Please try again.');
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -112,6 +119,12 @@ export default function Home() {
             To access our portal and explore additional features, please log in with your Discord account below.
           </p>
         </div>
+
+        {loginError && (
+          <div className="w-full max-w-xs bg-red-500/10 border border-red-500/30 px-3 py-2 text-xs text-red-300">
+            {loginError}
+          </div>
+        )}
 
         {/* Official Discord Login Button */}
         <div className="w-full max-w-xs mt-2">

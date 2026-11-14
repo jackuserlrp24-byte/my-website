@@ -40,9 +40,14 @@ export async function POST(request: Request) {
 
     if (body.type === 3) {
       const customId = body.data?.custom_id;
-      if (!customId || (!customId.startsWith('patrol_book_on') && !customId.startsWith('patrol_not_attending'))) {
+      const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_book_on', 'training_not_attending'];
+      if (!customId || !BUTTON_IDS.includes(customId)) {
         return NextResponse.json({ type: 4, data: { content: 'Unknown action.', flags: 64 } });
       }
+
+      // Patrol and training posts share the same roster buttons; only the table differs.
+      const table = customId.startsWith('training_') ? 'trainings' : 'patrols';
+      const recordLabel = table === 'trainings' ? 'training' : 'patrol';
 
       const member = body.member;
       const discordUser = member?.user || body.user;
@@ -85,7 +90,7 @@ export async function POST(request: Request) {
 
       const messageId = body.message?.id;
       const { data: patrol } = await supabase
-        .from('patrols')
+        .from(table)
         .select('*')
         .eq('discord_message_id', messageId)
         .maybeSingle();
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
       if (!patrol) {
         return NextResponse.json({
           type: 4,
-          data: { content: 'Error: Could not locate active patrol record for this message.', flags: 64 }
+          data: { content: `Error: Could not locate active ${recordLabel} record for this message.`, flags: 64 }
         });
       }
 
@@ -103,7 +108,7 @@ export async function POST(request: Request) {
       attending = attending.filter((n: string) => n !== userName);
       unattending = unattending.filter((n: string) => n !== userName);
 
-      const actionType = customId === 'patrol_book_on' ? 'attending' : 'unattending';
+      const actionType = customId.endsWith('_book_on') ? 'attending' : 'unattending';
       if (actionType === 'attending') {
         attending.push(userName);
       } else {
@@ -111,7 +116,7 @@ export async function POST(request: Request) {
       }
 
       await supabase
-        .from('patrols')
+        .from(table)
         .update({ attending, unattending })
         .eq('id', patrol.id);
 
