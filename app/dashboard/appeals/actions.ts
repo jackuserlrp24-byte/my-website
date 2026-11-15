@@ -51,7 +51,6 @@ export async function decideAppeal(id: string, accept: boolean, note: string): P
 
   revalidatePath('/dashboard/appeals');
   revalidatePath('/dashboard/staff/appeals');
-  revalidatePath('/dashboard/management');
   revalidatePath('/dashboard/staff/management');
   return { ok: true, message: `Appeal ${accept ? 'accepted' : 'denied'}. ${result.summary}` };
 }

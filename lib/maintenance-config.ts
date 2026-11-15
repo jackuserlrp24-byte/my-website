@@ -28,7 +28,6 @@ export const MAINTENANCE_PANELS = [
   { key: 'staff', label: 'Staff Panel', path: '/dashboard/staff' },
   { key: 'appeals', label: 'Ban Appeals (staff dashboard)', path: '/dashboard/appeals' },
   { key: 'trainer', label: 'Trainer Panel', path: '/dashboard/trainer' },
-  { key: 'management', label: 'Management', path: '/dashboard/management' },
   { key: 'command', label: 'Command (everything inside)', path: '/dashboard/command' },
   { key: 'command-met', label: 'Command: Metropolitan Police', path: '/dashboard/command/met-police' },
   { key: 'command-las', label: 'Command: London Ambulance Service (LAS)', path: '/dashboard/command/las' },

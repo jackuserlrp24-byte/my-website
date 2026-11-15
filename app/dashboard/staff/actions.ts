@@ -228,7 +228,6 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   });
 
   revalidatePath('/dashboard/staff');
-  revalidatePath('/dashboard/management');
   revalidatePath('/dashboard/staff/management');
   const done = { NOTE: 'Note added', WARN: 'Warning issued', KICK: 'Member kicked', BAN: 'Member banned', UNBAN: 'Member unbanned' }[action];
   return {

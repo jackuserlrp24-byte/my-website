@@ -10,7 +10,6 @@ const ICONS: Record<string, string> = {
   logs: 'M7 3h8l4 4v14H7V3zm8 0v4h4M10 12h6M10 16h6',
   patrols: 'M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zm0-8a3 3 0 100-6 3 3 0 000 6z',
   appeals: 'M12 3v18M5 7h14M5 7l-2 6a3 3 0 006 0L7 7M19 7l-2 6a3 3 0 006 0l-2-6',
-  management: 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.3 6.8 19.1l1-5.8L3.5 9.2l5.9-.9L12 3z',
 };
 
 interface Item {
@@ -28,17 +27,14 @@ const STAFF_ITEMS: Item[] = [
   { href: '/dashboard/staff/patrols', label: 'Patrols', hint: 'Shifts & attendance', icon: 'patrols' },
   { href: '/dashboard/staff/appeals', label: 'Ban Appeals', hint: 'Review appeals', icon: 'appeals' },
 ];
-const MANAGEMENT_ITEMS: Item[] = [{ href: '/dashboard/staff/management', label: 'Management', hint: 'Notices, whitelists & patrols', icon: 'management' }];
 
 type Pill = { top: number; left: number; width: number; height: number };
 
 export default function StaffSidebar({
   pendingAppeals,
-  isManagement,
   showPatrols,
 }: {
   pendingAppeals: number;
-  isManagement: boolean;
   showPatrols: boolean;
 }) {
   const pathname = usePathname();
@@ -115,13 +111,6 @@ export default function StaffSidebar({
           <p className="hidden lg:block px-4 pt-3 pb-1 text-[10px] font-mono text-[#5865F2] tracking-widest uppercase">Staff</p>
           {staffItems.map(renderItem)}
 
-          {isManagement && (
-            <>
-              <div className="hidden lg:block mx-4 my-2 h-px bg-neutral-800" aria-hidden />
-              <p className="hidden lg:block px-4 pt-1 pb-1 text-[10px] font-mono text-amber-400 tracking-widest uppercase">Management</p>
-              {MANAGEMENT_ITEMS.map(renderItem)}
-            </>
-          )}
         </nav>
       </div>
     </aside>
