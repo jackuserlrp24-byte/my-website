@@ -54,12 +54,11 @@ export async function GET(request: Request) {
       return fail('auth_failed');
     }
 
-    // Server nickname + roles are a bonus – a failure here must NEVER block the login.
+    // Server nickname is a bonus – a failure here must NEVER block the login.
     const GUILD_ID = process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID;
     const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
     let serverNickname: string = userData.global_name || userData.username;
-    let memberRoles: string[] = [];
 
     if (GUILD_ID && BOT_TOKEN) {
       try {
@@ -70,7 +69,6 @@ export async function GET(request: Request) {
         if (memberRes.ok) {
           const memberData = await memberRes.json();
           serverNickname = memberData.nick || serverNickname;
-          memberRoles = memberData.roles || [];
         }
       } catch (err) {
         console.error('Could not fetch server member data:', err);
@@ -88,7 +86,6 @@ export async function GET(request: Request) {
       global_name: userData.global_name ?? undefined,
       nickname: serverNickname,
       avatar: userData.avatar,
-      roles: memberRoles,
     });
     return res;
   } catch (error) {

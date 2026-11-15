@@ -38,7 +38,7 @@ export default async function ManagementLayout({
   const user = userCookie ? JSON.parse(userCookie) : null;
 
   if (!user?.id) {
-    redirect('/api/auth/discord/login');
+    redirect('/api/auth/discord');
   }
 
   const isManagement = await verifyManagementAccess(user.id);

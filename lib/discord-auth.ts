@@ -25,7 +25,12 @@ export const SESSION_COOKIE = 'discord_user';
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, sliding on every login
 
 export function setSessionCookie(res: NextResponse, value: object) {
-  res.cookies.set(SESSION_COOKIE, JSON.stringify(value), {
+  const json = JSON.stringify(value);
+  // Browsers silently drop cookies over ~4KB, which looks like a login loop. Warn loudly in the logs.
+  if (encodeURIComponent(json).length > 3500) {
+    console.error('Session cookie is close to / over the 4KB browser limit:', json.length);
+  }
+  res.cookies.set(SESSION_COOKIE, json, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax', // survives the redirect back from discord.com on every browser / device
