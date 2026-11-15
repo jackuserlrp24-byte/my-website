@@ -8,6 +8,7 @@ export interface Division {
   sort_order: number;
   status: 'open' | 'closed';
   application_url: string | null; // Google Form link, opened when someone clicks the division name
+  discord_role_id?: string | null; // given to the applicant on the Discord server when their application is accepted
 }
 
 export interface Training {

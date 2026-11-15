@@ -1,6 +1,14 @@
 import Link from 'next/link';
+import { getPortalUser } from '@/lib/portal';
+import { COMMAND_DEPARTMENTS, canOpenDepartment } from '@/lib/departments';
 
-export default function CommandHubPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function CommandHubPage() {
+  const user = await getPortalUser();
+  const can = (slug: string) =>
+    !!user && canOpenDepartment(user.roles, user.isManagement, COMMAND_DEPARTMENTS[slug]);
+
   const departments = [
     {
       title: 'Metropolitan Police Command',
@@ -14,18 +22,18 @@ export default function CommandHubPage() {
     {
       title: 'London Ambulance Service Command',
       subtitle: 'LAS',
-      description: 'Manage clinical staff qualifications, paramedic shift deployments, training rosters, and emergency medical operational directives.',
+      description: 'Run LAS and Control recruitment: open or close divisions, set application links and review applications.',
       href: '/dashboard/command/las',
-      available: false,
+      available: can('las'),
       accentColor: 'bg-emerald-600',
       badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
     },
     {
       title: 'London Fire Brigade Command',
       subtitle: 'LFB',
-      description: 'Oversee appliance commanders, pump allocation, specialized rescue training logs, and brigade documentation.',
+      description: 'Run LFB and Control recruitment: open or close divisions, set application links and review applications.',
       href: '/dashboard/command/lfb',
-      available: false,
+      available: can('lfb'),
       accentColor: 'bg-amber-600',
       badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30'
     },
@@ -83,7 +91,7 @@ export default function CommandHubPage() {
                 </Link>
               ) : (
                 <div className="w-full py-2.5 border border-neutral-800 text-neutral-600 text-xs font-semibold uppercase tracking-wider flex items-center justify-center">
-                  Coming soon
+                  Met Police Gold Command only
                 </div>
               )}
             </div>

@@ -26,6 +26,8 @@ create table if not exists divisions (
 
 -- For databases that already had the divisions table:
 alter table divisions add column if not exists application_url text;
+-- Discord role given to people accepted into the division (optional)
+alter table divisions add column if not exists discord_role_id text;
 
 create table if not exists division_applications (
   id uuid primary key default gen_random_uuid(),
@@ -149,6 +151,19 @@ insert into divisions (id, name, department, description, sort_order) values
   ('mo9',            'MO9 | Met Detention',                    'MET POLICE', 'Custody suite and prisoner processing.', 11),
   ('mo12',           'MO12 | MetCC',                           'MET POLICE', 'Control room dispatch and radio procedures.', 12),
   ('mo19',           'MO19 | Firearms Command',                'MET POLICE', 'Authorised Firearms Officers and ARV.', 13)
+on conflict (id) do update set
+  name = excluded.name,
+  department = excluded.department,
+  description = excluded.description,
+  sort_order = excluded.sort_order;
+
+-- ---------- Recruitment divisions: LAS, LFB, Control ----------
+-- New divisions start CLOSED. Open them from the portal (Divisions page or the LAS / LFB Command suite).
+-- discord_role_id = role given when an application is accepted. Seeded on first run only; edit it later in Supabase.
+insert into divisions (id, name, department, description, sort_order, discord_role_id) values
+  ('las-recruitment',     'LAS | Recruitment',     'LAS',     'London Ambulance Service recruitment.', 1, '1571508649824620645'),
+  ('lfb-recruitment',     'LFB | Recruitment',     'LFB',     'London Fire Brigade recruitment.',      1, '1571508649824620645'),
+  ('control-recruitment', 'Control | Recruitment', 'CONTROL', 'Control room recruitment.',             1, '1571508649824620645')
 on conflict (id) do update set
   name = excluded.name,
   department = excluded.department,

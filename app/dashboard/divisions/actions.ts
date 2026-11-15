@@ -2,17 +2,27 @@
 
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import { logEmbed } from '@/lib/discord';
+import { addGuildRole, logEmbed } from '@/lib/discord';
+import { GOLD_MANAGED_DEPARTMENTS } from '@/lib/departments';
+import { GOLD_ROLE_ID } from '@/lib/training-config';
 import { syncDivisionsEmbed } from '@/lib/divisions-sync';
 import type { ActionResult, Division } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
+/** Management can manage every division. Gold Command can manage the LAS / LFB / Control recruitment divisions. */
+function canManage(user: NonNullable<Awaited<ReturnType<typeof getPortalUser>>>, department: string | null | undefined) {
+  if (user.isManagement) return true;
+  return !!department && GOLD_MANAGED_DEPARTMENTS.includes(department) && !!GOLD_ROLE_ID && user.roles.includes(GOLD_ROLE_ID);
+}
+
 const field = (fd: FormData, key: string, max: number) => String(fd.get(key) ?? '').trim().slice(0, max);
 
 export async function setDivisionStatus(divisionId: string, status: 'open' | 'closed'): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.isManagement) return fail('You do not have permission to change division status.');
+  if (!user) return fail('Please log in again.');
   if (status !== 'open' && status !== 'closed') return fail('Invalid status.');
+  const { data: target } = await supabaseAdmin.from('divisions').select('department').eq('id', divisionId).maybeSingle();
+  if (!canManage(user, target?.department)) return fail('You do not have permission to change division status.');
 
   const { data, error } = await supabaseAdmin
     .from('divisions')
@@ -26,6 +36,7 @@ export async function setDivisionStatus(divisionId: string, status: 'open' | 'cl
   const synced = await syncDivisionsEmbed();
 
   revalidatePath('/dashboard/divisions');
+  revalidatePath('/dashboard/command', 'layout');
   return {
     ok: true,
     message: `${data.name} is now ${status.toUpperCase()}.${synced ? '' : ' Discord embed could not be updated (check the bot token and channel permissions).'}`,
@@ -123,8 +134,17 @@ export async function decideApplication(
   note: string
 ): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.isManagement) return fail('You do not have permission to review applications.');
+  if (!user) return fail('Please log in again.');
   if (decision !== 'accepted' && decision !== 'rejected') return fail('Invalid decision.');
+
+  const { data: app } = await supabaseAdmin
+    .from('division_applications')
+    .select('division_id, divisions(department)')
+    .eq('id', applicationId)
+    .maybeSingle();
+  const dept = (app as { divisions?: { department?: string } | { department?: string }[] | null } | null)?.divisions;
+  const department = Array.isArray(dept) ? dept[0]?.department : dept?.department;
+  if (!canManage(user, department)) return fail('You do not have permission to review applications.');
 
   const { data, error } = await supabaseAdmin
     .from('division_applications')
@@ -136,10 +156,20 @@ export async function decideApplication(
     })
     .eq('id', applicationId)
     .eq('status', 'pending')
-    .select('*, divisions(name)')
+    .select('*, divisions(name, discord_role_id)')
     .maybeSingle();
 
   if (error || !data) return fail('That application was already reviewed or no longer exists.');
+
+  // Accepted into a division that has a Discord role set -> give them the role.
+  let roleNote = '';
+  const roleId = (data.divisions as { discord_role_id?: string | null } | null)?.discord_role_id;
+  if (decision === 'accepted' && roleId) {
+    const given = await addGuildRole(data.discord_id, roleId);
+    roleNote = given
+      ? ' Discord role given.'
+      : ' (Could not give the Discord role - check the bot has Manage Roles and its role is above it.)';
+  }
 
   await logEmbed(
     `APPLICATION ${decision.toUpperCase()}`,
@@ -153,5 +183,6 @@ export async function decideApplication(
   );
 
   revalidatePath('/dashboard/divisions');
-  return { ok: true, message: `Application ${decision}.` };
+  revalidatePath('/dashboard/command', 'layout');
+  return { ok: true, message: `Application ${decision}.${roleNote}` };
 }
