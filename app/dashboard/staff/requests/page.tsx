@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import LocalTime from '@/app/components/LocalTime';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
@@ -33,7 +32,7 @@ export default async function StaffRequestsPage() {
   const history = all.filter((r) => !isOpen(r));
 
   return (
-    <main className="flex flex-col px-8 mt-6 max-w-[1100px] mx-auto w-full gap-6 pb-16 select-none antialiased">
+    <main className="flex flex-col w-full gap-6 pb-16 select-none antialiased">
       <AutoRefresh />
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
@@ -44,9 +43,6 @@ export default async function StaffRequestsPage() {
             Players asking for staff with /staffrequest in game. Updates by itself. Accept or deny requests in game with /acceptrequest and /denyrequest.
           </p>
         </div>
-        <Link href="/dashboard/staff" className="px-4 py-2 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[11px] font-mono uppercase tracking-wider">
-          &larr; Staff Panel
-        </Link>
       </div>
 
       {error && (

@@ -170,27 +170,9 @@ export default async function DashboardLayout({
           {access.isStaff && (
             <Link
               href="/dashboard/staff"
-              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-            >
-              Staff Panel
-            </Link>
-          )}
-
-          {access.isStaff && (
-            <Link
-              href="/dashboard/staff/requests"
-              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-            >
-              Staff Requests
-            </Link>
-          )}
-
-          {access.isStaff && (
-            <Link
-              href="/dashboard/appeals"
               className="relative px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
-              Ban Appeals
+              Staff Panel
               {pendingAppeals > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-mono font-bold rounded-full">{pendingAppeals}</span>
               )}

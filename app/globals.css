@@ -21,3 +21,23 @@
 .suggestions {
   font-family: 'Inter', sans-serif !important;
 }
+/* ---------- Staff section: animated sidebar + page transitions ---------- */
+@keyframes staff-slide-in {
+  from { opacity: 0; transform: translateX(-28px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes staff-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes staff-pulse-badge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  50%      { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+}
+.staff-sidebar { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.staff-item    { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.staff-page-enter { animation: staff-fade-up 0.35s ease-out both; }
+.staff-badge   { animation: staff-pulse-badge 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .staff-sidebar, .staff-item, .staff-page-enter, .staff-badge { animation: none; }
+}
