@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { canReviewRoleRequests, supabaseAdmin } from '@/lib/portal';
 import { sendDm } from '@/lib/discord';
 import { reviewRoleRequest } from '@/lib/role-requests';
+import { reviewAppeal } from '@/lib/appeals';
 import { roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import type { Training } from '@/lib/portal-types';
@@ -21,7 +22,7 @@ type Interaction = {
   application_id?: string;
   token?: string;
   member?: { roles?: string[]; nick?: string; user?: { username?: string; global_name?: string } };
-  message?: { id?: string };
+  message?: { id?: string; embeds?: Record<string, unknown>[] };
 };
 
 const reply = (content: string) => NextResponse.json({ type: 4, data: { content, flags: 64 } });
@@ -94,6 +95,96 @@ async function handleRoleRequestButton(body: Interaction, customId: string) {
   return NextResponse.json({ type: 7, data: roleRequestPayload(result.row, result.label, false) });
 }
 
+// ---- Ban appeal tickets ----
+const reviewerName = (b: Interaction) => b.member?.nick || b.member?.user?.global_name || b.member?.user?.username || 'Staff';
+
+async function editOriginal(body: Interaction, payload: object) {
+  if (!body.application_id || !body.token) return;
+  await fetch(`https://discord.com/api/v10/webhooks/${body.application_id}/${body.token}/messages/@original`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+
+async function followUp(body: Interaction, content: string) {
+  if (!body.application_id || !body.token) return;
+  await fetch(`https://discord.com/api/v10/webhooks/${body.application_id}/${body.token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ flags: 64, content }),
+  }).catch(() => {});
+}
+
+/** Runs after we have already answered Discord (deferred), because unbanning + DMing can take longer than 3 seconds. */
+function finishAppeal(body: Interaction, id: string, accept: boolean, note: string) {
+  after(async () => {
+    const result = await reviewAppeal(id, accept, reviewerName(body), note);
+    if (!result.ok) return followUp(body, result.message);
+
+    const embeds = [
+      ...(body.message?.embeds ?? []),
+      {
+        title: accept ? 'APPEAL ACCEPTED' : 'APPEAL DENIED',
+        color: accept ? 5763719 : 15548997,
+        description: `${accept ? 'Accepted' : 'Denied'} by **${reviewerName(body)}**.${note ? `\n**Note:** ${note.slice(0, 800)}` : ''}\n${result.summary}`,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+    await editOriginal(body, { embeds, components: [] });
+  });
+  return NextResponse.json({ type: 6 }); // deferred update - buttons stay until the work is done
+}
+
+function handleAppealButton(body: Interaction, customId: string) {
+  if (!canReviewRoleRequests(body.member?.roles ?? [])) {
+    return reply('Only Gold Command and management can decide ban appeals.');
+  }
+  const [action, id] = customId.split(':');
+  if (!id) return reply('Invalid appeal button.');
+
+  if (action === 'appeal_accept') return finishAppeal(body, id, true, '');
+
+  if (action === 'appeal_deny') {
+    // Ask for the reason the player will be shown.
+    return NextResponse.json({
+      type: 9,
+      data: {
+        custom_id: `appeal_denymodal:${id}`,
+        title: 'Deny ban appeal',
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 4,
+                custom_id: 'note',
+                label: 'Reason shown to the player',
+                style: 2,
+                min_length: 3,
+                max_length: 800,
+                required: true,
+                placeholder: 'Why the ban stays in place',
+              },
+            ],
+          },
+        ],
+      },
+    });
+  }
+  return reply('Unknown appeal action.');
+}
+
+function handleAppealModal(body: Interaction & { data?: { custom_id?: string; components?: { components?: { custom_id?: string; value?: string }[] }[] } }) {
+  if (!canReviewRoleRequests(body.member?.roles ?? [])) {
+    return reply('Only Gold Command and management can decide ban appeals.');
+  }
+  const id = body.data?.custom_id?.split(':')[1];
+  const note = body.data?.components?.flatMap((r) => r.components ?? []).find((c) => c.custom_id === 'note')?.value?.trim() ?? '';
+  if (!id) return reply('Invalid appeal form.');
+  return finishAppeal(body, id, false, note);
+}
+
 export async function POST(request: Request) {
   try {
     const signature = request.headers.get('x-signature-ed25519');
@@ -125,6 +216,9 @@ export async function POST(request: Request) {
       const customId = body.data?.custom_id;
       if (customId?.startsWith('rolereq_')) {
         return handleRoleRequestButton(body, customId);
+      }
+      if (customId?.startsWith('appeal_')) {
+        return handleAppealButton(body, customId);
       }
       const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending', 'training_cant_make_it'];
       if (!customId || !BUTTON_IDS.includes(customId)) {
@@ -233,6 +327,11 @@ export async function POST(request: Request) {
           components: body.message?.components || []
         }
       });
+    }
+
+    // Modal submit (deny reason)
+    if (body.type === 5 && String(body.data?.custom_id ?? '').startsWith('appeal_denymodal:')) {
+      return handleAppealModal(body);
     }
 
     return NextResponse.json({ error: 'Invalid interaction type' }, { status: 400 });

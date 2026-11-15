@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import {
+  ALLOWED_NEXT,
+  NEXT_COOKIE,
   fetchWithRetry,
   getRedirectUri,
   setSessionCookie,
@@ -74,7 +77,10 @@ export async function GET(request: Request) {
       }
     }
 
-    const res = NextResponse.redirect(siteUrl('/dashboard'));
+    const wanted = (await cookies()).get(NEXT_COOKIE)?.value;
+    const destination = wanted && ALLOWED_NEXT.includes(wanted) ? wanted : '/dashboard';
+    const res = NextResponse.redirect(siteUrl(destination));
+    res.cookies.delete(NEXT_COOKIE);
     res.headers.set('Cache-Control', 'no-store');
     setSessionCookie(res, {
       id: userData.id,

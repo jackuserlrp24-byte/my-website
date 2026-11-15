@@ -126,6 +126,27 @@ create table if not exists game_actions (
 );
 create index if not exists game_actions_status_idx on game_actions (status, created_at);
 
+
+-- ---------- Ban appeals (web form -> private ticket channel with Accept / Deny buttons) ----------
+create table if not exists ban_appeals (
+  id uuid primary key default gen_random_uuid(),
+  discord_id text not null,
+  username text,
+  rp_name text,
+  ban_reason text,              -- what the player says they were banned for
+  appeal_reason text not null,  -- why they should be unbanned
+  extra text,                   -- evidence / anything else
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'denied')),
+  reviewed_by text,
+  review_note text,
+  channel_id text,              -- the private ticket channel
+  message_id text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz
+);
+create unique index if not exists one_pending_appeal_per_user on ban_appeals (discord_id) where status = 'pending';
+create index if not exists ban_appeals_discord_idx on ban_appeals (discord_id, created_at desc);
+
 -- ---------- Lock out the anon key (the site uses the service-role key) ----------
 alter table portal_settings enable row level security;
 alter table divisions enable row level security;
@@ -134,6 +155,7 @@ alter table trainings enable row level security;
 alter table role_requests enable row level security;
 alter table moderation_logs enable row level security;
 alter table game_actions enable row level security;
+alter table ban_appeals enable row level security;
 
 -- ---------- Seed / refresh divisions ----------
 -- Updates names, descriptions and order, but never touches open/closed status.

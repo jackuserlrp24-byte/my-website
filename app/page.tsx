@@ -83,6 +83,7 @@ export default function Home() {
             <a href="/about" className="text-neutral-400 hover:text-white transition-colors">About Us</a>
             <a href="/tos" className="text-neutral-400 hover:text-white transition-colors">TOS</a>
             <a href="/info" className="text-neutral-400 hover:text-white transition-colors">Additional Information</a>
+            <a href="/appeal" className="text-neutral-400 hover:text-white transition-colors">Ban Appeal</a>
           </nav>
 
           <button
