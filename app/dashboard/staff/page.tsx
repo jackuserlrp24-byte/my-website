@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import type { GameAction, ModerationLog } from '@/lib/portal-types';
 import StaffClient from './StaffClient';
+import AopCard from './AopCard';
+import { getAop } from '@/lib/aop';
 import ManagementClient from './ManagementClient';
 import { loadManagementData } from './management-data';
 import {
@@ -62,9 +64,10 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
     );
   }
 
-  const [{ data }, { data: game }] = await Promise.all([
+  const [{ data }, { data: game }, aop] = await Promise.all([
     supabaseAdmin.from('moderation_logs').select('*').order('created_at', { ascending: false }).limit(30),
     supabaseAdmin.from('game_actions').select('*').order('created_at', { ascending: false }).limit(12),
+    getAop(),
   ]);
 
   return (
@@ -74,6 +77,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
         canModerate={user.canModerate}
         recent={(data ?? []) as ModerationLog[]}
         gameActions={(game ?? []) as GameAction[]}
+        topExtra={<AopCard initial={aop} />}
       />
     </>
   );

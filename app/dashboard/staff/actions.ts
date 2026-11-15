@@ -16,6 +16,8 @@ import {
 } from '@/lib/discord';
 import { GOLD_ROLE_ID, MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
 import { queueGameAction } from '@/lib/game-actions';
+import { getAop, saveAop } from '@/lib/aop';
+import { AOP_AREAS, formatAop } from '@/lib/aop-config';
 import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
 
 // Warn / kick / ban logs go to the moderation channel only (never the role request channel).
@@ -234,4 +236,27 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
     ok: true,
     message: `${done} and logged.${gameQueued ? ' Sent to the game server - it applies within a few seconds (see "In-game actions").' : ''}${unbanDm ? (unbanDm.inviteUrl ? ` New rejoin invite ${unbanDm.dmSent ? 'sent by DM' : 'created, but the DM could not be delivered - give them this link: ' + unbanDm.inviteUrl}.` : ' No new invite sent (already in server or bot lacks Create Invite).') : ''}${error ? ' (Warning: could not save to moderation_logs - check the table columns.)' : ''}`,
   };
+}
+
+/** The AOP currently set for the game server (staff panel card). */
+export async function getCurrentAop() {
+  const user = await getPortalUser();
+  if (!user?.canStaff) return null;
+  return getAop();
+}
+
+/** Sets the AOP from the staff panel. The FiveM server picks it up within ~10 seconds and shows it on every HUD. */
+export async function setAop(areas: string[]): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.canStaff) return fail('You do not have permission to change the AOP.');
+
+  const valid = (Array.isArray(areas) ? areas : []).filter((a) => (AOP_AREAS as readonly string[]).includes(a));
+  if (!valid.length) return fail('Pick at least one area.');
+
+  const aop = formatAop(valid);
+  const stamp = await saveAop(aop, user.name);
+  if (!stamp) return fail('Could not save the AOP. Try again.');
+
+  revalidatePath('/dashboard/staff');
+  return { ok: true, message: `AOP set to ${aop}. It shows in game within a few seconds.` };
 }

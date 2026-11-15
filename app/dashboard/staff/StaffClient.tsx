@@ -46,7 +46,9 @@ export default function StaffClient({
   canModerate,
   recent,
   gameActions,
+  topExtra,
 }: {
+  topExtra?: React.ReactNode;
   canModerate: boolean;
   recent: ModerationLog[];
   gameActions: GameAction[];
@@ -144,6 +146,8 @@ export default function StaffClient({
           Management &gt; Moderation Logs, and in the moderation log channel.
         </p>
       </div>
+
+      {topExtra}
 
       {result && (
         <div
