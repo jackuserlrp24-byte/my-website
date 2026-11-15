@@ -19,7 +19,8 @@ function Worker({
   children?: React.ReactNode;
 }) {
   return (
-    <g transform={`translate(${x} 93)${flip ? ' scale(-1 1)' : ''}`}>
+    <g transform={`translate(${x} 93)`}>
+      <g className="mt-face" style={flip ? { transform: 'scaleX(-1)' } : undefined}>
       <g className="mt-bob" style={{ animationDelay: `${delay}s` }}>
         {/* legs + boots */}
         <rect x={-6} y={-14} width={5} height={14} rx={1.5} fill="#52525b" />
@@ -41,6 +42,7 @@ function Worker({
         <rect x={-11} y={-53} width={22} height={3} rx={1.5} fill={hat} />
         <rect x={-1.2} y={-61} width={2.4} height={8} rx={1} fill="#000" opacity={0.12} />
         {children}
+      </g>
       </g>
     </g>
   );
@@ -86,7 +88,7 @@ function Crew() {
       </g>
 
       {/* worker 1: hammering the sign */}
-      <Worker x={70} skin="#f1c9a5" hat="#facc15" vest="#f97316">
+      <g className="mt-walk mt-walk-3"><Worker x={70} skin="#f1c9a5" hat="#facc15" vest="#f97316">
         <g transform="translate(9 -38)">
           <g className="mt-hammer">
             <line x1={0} y1={0} x2={12} y2={0} stroke="#f97316" strokeWidth={4} strokeLinecap="round" />
@@ -94,7 +96,7 @@ function Crew() {
             <rect x={22} y={-5} width={7} height={10} rx={1} fill="#9ca3af" />
           </g>
         </g>
-      </Worker>
+      </Worker></g>
       <g transform="translate(104 61)">
         <g className="mt-spark" opacity={0}>
           <path d="M0 -6v-5M5 -4l4 -4M6 1h5M5 6l4 4" stroke="#fde68a" strokeWidth={1.5} strokeLinecap="round" />
@@ -102,7 +104,7 @@ function Crew() {
       </g>
 
       {/* worker 2: wrench on the machine */}
-      <Worker x={176} skin="#b9825b" hat="#fb923c" vest="#a3e635" delay={0.4}>
+      <g className="mt-walk mt-walk-2"><Worker x={176} skin="#b9825b" hat="#fb923c" vest="#a3e635" delay={0.4}>
         <g transform="translate(9 -38)">
           <g className="mt-wrench">
             <line x1={0} y1={0} x2={11} y2={0} stroke="#a3e635" strokeWidth={4} strokeLinecap="round" />
@@ -110,18 +112,18 @@ function Crew() {
             <circle cx={21} cy={0} r={3} fill="none" stroke="#d4d4d8" strokeWidth={2} />
           </g>
         </g>
-      </Worker>
+      </Worker></g>
 
       {/* worker 3: scratching their head */}
-      <Worker x={262} flip skin="#8a5a3c" hat="#f5f5f5" vest="#f97316" delay={0.8}>
+      <g className="mt-walk mt-walk-1"><Worker x={262} flip skin="#8a5a3c" hat="#f5f5f5" vest="#f97316" delay={0.8}>
         <g transform="translate(9 -38)">
           <g className="mt-scratch">
             <line x1={0} y1={0} x2={11} y2={0} stroke="#f97316" strokeWidth={4} strokeLinecap="round" />
             <circle cx={12.5} cy={0} r={2.5} fill="#8a5a3c" />
           </g>
         </g>
-      </Worker>
-      <g fill="#737373">
+      </Worker></g>
+      <g fill="#737373" className="mt-thoughts">
         <circle cx={250} cy={30} r={1.6} className="mt-think" style={{ animationDelay: '0s' }} />
         <circle cx={256} cy={26} r={1.6} className="mt-think" style={{ animationDelay: '0.3s' }} />
         <circle cx={263} cy={23} r={1.6} className="mt-think" style={{ animationDelay: '0.6s' }} />
@@ -157,11 +159,7 @@ export default function MaintenanceScreen({
           <Image src="/logo.png" alt="Logo" fill sizes="56px" className="object-cover" />
         </div>
 
-        <span className={`inline-flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase mb-2 ${accentText}`}>
-          <span className="relative flex h-1.5 w-1.5" aria-hidden>
-            <span className={`mt-ping absolute inline-flex h-full w-full rounded-full ${accentBg}`} />
-            <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${accentBg}`} />
-          </span>
+        <span className={`block text-[10px] font-mono tracking-widest uppercase mb-2 ${accentText}`}>
           {soon ? 'Coming soon' : 'Under maintenance'}
         </span>
 
@@ -175,7 +173,10 @@ export default function MaintenanceScreen({
           <span className={`absolute inset-y-0 left-0 w-2/5 ${accentBg}`} />
         </div>
         <p className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider mt-4">
-          {soon ? 'This page updates automatically when it goes live.' : "This page refreshes automatically when we're back."}
+          <span className="mt-wait">
+            {soon ? 'This page updates automatically when it goes live.' : "This page refreshes automatically when we're back."}
+          </span>
+          <span className="mt-back">{soon ? "It's live." : "We're back."}</span>
         </p>
 
         {devLogin && (
