@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, postMessage, sendDm } from '@/lib/discord';
-import { trainingDmPayload, trainingPayload } from '@/lib/embeds';
-import { bookOnTraining } from '@/lib/training-attend';
+import { trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import { londonLocalToUtc } from '@/lib/london-time';
 import type { ActionResult, Training } from '@/lib/portal-types';
 
@@ -92,7 +92,7 @@ export async function attendTraining(trainingId: string): Promise<ActionResult> 
   const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
   if (!data) return fail('Training not found.');
 
-  const result = await bookOnTraining(data as Training, user.name, user.roles);
+  const result = await bookOnTraining(data as Training, user.name, user.roles, user.id);
   if (result.status === 'already') return { ok: true, message: 'You are already booked on this training.' };
   if (result.status !== 'booked') return fail(result.message);
 
@@ -115,6 +115,91 @@ export async function attendTraining(trainingId: string): Promise<ActionResult> 
     message: dmSent
       ? 'Booked on. Check your Discord DMs for the details and which VC to wait in.'
       : 'Booked on, but I could not DM you - turn on DMs from server members so you get reminders.',
+  };
+}
+
+export async function cantMakeTrainingAction(trainingId: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user) return fail('Please log in again.');
+
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return fail('Training not found.');
+
+  const result = await cantMakeTraining(data as Training, user.name, user.id);
+  if (result.status === 'already') return { ok: true, message: "You're already marked as unable to make this training." };
+  if (result.status !== 'removed') return fail(result.message.replace(/\*\*/g, ''));
+
+  const training = result.training;
+  if (training.discord_message_id) {
+    await editMessage(
+      training.discord_channel_id || TRAININGS_CHANNEL_ID,
+      training.discord_message_id,
+      trainingPayload(training, await divisionName(training.division_id))
+    );
+  }
+
+  revalidatePath('/dashboard/trainings');
+  return { ok: true, message: "Marked as can't make it. You've been taken off the attending list." };
+}
+
+const MAX_DELAY_MINUTES = 240;
+
+/** Trainers only: push a training back by N minutes, update the Discord post and DM everyone booked on. */
+export async function delayTraining(trainingId: string, minutes: number, reason: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.isTrainer) return fail('Only trainers can delay trainings.');
+
+  const mins = Math.round(Number(minutes));
+  if (!Number.isFinite(mins) || mins < 1 || mins > MAX_DELAY_MINUTES) {
+    return fail(`Delay must be between 1 and ${MAX_DELAY_MINUTES} minutes.`);
+  }
+  const note = String(reason ?? '').trim().slice(0, 200);
+
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return fail('Training not found.');
+  const current = data as Training;
+  if (new Date(current.ends_at) < new Date()) return fail('This training has already finished.');
+
+  const shift = mins * 60 * 1000;
+  const { data: row, error } = await supabaseAdmin
+    .from('trainings')
+    .update({
+      starts_at: new Date(new Date(current.starts_at).getTime() + shift).toISOString(),
+      ends_at: new Date(new Date(current.ends_at).getTime() + shift).toISOString(),
+      delayed_minutes: (current.delayed_minutes ?? 0) + mins,
+      delay_reason: note || current.delay_reason,
+      original_starts_at: current.original_starts_at ?? current.starts_at,
+    })
+    .eq('id', trainingId)
+    .select('*')
+    .single();
+
+  if (error || !row) {
+    console.error('Training delay failed:', error);
+    return fail('Could not delay the training. Have you run the latest supabase/full-setup.sql?');
+  }
+
+  const training = row as Training;
+  const divName = await divisionName(training.division_id);
+
+  if (training.discord_message_id) {
+    const channel = training.discord_channel_id || TRAININGS_CHANNEL_ID;
+    await editMessage(channel, training.discord_message_id, trainingPayload(training, divName));
+    await postMessage(channel, {
+      content: `**${training.id} delayed by ${mins} minutes.** New start: <t:${Math.floor(new Date(training.starts_at).getTime() / 1000)}:t> (<t:${Math.floor(new Date(training.starts_at).getTime() / 1000)}:R>).${note ? ` Reason: ${note}` : ''}`,
+      message_reference: { message_id: training.discord_message_id, fail_if_not_exists: false },
+      allowed_mentions: { parse: [] },
+    });
+  }
+
+  const ids = training.attending_ids ?? [];
+  const results = await Promise.all(ids.map((id) => sendDm(id, trainingDelayDmPayload(training, divName))));
+  const dmd = results.filter(Boolean).length;
+
+  revalidatePath('/dashboard/trainings');
+  return {
+    ok: true,
+    message: `${training.id} delayed by ${mins} minutes. ${dmd} of ${ids.length} attendee${ids.length === 1 ? '' : 's'} DMed.`,
   };
 }
 

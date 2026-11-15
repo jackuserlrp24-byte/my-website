@@ -32,6 +32,34 @@ export async function setDivisionStatus(divisionId: string, status: 'open' | 'cl
   };
 }
 
+/** Command / management: set the Google Form link that opens when someone clicks the division name. */
+export async function setDivisionLink(divisionId: string, url: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.isCommand && !user?.isManagement) return fail('You do not have permission to edit application links.');
+
+  const link = String(url ?? '').trim().slice(0, 500);
+  if (link && !/^https:\/\//i.test(link)) return fail('The link must start with https://');
+
+  const { data, error } = await supabaseAdmin
+    .from('divisions')
+    .update({ application_url: link || null, updated_by: user.name, updated_at: new Date().toISOString() })
+    .eq('id', divisionId)
+    .select('name')
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error('Division link update failed:', error);
+    return fail('Could not save the link. Have you run the latest supabase/full-setup.sql?');
+  }
+
+  const synced = await syncDivisionsEmbed();
+  revalidatePath('/dashboard/divisions');
+  return {
+    ok: true,
+    message: `${data.name}: ${link ? 'application link saved.' : 'application link removed.'}${synced ? '' : ' (Discord embed could not be updated.)'}`,
+  };
+}
+
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
   const user = await getPortalUser();
   if (!user) return fail('Please log in again.');

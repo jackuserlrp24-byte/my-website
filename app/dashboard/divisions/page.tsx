@@ -35,12 +35,12 @@ export default async function DivisionsPage() {
 
   return (
     <DivisionsClient
-      user={{ name: user.name, isManagement: user.isManagement, canViewApplications: user.canViewApplications }}
+      user={{ name: user.name, isManagement: user.isManagement, isCommand: user.isCommand, canViewApplications: user.canViewApplications }}
       divisions={(divisionsRes.data ?? []) as Division[]}
       myApplications={(mineRes.data ?? []) as DivisionApplication[]}
       pendingApplications={(pendingRes.data ?? []) as DivisionApplication[]}
       reviewedApplications={(reviewedRes.data ?? []) as DivisionApplication[]}
-      loadError={divisionsRes.error ? 'Divisions table not found. Run supabase/trainings-divisions.sql in Supabase.' : null}
+      loadError={divisionsRes.error ? 'Divisions table not found. Run supabase/full-setup.sql in Supabase.' : null}
     />
   );
 }

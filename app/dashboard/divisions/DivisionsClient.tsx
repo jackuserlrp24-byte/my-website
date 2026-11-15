@@ -3,10 +3,10 @@
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, DivisionApplication } from '@/lib/portal-types';
-import { decideApplication, setDivisionStatus, submitApplication } from './actions';
+import { decideApplication, setDivisionLink, setDivisionStatus } from './actions';
 
 interface Props {
-  user: { name: string; isManagement: boolean; canViewApplications: boolean };
+  user: { name: string; isManagement: boolean; isCommand: boolean; canViewApplications: boolean };
   divisions: Division[];
   myApplications: DivisionApplication[];
   pendingApplications: DivisionApplication[];
@@ -27,7 +27,8 @@ export default function DivisionsClient({
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
-  const [applyingTo, setApplyingTo] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [linkDraft, setLinkDraft] = useState('');
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   function run(action: () => Promise<ActionResult>, onOk?: () => void) {
@@ -38,17 +39,13 @@ export default function DivisionsClient({
     });
   }
 
-  function onApply(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    run(() => submitApplication(fd), () => setApplyingTo(null));
-  }
-
+  const canEditLinks = user.isCommand || user.isManagement;
   const departments = Array.from(new Set(divisions.map((d) => d.department)));
   const openCount = divisions.filter((d) => d.status === 'open').length;
+  const hasLegacy = pendingApplications.length > 0 || reviewedApplications.length > 0;
 
   return (
-    <main className="flex flex-col px-8 mt-6 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none antialiased">
+    <main className="flex flex-col px-8 mt-6 max-w-[1100px] mx-auto w-full gap-6 pb-16 select-none antialiased">
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
         <span className="text-[10px] font-mono text-[#5865F2] tracking-widest uppercase block mb-1">
@@ -56,8 +53,8 @@ export default function DivisionsClient({
         </span>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Division Applications</h2>
         <p className="text-xs text-neutral-400 mt-1">
-          {openCount} of {divisions.length} divisions currently accepting applications. The same status is posted in
-          Discord.
+          {openCount} of {divisions.length} divisions open. Click the name of an open division to go to its application
+          form.
         </p>
       </div>
 
@@ -77,138 +74,160 @@ export default function DivisionsClient({
         </div>
       )}
 
-      {departments.map((dept) => (
-        <section key={dept} className="flex flex-col gap-3">
-          <h3 className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest">{dept}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {divisions
-              .filter((d) => d.department === dept)
-              .map((d) => {
+      {departments.map((dept) => {
+        const inDept = divisions.filter((d) => d.department === dept);
+        return (
+          <section key={dept} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest">{dept}</h3>
+              <span className="text-[10px] font-mono text-neutral-600">
+                {inDept.filter((d) => d.status === 'open').length} open
+              </span>
+            </div>
+
+            <div className="bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800">
+              {inDept.map((d) => {
                 const isOpen = d.status === 'open';
                 const mine = myApplications.filter((a) => a.division_id === d.id);
-                const hasPending = mine.some((a) => a.status === 'pending');
                 const accepted = mine.some((a) => a.status === 'accepted');
-                const lastRejected = !hasPending && !accepted && mine[0]?.status === 'rejected';
+                const editing = editingId === d.id;
 
                 return (
-                  <div key={d.id} className="bg-neutral-900 border border-neutral-800 p-5 flex flex-col gap-3 relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 right-0 h-0.5 ${isOpen ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                    <div className="flex items-start justify-between gap-3">
-                      <h4 className="text-sm font-semibold text-neutral-100 leading-snug">{d.name}</h4>
+                  <div key={d.id} className="px-5 py-4 flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                       <span
-                        className={`shrink-0 px-2 py-0.5 text-[10px] font-mono font-bold border ${
-                          isOpen
-                            ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                            : 'text-red-400 bg-red-500/10 border-red-500/30'
-                        }`}
+                        className={`h-2 w-2 rounded-full shrink-0 ${isOpen ? 'bg-emerald-500' : 'bg-red-500/70'}`}
+                        aria-hidden
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        {isOpen && d.application_url ? (
+                          <a
+                            href={d.application_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-semibold text-neutral-100 hover:text-[#8ea1ff] underline decoration-neutral-700 hover:decoration-[#8ea1ff] underline-offset-4 transition-colors select-text"
+                          >
+                            {d.name} <span aria-hidden>↗</span>
+                          </a>
+                        ) : (
+                          <span className={`text-sm font-semibold ${isOpen ? 'text-neutral-100' : 'text-neutral-500'}`}>
+                            {d.name}
+                          </span>
+                        )}
+                        {d.description && (
+                          <p className="text-[11px] text-neutral-500 leading-relaxed mt-0.5">{d.description}</p>
+                        )}
+                        {isOpen && !d.application_url && (
+                          <p className="text-[11px] font-mono text-amber-400/80 mt-0.5">
+                            Open - application link not added yet.
+                          </p>
+                        )}
+                        {accepted && (
+                          <p className="text-[11px] font-mono text-emerald-400 mt-0.5 uppercase">You were accepted</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-auto">
+                        {canEditLinks && (
+                          <button
+                            disabled={pending}
+                            onClick={() => {
+                              setEditingId(editing ? null : d.id);
+                              setLinkDraft(d.application_url ?? '');
+                            }}
+                            className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-400 text-[10px] font-mono uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                          >
+                            {editing ? 'Cancel' : d.application_url ? 'Edit link' : 'Add link'}
+                          </button>
+                        )}
+                        {user.isManagement && (
+                          <button
+                            disabled={pending}
+                            onClick={() => run(() => setDivisionStatus(d.id, isOpen ? 'closed' : 'open'))}
+                            className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                          >
+                            {isOpen ? 'Close' : 'Open'}
+                          </button>
+                        )}
+                        <span
+                          className={`w-[68px] text-center px-2 py-0.5 text-[10px] font-mono font-bold border ${
+                            isOpen
+                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                              : 'text-red-400 bg-red-500/10 border-red-500/30'
+                          }`}
+                        >
+                          {isOpen ? 'OPEN' : 'CLOSED'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {editing && (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          run(() => setDivisionLink(d.id, linkDraft), () => setEditingId(null));
+                        }}
+                        className="flex flex-wrap items-center gap-2 pl-6"
                       >
-                        {isOpen ? 'OPEN' : 'CLOSED'}
-                      </span>
-                    </div>
-                    {d.description && <p className="text-xs text-neutral-400 leading-relaxed">{d.description}</p>}
-
-                    <div className="mt-auto pt-3 border-t border-neutral-800 flex flex-wrap items-center gap-2">
-                      {accepted ? (
-                        <span className="text-[11px] font-mono text-emerald-400 uppercase">Accepted</span>
-                      ) : hasPending ? (
-                        <span className="text-[11px] font-mono text-amber-400 uppercase">Application pending</span>
-                      ) : isOpen ? (
-                        <button
-                          onClick={() => setApplyingTo(applyingTo === d.id ? null : d.id)}
-                          className="px-3 py-1.5 bg-[#5865F2] hover:bg-[#4752c4] text-white text-xs font-mono font-medium uppercase tracking-wider cursor-pointer"
-                        >
-                          {applyingTo === d.id ? 'Cancel' : lastRejected ? 'Apply again' : 'Apply'}
-                        </button>
-                      ) : (
-                        <span className="text-[11px] font-mono text-neutral-500 uppercase">Not accepting applications</span>
-                      )}
-
-                      {user.isManagement && (
-                        <button
-                          disabled={pending}
-                          onClick={() => run(() => setDivisionStatus(d.id, isOpen ? 'closed' : 'open'))}
-                          className="ml-auto px-3 py-1.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-300 text-[11px] font-mono uppercase tracking-wider cursor-pointer disabled:opacity-50"
-                        >
-                          {isOpen ? 'Close' : 'Open'}
-                        </button>
-                      )}
-                    </div>
-
-                    {lastRejected && !hasPending && (
-                      <p className="text-[11px] font-mono text-neutral-500">
-                        Your last application was not successful
-                        {mine[0]?.review_note ? `: ${mine[0].review_note}` : '.'}
-                      </p>
-                    )}
-
-                    {applyingTo === d.id && (
-                      <form onSubmit={onApply} className="space-y-3 pt-3 border-t border-neutral-800">
-                        <input type="hidden" name="divisionId" value={d.id} />
-                        <div>
-                          <label className="block text-[11px] text-neutral-400 mb-1">Why do you want to join? *</label>
-                          <textarea name="reason" required minLength={30} maxLength={1500} rows={4} className={inputClass} />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-neutral-400 mb-1">Relevant experience</label>
-                          <textarea name="experience" maxLength={1000} rows={3} className={inputClass} />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-neutral-400 mb-1">Availability</label>
-                          <input name="availability" maxLength={300} placeholder="e.g. Evenings and weekends" className={inputClass} />
-                        </div>
+                        <input
+                          value={linkDraft}
+                          onChange={(e) => setLinkDraft(e.target.value)}
+                          maxLength={500}
+                          placeholder="https://docs.google.com/forms/..."
+                          className={`${inputClass} flex-1 min-w-[260px] select-text`}
+                        />
                         <button
                           type="submit"
                           disabled={pending}
-                          className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752c4] disabled:opacity-50 text-white text-xs font-mono font-medium uppercase tracking-wider cursor-pointer"
+                          className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752c4] disabled:opacity-50 text-white text-[11px] font-mono font-medium uppercase tracking-wider cursor-pointer"
                         >
-                          {pending ? 'Submitting...' : 'Submit application'}
+                          Save link
                         </button>
                       </form>
                     )}
                   </div>
                 );
               })}
-          </div>
-        </section>
-      ))}
+            </div>
+          </section>
+        );
+      })}
 
-      {user.canViewApplications && (
+      {/* Old in-portal applications - only shown while there are some left to review. */}
+      {user.canViewApplications && hasLegacy && (
         <section className="flex flex-col gap-3">
           <h3 className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest">
-            Pending applications ({pendingApplications.length})
+            Portal applications to review ({pendingApplications.length})
           </h3>
-          {pendingApplications.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-800 p-8 text-center text-xs font-mono text-neutral-500 uppercase tracking-widest">
-              Nothing waiting for review
-            </div>
-          ) : (
-            pendingApplications.map((a) => (
-              <div key={a.id} className="bg-neutral-900 border border-neutral-800 p-5 flex flex-col gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-sm font-semibold text-neutral-100">
-                    {a.applicant_name} <span className="text-neutral-500 font-normal">for</span> {a.divisions?.name ?? a.division_id}
-                  </div>
-                  <span className="text-[11px] font-mono text-neutral-500">
-                    <LocalTime iso={a.created_at} />
-                  </span>
+          {pendingApplications.map((a) => (
+            <div key={a.id} className="bg-neutral-900 border border-neutral-800 p-5 flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-neutral-100">
+                  {a.applicant_name} <span className="text-neutral-500 font-normal">for</span>{' '}
+                  {a.divisions?.name ?? a.division_id}
                 </div>
+                <span className="text-[11px] font-mono text-neutral-500">
+                  <LocalTime iso={a.created_at} />
+                </span>
+              </div>
+              <div className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
+                <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Why they want to join</p>
+                {a.reason}
+              </div>
+              {a.experience && (
                 <div className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
-                  <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Why they want to join</p>
-                  {a.reason}
+                  <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Experience</p>
+                  {a.experience}
                 </div>
-                {a.experience && (
-                  <div className="text-xs text-neutral-300 whitespace-pre-line leading-relaxed">
-                    <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Experience</p>
-                    {a.experience}
-                  </div>
-                )}
-                {a.availability && (
-                  <div className="text-xs text-neutral-300">
-                    <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Availability</p>
-                    {a.availability}
-                  </div>
-                )}
-                {user.isManagement && (
+              )}
+              {a.availability && (
+                <div className="text-xs text-neutral-300">
+                  <p className="text-[10px] font-mono text-neutral-500 uppercase mb-1">Availability</p>
+                  {a.availability}
+                </div>
+              )}
+              {user.isManagement && (
                 <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-neutral-800">
                   <input
                     value={notes[a.id] ?? ''}
@@ -232,27 +251,23 @@ export default function DivisionsClient({
                     Reject
                   </button>
                 </div>
-                )}
-              </div>
-            ))
-          )}
+              )}
+            </div>
+          ))}
 
           {reviewedApplications.length > 0 && (
-            <>
-              <h3 className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest mt-4">Recently reviewed</h3>
-              <div className="bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800">
-                {reviewedApplications.map((a) => (
-                  <div key={a.id} className="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <span className="text-neutral-200">
-                      {a.applicant_name} <span className="text-neutral-500">-</span> {a.divisions?.name ?? a.division_id}
-                    </span>
-                    <span className={`font-mono uppercase ${a.status === 'accepted' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {a.status} by {a.reviewed_by}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="bg-neutral-900 border border-neutral-800 divide-y divide-neutral-800">
+              {reviewedApplications.map((a) => (
+                <div key={a.id} className="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-neutral-200">
+                    {a.applicant_name} <span className="text-neutral-500">-</span> {a.divisions?.name ?? a.division_id}
+                  </span>
+                  <span className={`font-mono uppercase ${a.status === 'accepted' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {a.status} by {a.reviewed_by}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
         </section>
       )}

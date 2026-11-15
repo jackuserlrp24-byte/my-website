@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-const REQUIRED_ROLE_ID = '1497557905275224149';
+import { hasCommandAccess } from '@/lib/training-config';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
@@ -36,7 +36,7 @@ export default async function CommandLayout({
     }
 
     const member = await res.json();
-    const hasRole = member.roles && member.roles.includes(REQUIRED_ROLE_ID);
+    const hasRole = Array.isArray(member.roles) && hasCommandAccess(member.roles);
 
     // If the user does not have the required role ID, block access and redirect back
     if (!hasRole) {

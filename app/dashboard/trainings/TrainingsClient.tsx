@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, Training } from '@/lib/portal-types';
-import { attendTraining, deleteTraining } from './actions';
+import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining } from './actions';
 
 interface Props {
   user: { name: string; isTrainer: boolean };
@@ -23,6 +23,9 @@ function trainingState(t: Training): 'UPCOMING' | 'ACTIVE' | 'CONCLUDED' {
 export default function TrainingsClient({ user, trainings, divisions, loadError }: Props) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
+  const [delayingId, setDelayingId] = useState<string | null>(null);
+  const [delayMinutes, setDelayMinutes] = useState(15);
+  const [delayReason, setDelayReason] = useState('');
 
   const divisionName = (id: string | null) => divisions.find((d) => d.id === id)?.name ?? 'General';
 
@@ -81,6 +84,8 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
           trainings.map((t) => {
             const state = trainingState(t);
             const isAttending = t.attending.includes(user.name);
+            const cantMake = (t.unattending ?? []).includes(user.name);
+            const delayed = (t.delayed_minutes ?? 0) > 0;
 
             return (
               <div key={t.id} className="bg-neutral-900 border border-neutral-800 shadow-xl overflow-hidden flex flex-col">
@@ -89,6 +94,11 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                     <span>{t.id}</span>
                     <span className="text-neutral-700">/</span>
                     <span>{state}</span>
+                    {delayed && (
+                      <span className="px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px]">
+                        DELAYED +{t.delayed_minutes}m
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {state !== 'CONCLUDED' && (
@@ -104,7 +114,36 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         >
                           {isAttending ? '[ Attending ]' : 'Attend'}
                         </button>
+                        {(isAttending || cantMake) && (
+                          <button
+                            disabled={pending || cantMake}
+                            onClick={() => {
+                              if (confirm(`Can't make ${t.id}? You'll be taken off the attending list.`)) {
+                                run(() => cantMakeTrainingAction(t.id));
+                              }
+                            }}
+                            className={`px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider border ${
+                              cantMake
+                                ? 'border-amber-500/40 bg-amber-500/10 text-amber-300 cursor-default'
+                                : 'border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer'
+                            }`}
+                          >
+                            {cantMake ? "[ Can't Make It ]" : "Can't Make It"}
+                          </button>
+                        )}
                       </>
+                    )}
+                    {user.isTrainer && state !== 'CONCLUDED' && (
+                      <button
+                        disabled={pending}
+                        onClick={() => {
+                          setDelayingId(delayingId === t.id ? null : t.id);
+                          setDelayReason('');
+                        }}
+                        className="px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider border border-amber-500/30 text-amber-300 hover:bg-amber-500/10 cursor-pointer"
+                      >
+                        Delay
+                      </button>
                     )}
                     {user.isTrainer && (
                       <button
@@ -122,6 +161,47 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                   </div>
                 </div>
 
+                {user.isTrainer && delayingId === t.id && (
+                  <div className="bg-amber-500/5 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center gap-3 text-xs font-mono">
+                    <span className="text-amber-300 uppercase tracking-wider">Delay by</span>
+                    <select
+                      value={delayMinutes}
+                      onChange={(e) => setDelayMinutes(Number(e.target.value))}
+                      className="bg-neutral-950 border border-neutral-700 text-neutral-200 px-2 py-1.5"
+                    >
+                      {[5, 10, 15, 20, 30, 45, 60, 90, 120].map((m) => (
+                        <option key={m} value={m}>
+                          {m} min
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={delayReason}
+                      onChange={(e) => setDelayReason(e.target.value)}
+                      maxLength={200}
+                      placeholder="Reason (optional)"
+                      className="flex-1 min-w-[180px] bg-neutral-950 border border-neutral-700 text-neutral-200 px-2 py-1.5 placeholder:text-neutral-600"
+                    />
+                    <button
+                      disabled={pending}
+                      onClick={() => {
+                        const id = t.id;
+                        setDelayingId(null);
+                        run(() => delayTraining(id, delayMinutes, delayReason));
+                      }}
+                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-medium uppercase tracking-wider cursor-pointer"
+                    >
+                      Confirm Delay
+                    </button>
+                    <button
+                      onClick={() => setDelayingId(null)}
+                      className="px-3 py-1.5 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 uppercase tracking-wider cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                   <div className="lg:col-span-2 flex flex-col gap-4">
                     <div>
@@ -135,6 +215,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         { label: 'Division', node: divisionName(t.division_id) },
                         { label: 'Starts', node: <LocalTime iso={t.starts_at} /> },
                         { label: 'Host', node: t.host || 'TBD' },
+                        ...(delayed && t.delay_reason ? [{ label: 'Delay reason', node: t.delay_reason }] : []),
                         ...(t.requires_ipp ? [{ label: 'Requirement', node: 'IPP + Advanced' }] : []),
                       ].map((m) => (
                         <div key={m.label} className="bg-neutral-950 border border-neutral-800/80 p-3 flex flex-col gap-1 relative overflow-hidden">
@@ -164,6 +245,21 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         )}
                       </div>
                     </div>
+                    {(t.unattending ?? []).length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800">
+                          <span className="text-[10px] font-mono font-medium text-amber-400/80 uppercase tracking-wider">Can't Make It</span>
+                          <span className="text-[10px] font-mono text-neutral-400">{t.unattending.length}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto">
+                          {t.unattending.map((n, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-neutral-900 border border-amber-500/20 text-[11px] font-mono text-neutral-400">
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

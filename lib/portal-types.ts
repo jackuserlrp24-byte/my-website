@@ -7,6 +7,7 @@ export interface Division {
   description: string | null;
   sort_order: number;
   status: 'open' | 'closed';
+  application_url: string | null; // Google Form link, opened when someone clicks the division name
 }
 
 export interface Training {
@@ -21,8 +22,12 @@ export interface Training {
   discord_message_id: string | null;
   discord_channel_id: string | null;
   attending: string[];
-  unattending: string[]; // legacy, no longer used
+  attending_ids: string[]; // Discord IDs of everyone in `attending` (used to DM them on delays)
+  unattending: string[]; // students who pressed "Can't make it"
   requires_ipp: boolean;
+  delayed_minutes: number; // total minutes the session has been pushed back (0 = on time)
+  delay_reason: string | null;
+  original_starts_at: string | null; // set the first time a training is delayed
   created_at: string;
 }
 

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, hasRoleId, isTrainerRoles } from '@/lib/training-config';
+import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +22,7 @@ export interface PortalUser {
   id: string;
   name: string;
   isManagement: boolean;
+  isCommand: boolean; // can see the Command tab and edit division application links
   isTrainer: boolean; // can open the trainer panel and post trainings (trainer role, bronze/silver/gold, management)
   canRequestRoles: boolean; // trainer role, gold, management
   canReviewRoleRequests: boolean; // gold, management
@@ -68,6 +69,7 @@ export async function getPortalUser(): Promise<PortalUser | null> {
       id,
       name: member.nick || member.user?.global_name || member.user?.username || 'Unknown',
       isManagement,
+      isCommand: hasCommandAccess(roles),
       isTrainer:
         isManagement ||
         isTrainerRoles(roles) ||

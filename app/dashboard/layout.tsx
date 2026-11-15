@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import BackgroundSlideshow from './BackgroundSlideshow';
-import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID } from '@/lib/training-config';
+import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +80,7 @@ async function checkUserAccessAndFetchDetails(userId: string) {
       isManagement: hasMasterRole || hasAltManagementRole,
       isStaff: hasMasterRole || hasAltManagementRole || roles.includes(GOLD_ROLE_ID) || roles.includes(SILVER_ROLE_ID),
       isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
-      isCommand: hasMasterRole,
+      isCommand: hasCommandAccess(roles),
       displayName,
       avatarUrl
     };

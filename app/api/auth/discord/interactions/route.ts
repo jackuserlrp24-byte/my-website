@@ -5,7 +5,7 @@ import { canReviewRoleRequests, supabaseAdmin } from '@/lib/portal';
 import { sendDm } from '@/lib/discord';
 import { reviewRoleRequest } from '@/lib/role-requests';
 import { roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
-import { bookOnTraining } from '@/lib/training-attend';
+import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import type { Training } from '@/lib/portal-types';
 
 const supabase = createClient(
@@ -27,10 +27,6 @@ type Interaction = {
 const reply = (content: string) => NextResponse.json({ type: 4, data: { content, flags: 64 } });
 
 async function handleTrainingButton(body: Interaction, customId: string, userName: string, discordId: string) {
-  if (customId === 'training_not_attending') {
-    return reply('"Not Attending" has been removed - just press **Attend** if you can make it.');
-  }
-
   const { data } = await supabaseAdmin
     .from('trainings')
     .select('*')
@@ -38,8 +34,22 @@ async function handleTrainingButton(body: Interaction, customId: string, userNam
     .maybeSingle();
   if (!data) return reply('Error: Could not locate active training record for this message.');
 
+  // "Can't Make It": take them off the roster and log it on the post.
+  if (customId === 'training_cant_make_it' || customId === 'training_not_attending') {
+    const out = await cantMakeTraining(data as Training, userName, discordId);
+    if (out.status === 'already') return reply("You're already marked as unable to make this training.");
+    if (out.status !== 'removed') return reply(out.message);
+
+    let name: string | null = null;
+    if (out.training.division_id) {
+      const { data: div } = await supabaseAdmin.from('divisions').select('name').eq('id', out.training.division_id).maybeSingle();
+      name = div?.name ?? null;
+    }
+    return NextResponse.json({ type: 7, data: trainingPayload(out.training, name) });
+  }
+
   // Role check uses the roles Discord sends with the click, so it is always live.
-  const result = await bookOnTraining(data as Training, userName, body.member?.roles ?? []);
+  const result = await bookOnTraining(data as Training, userName, body.member?.roles ?? [], discordId);
   if (result.status === 'already') return reply('You are already booked on this training.');
   if (result.status !== 'booked') return reply(result.message);
 
@@ -116,7 +126,7 @@ export async function POST(request: Request) {
       if (customId?.startsWith('rolereq_')) {
         return handleRoleRequestButton(body, customId);
       }
-      const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending'];
+      const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending', 'training_cant_make_it'];
       if (!customId || !BUTTON_IDS.includes(customId)) {
         return NextResponse.json({ type: 4, data: { content: 'Unknown action.', flags: 64 } });
       }

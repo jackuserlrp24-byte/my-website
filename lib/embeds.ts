@@ -18,12 +18,26 @@ export function rosterText(names: string[], empty: string): string {
 export function trainingPayload(t: Training, divisionName?: string | null) {
   const start = unix(t.starts_at);
   const end = unix(t.ends_at);
+  const delayed = (t.delayed_minutes ?? 0) > 0;
+  const cantMake = t.unattending ?? [];
 
   const embed: Record<string, unknown> = {
     title: t.title,
     description: t.description || 'No additional details provided.',
-    color: 5793266,
+    color: delayed ? 16705372 : 5793266,
     fields: [
+      ...(delayed
+        ? [
+            {
+              name: 'DELAYED',
+              value:
+                `Pushed back **${t.delayed_minutes} min**` +
+                (t.original_starts_at ? ` (was <t:${unix(t.original_starts_at)}:t>)` : '') +
+                (t.delay_reason ? `\nReason: ${t.delay_reason}` : ''),
+              inline: false,
+            },
+          ]
+        : []),
       { name: 'Training ID', value: t.id, inline: true },
       { name: 'Division', value: divisionName || 'General', inline: true },
       { name: 'Host', value: t.host || 'TBD', inline: true },
@@ -35,6 +49,9 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         value: rosterText(t.attending, 'No one attending yet.'),
         inline: false,
       },
+      ...(cantMake.length
+        ? [{ name: `Can't make it (${cantMake.length})`, value: rosterText(cantMake, 'None.'), inline: false }]
+        : []),
       ...(t.requires_ipp
         ? [{ name: 'Requirements', value: 'IPP + trained driver (Advanced) only', inline: false }]
         : []),
@@ -52,6 +69,7 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         type: 1,
         components: [
           { type: 2, style: 3, label: 'Attend', custom_id: 'training_attend' },
+          { type: 2, style: 4, label: "Can't Make It", custom_id: 'training_cant_make_it' },
           { type: 2, style: 5, label: 'View Portal', url: `${PORTAL_URL}/dashboard/trainings` },
         ],
       },
@@ -70,7 +88,9 @@ export function divisionsPayload(divisions: Division[]) {
     fields.push(
       {
         name: `${dept} - OPEN (${open.length})`,
-        value: open.length ? open.map((d) => `**${d.name}**`).join('\n') : 'None currently open.',
+        value: open.length
+          ? open.map((d) => (d.application_url ? `**[${d.name}](${d.application_url})**` : `**${d.name}**`)).join('\n')
+          : 'None currently open.',
         inline: true,
       },
       {
@@ -88,7 +108,7 @@ export function divisionsPayload(divisions: Division[]) {
       {
         title: 'DIVISION APPLICATION STATUS',
         description:
-          'Applications are made on the Central Operations Portal. Only divisions listed as OPEN are accepting applications.',
+          'Click an OPEN division name to open its application form. Only divisions listed as OPEN are accepting applications.',
         color: anyOpen ? 5763719 : 15548997,
         fields,
         footer: { text: 'Central Operations Portal - last updated' },
@@ -132,6 +152,29 @@ export function trainingDmPayload(t: Training, divisionName?: string | null) {
         components: [
           { type: 2, style: 5, label: 'Join Waiting VC', url: `https://discord.com/channels/${process.env.DISCORD_GUILD_ID}/${vc}` },
         ],
+      },
+    ],
+  };
+}
+
+/** DM sent to everyone booked on when a trainer delays the session. */
+export function trainingDelayDmPayload(t: Training, divisionName?: string | null) {
+  const start = unix(t.starts_at);
+  return {
+    embeds: [
+      {
+        title: `Training delayed: ${t.title}`,
+        description:
+          `This session has been pushed back by **${t.delayed_minutes} minutes**.` +
+          (t.delay_reason ? `\n**Reason:** ${t.delay_reason}` : '') +
+          `\n\nYou're still booked on - keep waiting in <#${TRAINING_VC_ID}>. If you can no longer make the new time, press **Can't Make It** on the training post or the portal.`,
+        color: 16705372,
+        fields: [
+          { name: 'Training ID', value: t.id, inline: true },
+          { name: 'Division', value: divisionName || 'General', inline: true },
+          { name: 'New start', value: `<t:${start}:F>\n<t:${start}:R>`, inline: false },
+        ],
+        footer: { text: 'Central Operations Portal' },
       },
     ],
   };

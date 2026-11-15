@@ -7,6 +7,7 @@ export default function CommandHubPage() {
       subtitle: 'MET POLICE',
       description: 'Manage Met Police officer dossiers, look up collar numbers, issue role assignments, audit training records, and access operational Google Drive slides.',
       href: '/dashboard/command/met-police',
+      available: true,
       accentColor: 'bg-blue-600',
       badgeColor: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
     },
@@ -15,6 +16,7 @@ export default function CommandHubPage() {
       subtitle: 'LAS',
       description: 'Manage clinical staff qualifications, paramedic shift deployments, training rosters, and emergency medical operational directives.',
       href: '/dashboard/command/las',
+      available: false,
       accentColor: 'bg-emerald-600',
       badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
     },
@@ -23,6 +25,7 @@ export default function CommandHubPage() {
       subtitle: 'LFB',
       description: 'Oversee appliance commanders, pump allocation, specialized rescue training logs, and brigade documentation.',
       href: '/dashboard/command/lfb',
+      available: false,
       accentColor: 'bg-amber-600',
       badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30'
     },
@@ -71,12 +74,18 @@ export default function CommandHubPage() {
             </div>
 
             <div className="pt-6 mt-6 border-t border-neutral-800">
-              <Link
-                href={dept.href}
-                className="w-full py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Access Command Suite &rarr;
-              </Link>
+              {dept.available ? (
+                <Link
+                  href={dept.href}
+                  className="w-full py-2.5 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Access Command Suite &rarr;
+                </Link>
+              ) : (
+                <div className="w-full py-2.5 border border-neutral-800 text-neutral-600 text-xs font-semibold uppercase tracking-wider flex items-center justify-center">
+                  Coming soon
+                </div>
+              )}
             </div>
           </div>
         ))}

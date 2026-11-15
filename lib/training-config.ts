@@ -13,6 +13,18 @@ export const GOLD_ROLE_ID = process.env.DISCORD_GOLD_COMMAND_ROLE_ID || '1532828
 export const SILVER_ROLE_ID = process.env.DISCORD_SILVER_COMMAND_ROLE_ID || '1532828760410427432';
 export const BRONZE_ROLE_ID = process.env.DISCORD_BRONZE_COMMAND_ROLE_ID || '1532828869944545410';
 
+// Optional extra role (e.g. "Met Police Command") that can see the Command tab. Set DISCORD_MET_COMMAND_ROLE_ID in env.
+export const MET_COMMAND_ROLE_ID = process.env.DISCORD_MET_COMMAND_ROLE_ID || '';
+const COMMAND_MANAGEMENT_ROLE_IDS = ['1497557905275224149', '1497557905275224148'];
+
+/** Who can see the Command tab and open /dashboard/command: management, Gold/Silver/Bronze command, or the Met Command role. */
+export function hasCommandAccess(roles: string[]): boolean {
+  return (
+    roles.some((r) => COMMAND_MANAGEMENT_ROLE_IDS.includes(r)) ||
+    [GOLD_ROLE_ID, SILVER_ROLE_ID, BRONZE_ROLE_ID, MET_COMMAND_ROLE_ID].some((id) => !!id && roles.includes(id))
+  );
+}
+
 export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes(id);
 
 // Voice channel people wait in before a training starts.
