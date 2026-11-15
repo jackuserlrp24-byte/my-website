@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { parseSessionCookie, SESSION_COOKIE } from '@/lib/discord-auth';
+
+export const dynamic = 'force-dynamic';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const GUILD_ID = process.env.DISCORD_GUILD_ID!;
+const GUILD_ID = (process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID)!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const LOG_CHANNEL_ID = '1563506688798236743'; // Audit Log Channel
 
@@ -26,7 +30,20 @@ const WHITELIST_ROLES = [
 
 export async function POST(req: Request) {
   try {
-    const { discordId, forename, surname, dob, email, rpName, referralSource, rpExperience } = await req.json();
+    const body = await req.json();
+    const { forename, surname, dob, email, rpName, referralSource, rpExperience } = body;
+
+    // Identity comes from the signed-in session, never from the request body
+    const session = parseSessionCookie((await cookies()).get(SESSION_COOKIE)?.value);
+    if (!session) {
+      return NextResponse.json({ error: 'Your login has expired. Please connect Discord again.' }, { status: 401 });
+    }
+    const discordId = session.id;
+
+    if (!GUILD_ID || !BOT_TOKEN) {
+      console.error('Whitelist: DISCORD_GUILD_ID / DISCORD_BOT_TOKEN not set');
+      return NextResponse.json({ error: 'Server is missing Discord configuration (DISCORD_GUILD_ID / DISCORD_BOT_TOKEN).' }, { status: 500 });
+    }
 
     if (!discordId || !forename || !surname || !dob || !email || !rpName || !referralSource || !rpExperience) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -42,6 +59,11 @@ export async function POST(req: Request) {
 
     if (memberRes.status === 404) {
       return NextResponse.json({ error: 'NOT_IN_SERVER' }, { status: 404 });
+    }
+
+    if (!memberRes.ok) {
+      console.error('Whitelist: member lookup failed', memberRes.status, await memberRes.text().catch(() => ''));
+      return NextResponse.json({ error: `Could not read your Discord server profile (${memberRes.status}). Please try again.` }, { status: 502 });
     }
 
     const memberData = await memberRes.json();
@@ -108,20 +130,25 @@ export async function POST(req: Request) {
       ])
     );
 
-    await fetch(
-      `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`,
-      {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bot ${BOT_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          roles: updatedRoles,
-          nick: formattedNickname
-        })
+    const patchBody = { roles: updatedRoles, nick: formattedNickname };
+    const patchUrl = `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordId}`;
+    const patchHeaders = { Authorization: `Bot ${BOT_TOKEN}`, 'Content-Type': 'application/json' };
+
+    let patchRes = await fetch(patchUrl, { method: 'PATCH', headers: patchHeaders, body: JSON.stringify(patchBody) });
+
+    if (!patchRes.ok) {
+      console.error('Whitelist: role+nick update failed', patchRes.status, await patchRes.text().catch(() => ''));
+      // Nickname can fail (e.g. server owner / higher role). Roles are what unlock the portal, so retry roles alone.
+      patchRes = await fetch(patchUrl, { method: 'PATCH', headers: patchHeaders, body: JSON.stringify({ roles: updatedRoles }) });
+      if (!patchRes.ok) {
+        const detail = await patchRes.text().catch(() => '');
+        console.error('Whitelist: roles-only update failed', patchRes.status, detail);
+        return NextResponse.json(
+          { error: `Application saved but Discord roles could not be assigned (${patchRes.status}). Make sure the bot has Manage Roles and its role is above the whitelist roles, then submit again.` },
+          { status: 502 }
+        );
       }
-    );
+    }
 
     // 4. Send Channel Audit Log Embed (Cleaned without emojis)
     try {

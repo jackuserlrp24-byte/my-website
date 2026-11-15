@@ -1,64 +1,72 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import {
+  fetchWithRetry,
+  getRedirectUri,
+  setSessionCookie,
+  siteUrl,
+} from '@/lib/discord-auth';
+
+export const dynamic = 'force-dynamic';
+
+function fail(reason: string) {
+  const res = NextResponse.redirect(siteUrl(`/?error=${reason}`));
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
-  if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', request.url));
-  }
+  // User pressed "Cancel" on Discord, or Discord sent back an error
+  if (url.searchParams.get('error')) return fail('no_code');
+  if (!code) return fail('no_code');
 
   try {
-    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+    const tokenResponse = await fetchWithRetry('https://discord.com/api/oauth2/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         client_id: process.env.DISCORD_CLIENT_ID!,
         client_secret: process.env.DISCORD_CLIENT_SECRET!,
         grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: process.env.DISCORD_REDIRECT_URI!,
+        code,
+        redirect_uri: getRedirectUri(), // identical to the one used to start the login
       }),
     });
 
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok) {
       console.error('Discord token exchange failed:', tokenResponse.status, tokenData);
-      throw new Error('Failed to fetch token from Discord');
+      return fail('auth_failed');
     }
 
-    const userResponse = await fetch('https://discord.com/api/users/@me', {
-      headers: {
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
+    const userResponse = await fetchWithRetry('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
 
     const userData = await userResponse.json();
-    if (!userResponse.ok) {
+    if (!userResponse.ok || !userData?.id) {
       console.error('Discord profile fetch failed:', userResponse.status, userData);
-      throw new Error('Failed to fetch user profile from Discord');
+      return fail('auth_failed');
     }
 
-    const GUILD_ID = process.env.DISCORD_SERVER_ID;
+    // Server nickname + roles are a bonus – a failure here must NEVER block the login.
+    const GUILD_ID = process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID;
     const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
-    let serverNickname = userData.username;
+    let serverNickname: string = userData.global_name || userData.username;
     let memberRoles: string[] = [];
 
     if (GUILD_ID && BOT_TOKEN) {
       try {
-        const memberRes = await fetch(`https://discord.com/api/v10/guilds/${GUILD_ID}/members/${userData.id}`, {
-          headers: {
-            Authorization: `Bot ${BOT_TOKEN}`,
-          },
-        });
-
+        const memberRes = await fetchWithRetry(
+          `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${userData.id}`,
+          { headers: { Authorization: `Bot ${BOT_TOKEN}` } }
+        );
         if (memberRes.ok) {
           const memberData = await memberRes.json();
-          serverNickname = memberData.nick || userData.username;
+          serverNickname = memberData.nick || serverNickname;
           memberRoles = memberData.roles || [];
         }
       } catch (err) {
@@ -66,27 +74,19 @@ export async function GET(request: Request) {
       }
     }
 
-    const cookieStore = await cookies();
-    cookieStore.set(
-      'discord_user',
-      JSON.stringify({
-        id: userData.id,
-        username: userData.username,
-        nickname: serverNickname,
-        avatar: userData.avatar,
-        roles: memberRoles, // <--- Storing roles properly here
-      }),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        maxAge: 60 * 60 * 24 * 7,
-      }
-    );
-
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const res = NextResponse.redirect(siteUrl('/dashboard'));
+    res.headers.set('Cache-Control', 'no-store');
+    setSessionCookie(res, {
+      id: userData.id,
+      username: userData.username,
+      global_name: userData.global_name ?? undefined,
+      nickname: serverNickname,
+      avatar: userData.avatar,
+      roles: memberRoles,
+    });
+    return res;
   } catch (error) {
     console.error('Discord Auth Error:', error);
-    return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+    return fail('auth_failed');
   }
 }

@@ -98,7 +98,12 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('discord_user')?.value;
   
-  const user = userCookie ? JSON.parse(userCookie) : { id: '0000' };
+  let user: { id?: string } = { id: '0000' };
+  try {
+    if (userCookie) user = JSON.parse(userCookie);
+  } catch {
+    user = { id: '0000' };
+  }
 
   if (!user.id || user.id === '0000') {
     redirect('/');

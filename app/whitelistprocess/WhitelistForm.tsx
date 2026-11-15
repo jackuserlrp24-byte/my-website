@@ -119,7 +119,6 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          discordId: discordUser.id,
           forename,
           surname,
           dob,
@@ -130,7 +129,17 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
         }),
       });
 
-      const data = await res.json();
+      let data: { success?: boolean; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        data = { error: `Server error (${res.status}). Please try again in a moment.` };
+      }
+
+      if (res.status === 401) {
+        window.location.assign('/api/auth/discord');
+        return;
+      }
 
       if (data.success) {
         setSuccess(true);
@@ -141,8 +150,8 @@ export default function WhitelistForm({ initialUser }: { initialUser: DiscordUse
         setErrorMessage(data.error || 'An error occurred.');
         setLoading(false);
       }
-    } catch (err) {
-      setErrorMessage('Failed to submit application. Please try again.');
+    } catch {
+      setErrorMessage('Failed to submit application. Check your connection and try again.');
       setLoading(false);
     }
   };
