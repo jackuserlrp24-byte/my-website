@@ -3,6 +3,7 @@ import { getGuildMember } from '@/lib/discord-member';
 import { LOG_CHANNEL_ID } from '@/lib/training-config';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { purgeOldBodycam } from '@/lib/bodycam';
 import MetPoliceClient from './MetPoliceClient';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -224,13 +225,24 @@ export default async function MetPoliceCommandPage() {
   let roleRequests: any[] = [];
   let trainingRecords: any[] = [];
   let allWhitelistedUsers: any[] = [];
+  let bodycam: any[] = [];
 
   try {
-    const [reqsRes, trainingRes, whitelistsRes] = await Promise.all([
+    const [reqsRes, trainingRes, whitelistsRes, bodycamRes] = await Promise.all([
       supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(300),
-      supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200)
+      supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200),
+      // Newest bodycam clips (cleaning up expired ones at the same time).
+      purgeOldBodycam().then(() =>
+        supabase
+          .from('bodycam_incidents')
+          .select('id, created_at, officer_name, officer_discord_id, target_name, target_discord_id, serial, coords, total_ms, segments')
+          .eq('status', 'ready')
+          .order('created_at', { ascending: false })
+          .limit(60)
+      ),
     ]);
+    bodycam = (bodycamRes.data || []).map(({ segments, ...rest }: any) => ({ ...rest, segment_count: Array.isArray(segments) ? segments.length : 0 }));
 
     roleRequests = reqsRes.data || [];
     trainingRecords = trainingRes.data || [];
@@ -265,6 +277,7 @@ export default async function MetPoliceCommandPage() {
       allUsers={allWhitelistedUsers}
       roleRequests={roleRequests}
       trainingRecords={trainingRecords}
+      bodycam={bodycam}
       actions={{
         submitRoleRequest,
         handleRoleRequestDecision,
