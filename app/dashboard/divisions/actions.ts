@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import { addGuildRole, logEmbed } from '@/lib/discord';
+import { addGuildRole, applicationsLogChannel, logEmbed } from '@/lib/discord';
 import { GOLD_MANAGED_DEPARTMENTS } from '@/lib/departments';
 import { GOLD_ROLE_ID } from '@/lib/training-config';
 import { syncDivisionsEmbed } from '@/lib/divisions-sync';
@@ -122,7 +122,7 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     { name: 'Why they want to join', value: reason.slice(0, 1000) },
     ...(experience ? [{ name: 'Experience', value: experience.slice(0, 1000) }] : []),
     ...(availability ? [{ name: 'Availability', value: availability.slice(0, 300) }] : []),
-  ]);
+  ], 5793266, applicationsLogChannel((division as Division).department));
 
   revalidatePath('/dashboard/divisions');
   return { ok: true, message: 'Application submitted. Management will review it.' };
@@ -156,7 +156,7 @@ export async function decideApplication(
     })
     .eq('id', applicationId)
     .eq('status', 'pending')
-    .select('*, divisions(name, discord_role_id)')
+    .select('*, divisions(name, discord_role_id, department)')
     .maybeSingle();
 
   if (error || !data) return fail('That application was already reviewed or no longer exists.');
@@ -179,7 +179,8 @@ export async function decideApplication(
       { name: 'Reviewed By', value: user.name, inline: true },
       ...(data.review_note ? [{ name: 'Note', value: data.review_note }] : []),
     ],
-    decision === 'accepted' ? 5763719 : 15548997
+    decision === 'accepted' ? 5763719 : 15548997,
+    applicationsLogChannel((data.divisions as { department?: string | null } | null)?.department ?? department)
   );
 
   revalidatePath('/dashboard/divisions');

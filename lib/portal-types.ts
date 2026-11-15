@@ -45,7 +45,7 @@ export interface DivisionApplication {
   review_note: string | null;
   created_at: string;
   reviewed_at: string | null;
-  divisions?: { name: string } | null;
+  divisions?: { name: string; department?: string } | null;
 }
 
 export interface RoleRequest {

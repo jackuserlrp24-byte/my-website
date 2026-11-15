@@ -41,3 +41,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - When someone is unbanned (appeal accepted, or a Discord UNBAN from the Staff Panel) the bot DMs them a fresh single-use invite (valid 7 days). Accepted appeals also show the invite on `/appeal`.
 - Run the latest `supabase/full-setup.sql` (adds `ban_appeals.invite_url`).
 - Bot needs **Create Invite**. Optional env vars: `DISCORD_INVITE_CHANNEL_ID` (channel invites are created for), `DISCORD_INVITE_URL` (fallback permanent invite).
+
+## Log channels
+
+- Ban appeal logs (new appeal, accepted, denied): `DISCORD_APPEAL_LOG_CHANNEL_ID` (default `1571300231021203476`).
+- Met Police division application logs: `DISCORD_APPLICATIONS_LOG_CHANNEL_ID_MET` (default `1571517865406763149`). LAS, LFB and Control still use `DISCORD_APPLICATIONS_LOG_CHANNEL_ID`.
+- The Divisions page (`/dashboard/divisions`) has one tab per service: Met Police, LAS, LFB, Control.

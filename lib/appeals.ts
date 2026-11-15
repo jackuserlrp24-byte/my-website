@@ -1,7 +1,7 @@
 import { supabaseAdmin, MANAGEMENT_ROLE_IDS } from '@/lib/portal';
-import { createPrivateChannel, getGuildBan, postMessage, sendDm, sendUnbanNotice, unbanMember } from '@/lib/discord';
+import { APPEAL_LOG_CHANNEL_ID, createPrivateChannel, getGuildBan, postMessage, sendDm, sendUnbanNotice, unbanMember } from '@/lib/discord';
 import { queueGameAction } from '@/lib/game-actions';
-import { GOLD_ROLE_ID, MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
+import { GOLD_ROLE_ID } from '@/lib/training-config';
 
 export interface BanAppeal {
   id: string;
@@ -229,7 +229,7 @@ export async function reviewAppeal(id: string, accept: boolean, reviewer: string
   }
   notes.push(dmSent ? 'Player notified by DM.' : 'Could not DM the player (they can see the result on the appeal page).');
 
-  await postMessage(MODERATION_LOG_CHANNEL_ID, {
+  await postMessage(APPEAL_LOG_CHANNEL_ID, {
     embeds: [
       {
         title: `BAN APPEAL ${accept ? 'ACCEPTED' : 'DENIED'}`,
@@ -237,6 +237,7 @@ export async function reviewAppeal(id: string, accept: boolean, reviewer: string
         fields: [
           { name: 'Player', value: `<@${appeal.discord_id}> (${appeal.username ?? 'Unknown'})`, inline: true },
           { name: 'Decided by', value: reviewer, inline: true },
+          ...(accept ? [{ name: 'Rejoin invite', value: inviteUrl ? 'Created and sent' : 'Not needed / unavailable', inline: true }] : []),
           ...(cleanNote ? [{ name: 'Note', value: cleanNote }] : []),
         ],
         timestamp: new Date().toISOString(),
@@ -246,4 +247,23 @@ export async function reviewAppeal(id: string, accept: boolean, reviewer: string
   });
 
   return { ok: true, appeal: { ...(claimed as BanAppeal), invite_url: inviteUrl }, summary: notes.join(' ') };
+}
+
+/** Logs a freshly submitted appeal in the appeal log channel. */
+export async function logNewAppeal(appeal: BanAppeal) {
+  await postMessage(APPEAL_LOG_CHANNEL_ID, {
+    embeds: [
+      {
+        title: 'NEW BAN APPEAL',
+        color: 5793266,
+        fields: [
+          { name: 'Player', value: `<@${appeal.discord_id}> (${appeal.username ?? 'Unknown'})`, inline: true },
+          { name: 'Ticket', value: appeal.channel_id ? `<#${appeal.channel_id}>` : 'Opening...', inline: true },
+          { name: 'Why they should be unbanned', value: clip(appeal.appeal_reason, 900) },
+        ],
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    allowed_mentions: { parse: [] },
+  });
 }

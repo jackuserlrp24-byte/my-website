@@ -77,7 +77,11 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
   };
 }
 
-export function divisionsPayload(divisions: Division[]) {
+// Services left out of the Discord status embed (they still exist in the portal).
+const HIDDEN_FROM_EMBED = ['LAS', 'LFB', 'CONTROL'];
+
+export function divisionsPayload(allDivisions: Division[]) {
+  const divisions = allDivisions.filter((d) => !HIDDEN_FROM_EMBED.includes(d.department.toUpperCase()));
   const departments = Array.from(new Set(divisions.map((d) => d.department)));
   const fields: { name: string; value: string; inline: boolean }[] = [];
 

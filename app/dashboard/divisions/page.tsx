@@ -19,14 +19,14 @@ export default async function DivisionsPage() {
     user.canViewApplications
       ? supabaseAdmin
           .from('division_applications')
-          .select('*, divisions(name)')
+          .select('*, divisions(name, department)')
           .eq('status', 'pending')
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
     user.canViewApplications
       ? supabaseAdmin
           .from('division_applications')
-          .select('*, divisions(name)')
+          .select('*, divisions(name, department)')
           .neq('status', 'pending')
           .order('reviewed_at', { ascending: false })
           .limit(15)

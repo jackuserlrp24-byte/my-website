@@ -7,6 +7,14 @@ export const DIVISIONS_CHANNEL_ID = process.env.DISCORD_DIVISIONS_CHANNEL_ID || 
 export const APPLICATIONS_LOG_CHANNEL_ID =
   process.env.DISCORD_APPLICATIONS_LOG_CHANNEL_ID || '1564285919564136711';
 
+// Ban appeal logs (new appeal, accepted, denied) go here.
+export const APPEAL_LOG_CHANNEL_ID = process.env.DISCORD_APPEAL_LOG_CHANNEL_ID || '1571300231021203476';
+
+// Division application logs. Met Police has its own channel; LAS, LFB and Control are untouched and keep using the shared one.
+export const MET_APPLICATIONS_LOG_CHANNEL_ID = process.env.DISCORD_APPLICATIONS_LOG_CHANNEL_ID_MET || '1571517865406763149';
+export const applicationsLogChannel = (department?: string | null) =>
+  department?.toUpperCase() === 'MET POLICE' ? MET_APPLICATIONS_LOG_CHANNEL_ID : APPLICATIONS_LOG_CHANNEL_ID;
+
 function headers() {
   return {
     Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
@@ -59,9 +67,10 @@ export async function logEmbed(
   title: string,
   description: string,
   fields: { name: string; value: string; inline?: boolean }[],
-  color = 5793266
+  color = 5793266,
+  channelId: string = APPLICATIONS_LOG_CHANNEL_ID
 ) {
-  await postMessage(APPLICATIONS_LOG_CHANNEL_ID, {
+  await postMessage(channelId, {
     embeds: [{ title, description, color, fields, timestamp: new Date().toISOString() }],
     allowed_mentions: { parse: [] },
   });

@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/portal';
 import { parseSessionCookie, SESSION_COOKIE } from '@/lib/discord-auth';
-import { createAppealTicket, type BanAppeal } from '@/lib/appeals';
+import { createAppealTicket, logNewAppeal, type BanAppeal } from '@/lib/appeals';
 import type { ActionResult } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -65,5 +65,6 @@ export async function submitAppeal(formData: FormData): Promise<ActionResult> {
   }
 
   await supabaseAdmin.from('ban_appeals').update({ channel_id: ticket.channelId, message_id: ticket.messageId }).eq('id', row.id);
+  await logNewAppeal({ ...(row as BanAppeal), channel_id: ticket.channelId, message_id: ticket.messageId });
   return { ok: true, message: 'Your appeal has been sent to staff. You will be told the result here and by Discord DM if possible.' };
 }
