@@ -14,6 +14,12 @@ const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 
 export const MANAGEMENT_ROLE_IDS = [MASTER_ROLE_ID, MANAGEMENT_ROLE_ALT];
 
+/** Founder + developer roles: the only people who can open the Developer panel and who bypass maintenance mode. */
+export const DEVELOPER_ROLE_IDS = (process.env.DISCORD_DEVELOPER_ROLE_IDS || '1497557905275224151,1497557905275224148,1497557905250193506')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 /** Gold command (or management) approves role requests. */
 export const canReviewRoleRequests = (roles: string[]) =>
   hasRoleId(roles, GOLD_ROLE_ID) || MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
@@ -22,6 +28,7 @@ export interface PortalUser {
   id: string;
   name: string;
   isManagement: boolean;
+  isDeveloper: boolean; // founder / developer - Developer panel + bypasses maintenance mode
   isCommand: boolean; // can see the Command tab and edit division application links
   isTrainer: boolean; // can open the trainer panel and post trainings (trainer role, bronze/silver/gold, management)
   canRequestRoles: boolean; // trainer role, gold, management
@@ -69,6 +76,7 @@ export async function getPortalUser(): Promise<PortalUser | null> {
       id,
       name: member.nick || member.user?.global_name || member.user?.username || 'Unknown',
       isManagement,
+      isDeveloper: roles.some((r) => DEVELOPER_ROLE_IDS.includes(r)),
       isCommand: hasCommandAccess(roles),
       isTrainer:
         isManagement ||

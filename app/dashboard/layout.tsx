@@ -4,6 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import BackgroundSlideshow from './BackgroundSlideshow';
+import { DEVELOPER_ROLE_IDS } from '@/lib/portal';
+import { getMaintenance } from '@/lib/maintenance';
 import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +38,7 @@ const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
 async function checkUserAccessAndFetchDetails(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true, isStaff: true, isTrainer: true, isCommand: true, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+    return { inGuild: true, hasAccess: true, isManagement: true, isStaff: true, isTrainer: true, isCommand: true, isDeveloper: true, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 
   try {
@@ -51,11 +53,11 @@ async function checkUserAccessAndFetchDetails(userId: string) {
         .delete()
         .eq('discord_id', userId);
 
-      return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+      return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+      return { inGuild: true, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     const member = await res.json();
@@ -81,12 +83,13 @@ async function checkUserAccessAndFetchDetails(userId: string) {
       isStaff: hasMasterRole || hasAltManagementRole || roles.includes(GOLD_ROLE_ID) || roles.includes(SILVER_ROLE_ID),
       isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
       isCommand: hasCommandAccess(roles),
+      isDeveloper: roles.some((role) => DEVELOPER_ROLE_IDS.includes(role)),
       displayName,
       avatarUrl
     };
   } catch (err) {
     console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+    return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 }
 
@@ -113,6 +116,14 @@ export default async function DashboardLayout({
 
   if (!access.inGuild || !access.hasAccess) {
     redirect('/whitelistprocess');
+  }
+
+  // Developers get a reminder while anything is switched off (they can still see everything).
+  let maintenanceNote = '';
+  if (access.isDeveloper) {
+    const m = await getMaintenance();
+    const parts = [...(m.site.on ? ['Whole website'] : []), ...Object.entries(m.panels).filter(([, v]) => v.on).map(([k]) => k)];
+    if (parts.length) maintenanceNote = parts.join(', ');
   }
 
   // Pending ban appeals badge for staff (silently 0 if the table is not set up yet)
@@ -179,6 +190,15 @@ export default async function DashboardLayout({
               {pendingAppeals > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-mono font-bold rounded-full">{pendingAppeals}</span>
               )}
+            </Link>
+          )}
+
+          {access.isDeveloper && (
+            <Link
+              href="/dashboard/developer"
+              className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Developer
             </Link>
           )}
 
@@ -249,6 +269,12 @@ export default async function DashboardLayout({
           </details>
         </div>
       </header>
+
+      {maintenanceNote && (
+        <div className="z-10 bg-amber-500/10 border-b border-amber-500/30 px-8 py-2 text-center text-[11px] font-mono text-amber-300 uppercase tracking-wider">
+          Maintenance active: {maintenanceNote} - only founders / developers can see it
+        </div>
+      )}
 
       {/* Page Contents */}
       <div className="flex-1 flex flex-col my-4 z-10">

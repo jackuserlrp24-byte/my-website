@@ -47,3 +47,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - Ban appeal logs (new appeal, accepted, denied): `DISCORD_APPEAL_LOG_CHANNEL_ID` (default `1571300231021203476`).
 - Met Police division application logs: `DISCORD_APPLICATIONS_LOG_CHANNEL_ID_MET` (default `1571517865406763149`). LAS, LFB and Control still use `DISCORD_APPLICATIONS_LOG_CHANNEL_ID`.
 - The Divisions page (`/dashboard/divisions`) has one tab per service: Met Police, LAS, LFB, Control.
+
+## Developer panel / maintenance mode
+
+- `/dashboard/developer` (nav: **Developer**) is only for roles in `DISCORD_DEVELOPER_ROLE_IDS` (default: `1497557905275224151`, `1497557905275224148`, `1497557905250193506`).
+- It can put the whole website, or any single panel, under maintenance with a custom message. Founders / developers bypass it so they can switch it back off. Settings live in `portal_settings` (key `maintenance`); changes are logged to the moderation log channel.

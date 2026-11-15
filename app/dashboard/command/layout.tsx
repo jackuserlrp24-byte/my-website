@@ -1,3 +1,4 @@
+import { PanelGate } from '@/app/components/MaintenanceGates';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -47,5 +48,5 @@ export default async function CommandLayout({
     redirect('/dashboard');
   }
 
-  return <>{children}</>;
+  return <PanelGate panel="command">{children}</PanelGate>;
 }
