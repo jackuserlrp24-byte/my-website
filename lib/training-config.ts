@@ -79,11 +79,17 @@ export const ROLE_LOG_CHANNEL_ID = process.env.PORTAL_ROLE_LOG_CHANNEL_ID || '15
 // Command LOA (leave of absence) approvals, declines and returns are logged here.
 export const LOA_LOG_CHANNEL_ID = process.env.PORTAL_LOA_LOG_CHANNEL_ID || '1571528481739636927';
 
-// Role requests must never be posted into the moderation log channel, even if an env var points at it.
-const ROLE_REQUESTS_FALLBACK = '1532786346920247398';
-const roleRequestsEnv = process.env.DISCORD_ROLE_REQUESTS_CHANNEL_ID || ROLE_REQUESTS_FALLBACK;
+// The patrol channel is for patrol notifications ONLY - role requests are never posted there.
+export const PATROL_CHANNEL_ID = '1532786346920247398';
+
+// Where the Approve / Deny role request posts go. Set DISCORD_ROLE_REQUESTS_CHANNEL_ID to use a different channel;
+// otherwise they go to the role log channel above. The patrol channel and the moderation log channel are never used,
+// even if the variable points at one of them.
+const roleRequestsEnv = (process.env.DISCORD_ROLE_REQUESTS_CHANNEL_ID || '').trim();
 export const ROLE_REQUESTS_CHANNEL_ID =
-  roleRequestsEnv === MODERATION_LOG_CHANNEL_ID ? ROLE_REQUESTS_FALLBACK : roleRequestsEnv;
+  roleRequestsEnv && roleRequestsEnv !== PATROL_CHANNEL_ID && roleRequestsEnv !== MODERATION_LOG_CHANNEL_ID
+    ? roleRequestsEnv
+    : ROLE_LOG_CHANNEL_ID;
 
 export const REQUIREMENT_MESSAGE =
   'You need to be IPP and a trained driver first before you can attend this training.';

@@ -260,3 +260,39 @@ create table if not exists staff_requests (
 );
 create index if not exists staff_requests_created_idx on staff_requests (created_at desc);
 alter table staff_requests enable row level security;
+
+
+-- ---------- Completed trainings (Complete button -> DM the instructor "did anyone leave?") ----------
+alter table trainings add column if not exists completed_at timestamptz;
+alter table trainings add column if not exists completed_by text;
+alter table trainings add column if not exists host_id text;                          -- Discord ID of the instructor (gets the DM)
+alter table trainings add column if not exists left_ids text[] not null default '{}'; -- people the instructor removed from the record
+
+-- ---------- Training rooms (auto-assigned voice room; DM sent once everyone has left it) ----------
+alter table trainings add column if not exists room_id text;                  -- Discord voice channel assigned to this training
+alter table trainings add column if not exists room_seen boolean not null default false; -- someone has been seen in the room
+alter table trainings add column if not exists room_empty_since timestamptz;  -- when the room was first seen empty after being used
+
+-- ---------- Training bars (a trainer bars someone from ONE kind of training, e.g. IPP, until a new one of that kind is posted) ----------
+create table if not exists training_bars (
+  id uuid primary key default gen_random_uuid(),
+  discord_id text not null,
+  target_name text,
+  training_key text not null default '',   -- which training type (template key, e.g. ipp-induction)
+  training_title text,                     -- readable name of that training type
+  reason text,
+  barred_by text not null,
+  barred_by_id text,
+  created_at timestamptz not null default now(),
+  lifted_at timestamptz,   -- set when a new training of that type is posted, or a trainer lifts it early
+  lifted_by text
+);
+-- For databases that already ran the earlier version of this table:
+alter table training_bars add column if not exists training_key text not null default '';
+alter table training_bars add column if not exists training_title text;
+drop index if exists one_active_training_bar;
+create unique index if not exists one_active_training_bar_per_type on training_bars (discord_id, training_key) where lifted_at is null;
+alter table training_bars enable row level security;
+
+-- Which template a training was posted from (so a bar lifts when a new training of the same type is posted)
+alter table trainings add column if not exists template_key text;

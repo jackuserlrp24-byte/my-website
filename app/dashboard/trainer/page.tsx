@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import type { Division, RoleRequest } from '@/lib/portal-types';
+import type { Division, RoleRequest, TrainingBar } from '@/lib/portal-types';
 import TrainerClient from './TrainerClient';
 
 export const dynamic = 'force-dynamic';
@@ -21,15 +21,17 @@ export default async function TrainerPage() {
         .limit(30)
     : null;
 
-  const [divisionsRes, requestsRes] = await Promise.all([
+  const [divisionsRes, requestsRes, barsRes] = await Promise.all([
     supabaseAdmin.from('divisions').select('*').order('department').order('sort_order'),
     requestsQuery ?? Promise.resolve({ data: [] }),
+    supabaseAdmin.from('training_bars').select('*').is('lifted_at', null).order('created_at', { ascending: false }),
   ]);
 
   return (
     <TrainerClient
       divisions={(divisionsRes.data ?? []) as Division[]}
       requests={(requestsRes.data ?? []) as RoleRequest[]}
+      bars={(barsRes.error ? [] : barsRes.data ?? []) as TrainingBar[]}
       canRequestRoles={user.canRequestRoles}
       canReview={user.canReviewRoleRequests}
     />

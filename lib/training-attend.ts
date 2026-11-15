@@ -1,5 +1,7 @@
 import { supabaseAdmin } from '@/lib/portal';
 import { REQUIREMENT_MESSAGE, meetsTrainingRequirements } from '@/lib/training-config';
+import { getActiveBar } from '@/lib/training-bars';
+import { trainingKey } from '@/lib/training-key';
 import type { Training } from '@/lib/portal-types';
 
 export type BookResult =
@@ -62,6 +64,13 @@ export async function bookOnTraining(
   }
   if (training.completed_at) {
     return { status: 'finished', message: 'This training has already been completed.' };
+  }
+  const bar = await getActiveBar(discordId, trainingKey(training));
+  if (bar) {
+    return {
+      status: 'blocked',
+      message: `A trainer has barred you from **${bar.training_title || training.title}**. You can book on again once a new one is posted.`,
+    };
   }
   if (training.requires_ipp && !meetsTrainingRequirements(roles)) {
     return { status: 'blocked', message: REQUIREMENT_MESSAGE };

@@ -9,6 +9,9 @@ import { isLateNightLondon, londonLocalToUtc } from '@/lib/london-time';
 import { TRAINING_PING_ROLE_ID } from '@/lib/training-config';
 import { markTrainingComplete } from '@/lib/training-complete';
 import { pickFreeRoom } from '@/lib/training-rooms';
+import { liftBarsForKey } from '@/lib/training-bars';
+import { trainingKey } from '@/lib/training-key';
+import { TRAINING_TEMPLATES } from '@/lib/training-templates';
 import type { ActionResult, Training } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -66,6 +69,11 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   }
 
   const training = row as Training;
+  // Remember which template it came from, and posting a new training of this kind ends everyone's bar for that kind.
+  const templateKeyInput = field(formData, 'templateKey', 60);
+  const templateKey = TRAINING_TEMPLATES.some((t) => t.key === templateKeyInput) ? templateKeyInput : null;
+  if (templateKey) await supabaseAdmin.from('trainings').update({ template_key: templateKey }).eq('id', training.id);
+  const liftedBars = await liftBarsForKey(trainingKey({ title: training.title, template_key: templateKey }), 'New training posted');
   // Remember who the instructor is (so the "did anyone leave?" DM reaches them). Best-effort: needs supabase/training-complete.sql.
   await supabaseAdmin.from('trainings').update({ host_id: user.id }).eq('id', training.id);
   // Assign a free training room (needs DISCORD_TRAINING_ROOM_IDS + supabase/training-rooms.sql).
@@ -91,7 +99,7 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   return {
     ok: true,
     message: messageId
-      ? `${training.id} posted to the website and Discord.${training.room_id ? ' Training room assigned.' : ''}`
+      ? `${training.id} posted to the website and Discord.${training.room_id ? ' Training room assigned.' : ''}${liftedBars ? ` ${liftedBars} bar${liftedBars === 1 ? '' : 's'} for this training lifted.` : ''}`
       : `${training.id} saved, but posting to Discord failed (check the bot token and channel permissions).`,
   };
 }

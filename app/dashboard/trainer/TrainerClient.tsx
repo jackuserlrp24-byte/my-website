@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import type { ActionResult, Division, RoleRequest } from '@/lib/portal-types';
+import type { ActionResult, Division, RoleRequest, TrainingBar } from '@/lib/portal-types';
 import { REQUESTABLE_ROLES } from '@/lib/training-config';
 import { TRAINING_TEMPLATES } from '@/lib/training-templates';
 import { createTraining } from '@/app/dashboard/trainings/actions';
-import { decideRoleRequest, requestRole } from './actions';
+import { barFromTrainings, decideRoleRequest, liftTrainingBar, requestRole } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]';
@@ -25,16 +25,18 @@ const addMinutes = (time: string, mins: number) => {
 export default function TrainerClient({
   divisions,
   requests,
+  bars,
   canRequestRoles,
   canReview,
 }: {
   divisions: Division[];
   requests: RoleRequest[];
+  bars: TrainingBar[];
   canRequestRoles: boolean;
   canReview: boolean;
 }) {
   const showRoles = canRequestRoles || canReview;
-  const [tab, setTab] = useState<'post' | 'roles'>('post');
+  const [tab, setTab] = useState<'post' | 'roles' | 'bars'>('post');
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
 
@@ -45,6 +47,7 @@ export default function TrainerClient({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [duration, setDuration] = useState<number | null>(null);
+  const [templateKey, setTemplateKey] = useState('');
 
   // Role request: several roles can be ticked and sent in one go.
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -55,6 +58,7 @@ export default function TrainerClient({
   function applyTemplate(key: string) {
     const t = TRAINING_TEMPLATES.find((x) => x.key === key);
     if (!t) return;
+    setTemplateKey(t.key);
     setTitle(t.title);
     setDescription(t.description);
     setRequiresIpp(t.requiresIpp);
@@ -82,6 +86,7 @@ export default function TrainerClient({
   }
 
   const clearTraining = () => {
+    setTemplateKey('');
     setTitle('');
     setDescription('');
     setStartTime('');
@@ -97,7 +102,7 @@ export default function TrainerClient({
         <div>
           <span className="text-[10px] font-mono text-[#5865F2] tracking-widest uppercase block mb-1">TRAINER PANEL</span>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Trainer Panel</h2>
-          <p className="text-xs text-neutral-400 mt-1">Post trainings from templates{showRoles ? ' and manage role requests' : ''}.</p>
+          <p className="text-xs text-neutral-400 mt-1">Post trainings from templates, bar people from a training{showRoles ? ' and manage role requests' : ''}.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setTab('post')} className={`${btnClass} ${tab === 'post' ? '' : '!bg-neutral-800 hover:!bg-neutral-700'}`}>
@@ -108,6 +113,9 @@ export default function TrainerClient({
               Role Requests
             </button>
           )}
+          <button onClick={() => setTab('bars')} className={`${btnClass} ${tab === 'bars' ? '' : '!bg-neutral-800 hover:!bg-neutral-700'}`}>
+            Training Bars
+          </button>
           <Link href="/dashboard/trainings" className={`${btnClass} !bg-neutral-800 hover:!bg-neutral-700`}>
             View Trainings
           </Link>
@@ -126,6 +134,7 @@ export default function TrainerClient({
 
       {tab === 'post' && (
         <form onSubmit={(e) => submit(e, createTraining, clearTraining)} className="bg-neutral-900 border border-neutral-800 p-6 space-y-4">
+          <input type="hidden" name="templateKey" value={templateKey} />
           <div>
             <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-2">Templates</h3>
             <div className="flex flex-wrap gap-2">
@@ -316,6 +325,69 @@ export default function TrainerClient({
                     >
                       {r.status}
                     </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'bars' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <form onSubmit={(e) => submit(e, barFromTrainings, () => {})} className="bg-neutral-900 border border-neutral-800 p-6 space-y-4">
+            <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">Bar from trainings</h3>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Member's Discord ID</label>
+              <input name="target" required placeholder="Right click them > Copy User ID" className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Barred from which training</label>
+              <select name="trainingKey" required defaultValue="" className={inputClass}>
+                <option value="" disabled>
+                  Choose a training...
+                </option>
+                {TRAINING_TEMPLATES.map((t) => (
+                  <option key={t.key} value={t.key}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Reason</label>
+              <textarea name="reason" required rows={4} maxLength={300} className={inputClass} />
+            </div>
+            <button type="submit" disabled={pending} className={btnClass}>
+              {pending ? 'Saving...' : 'Bar from trainings'}
+            </button>
+            <p className="text-[11px] text-neutral-500">
+              They can't book that training and are taken off any upcoming one they're booked on. The bar ends automatically when a new training of the same type is posted.
+            </p>
+          </form>
+
+          <div className="bg-neutral-900 border border-neutral-800 p-6 lg:col-span-2">
+            <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-4">Currently barred</h3>
+            {bars.length === 0 ? (
+              <p className="text-xs font-mono text-neutral-500">Nobody is barred.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {bars.map((b) => (
+                  <div key={b.id} className="bg-neutral-950 border border-neutral-800 p-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-xs text-neutral-300">
+                      <span className="font-mono font-bold">{b.target_name || b.discord_id}</span>
+                      <span className="text-neutral-500"> - </span>
+                      {b.training_title || b.training_key}
+                      <span className="text-neutral-500"> (by {b.barred_by})</span>
+                      {b.reason && <div className="text-neutral-500 mt-1">{b.reason}</div>}
+                    </div>
+                    <button
+                      disabled={pending}
+                      onClick={() => startTransition(async () => setResult(await liftTrainingBar(b.id)))}
+                      className="px-3 py-1 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 disabled:opacity-50 text-[10px] font-mono uppercase tracking-wider cursor-pointer"
+                    >
+                      Lift bar
+                    </button>
                   </div>
                 ))}
               </div>

@@ -32,6 +32,7 @@ export interface Training {
   original_starts_at: string | null; // set the first time a training is delayed
   cancelled_at?: string | null; // set when a trainer cancels the session
   cancel_reason?: string | null;
+  template_key?: string | null; // which template it was posted from (used by training bars)
   completed_at?: string | null; // set when a trainer presses Complete
   completed_by?: string | null;
   host_id?: string | null; // Discord ID of the instructor
@@ -98,4 +99,18 @@ export interface GameAction {
   result: string | null;
   created_at: string;
   completed_at: string | null;
+}
+
+export interface TrainingBar {
+  id: string;
+  discord_id: string;
+  target_name: string | null;
+  training_key: string;
+  training_title: string | null;
+  reason: string | null;
+  barred_by: string;
+  barred_by_id: string | null;
+  created_at: string;
+  lifted_at: string | null;
+  lifted_by: string | null;
 }
