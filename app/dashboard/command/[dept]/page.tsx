@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { COMMAND_DEPARTMENTS, canOpenDepartment } from '@/lib/departments';
 import type { Division, DivisionApplication } from '@/lib/portal-types';
+import { closeExpiredDivisions } from '@/lib/division-deadlines';
 import DepartmentCommandClient from './DepartmentCommandClient';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,8 @@ export default async function DepartmentCommandPage({ params }: { params: Promis
   const user = await getPortalUser();
   if (!user) redirect('/');
   if (!canOpenDepartment(user.roles, user.isManagement, dept)) redirect('/dashboard/command');
+
+  await closeExpiredDivisions();
 
   const [divisionsRes, pendingRes, reviewedRes] = await Promise.all([
     supabaseAdmin

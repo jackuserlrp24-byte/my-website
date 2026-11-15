@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, DivisionApplication } from '@/lib/portal-types';
-import { decideApplication, setDivisionLink, setDivisionStatus } from './actions';
+import { decideApplication, setDivisionDeadline, setDivisionLink, setDivisionStatus } from './actions';
+import { formatCloseDate } from '@/lib/london-time';
 
 interface Props {
   user: { name: string; isManagement: boolean; isCommand: boolean; canViewApplications: boolean };
@@ -38,6 +39,7 @@ export default function DivisionsClient({
   const [result, setResult] = useState<ActionResult | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
+  const [dateDraft, setDateDraft] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   function run(action: () => Promise<ActionResult>, onOk?: () => void) {
@@ -146,6 +148,7 @@ export default function DivisionsClient({
                       {d.description && <p className="text-[11px] text-neutral-500 leading-relaxed">{d.description}</p>}
                       {accepted && <p className="text-[11px] font-mono text-emerald-400 uppercase">You were accepted</p>}
                       {isOpen && !d.application_url && <p className="text-[11px] font-mono text-amber-400/80">Open - application link not added yet.</p>}
+                      {isOpen && d.closes_on && <p className="text-[11px] font-mono text-neutral-400">Closes after {formatCloseDate(d.closes_on)}</p>}
                     </div>
 
                     <div className="px-4 py-3 border-t border-neutral-800 flex flex-wrap items-center gap-2">
@@ -187,6 +190,34 @@ export default function DivisionsClient({
                         )}
                       </div>
                     </div>
+
+                    {isOpen && user.isManagement && (
+                      <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
+                        <span className="text-[10px] font-mono text-neutral-500 uppercase">Closes on</span>
+                        <input
+                          type="date"
+                          value={dateDraft[d.id] ?? d.closes_on ?? ''}
+                          onChange={(e) => setDateDraft((x) => ({ ...x, [d.id]: e.target.value }))}
+                          className={`${inputClass} !w-auto select-text`}
+                        />
+                        <button
+                          disabled={pending}
+                          onClick={() => run(() => setDivisionDeadline(d.id, dateDraft[d.id] ?? d.closes_on ?? ''))}
+                          className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                        {d.closes_on && (
+                          <button
+                            disabled={pending}
+                            onClick={() => run(() => setDivisionDeadline(d.id, ''), () => setDateDraft((x) => ({ ...x, [d.id]: '' })))}
+                            className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-500 text-[10px] font-mono uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     {editing && (
                       <form

@@ -8,6 +8,7 @@ export interface Division {
   sort_order: number;
   status: 'open' | 'closed';
   application_url: string | null; // Google Form link, opened when someone clicks the division name
+  closes_on?: string | null; // YYYY-MM-DD (UK date). The division closes itself once this day has finished.
   discord_role_id?: string | null; // given to the applicant on the Discord server when their application is accepted
 }
 
@@ -29,6 +30,8 @@ export interface Training {
   delayed_minutes: number; // total minutes the session has been pushed back (0 = on time)
   delay_reason: string | null;
   original_starts_at: string | null; // set the first time a training is delayed
+  cancelled_at?: string | null; // set when a trainer cancels the session
+  cancel_reason?: string | null;
   created_at: string;
 }
 

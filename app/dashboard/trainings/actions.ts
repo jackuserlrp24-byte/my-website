@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, getGuildMember, postMessage, sendDm } from '@/lib/discord';
-import { trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { trainingCancelDmPayload, trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
-import { londonLocalToUtc } from '@/lib/london-time';
+import { isLateNightLondon, londonLocalToUtc } from '@/lib/london-time';
+import { TRAINING_PING_ROLE_ID } from '@/lib/training-config';
 import type { ActionResult, Training } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -247,6 +248,56 @@ export async function changeTrainingHost(trainingId: string, who: string): Promi
 
   revalidatePath('/dashboard/trainings');
   return { ok: true, message: `${training.id} instructor changed from ${oldHost} to ${newHost}.` };
+}
+
+/** Trainers only: cancel a session. Edits the Discord post, pings the role (silently overnight, UK time) and DMs everyone booked on. */
+export async function cancelTraining(trainingId: string, reason: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.isTrainer) return fail('Only trainers can cancel trainings.');
+  const note = String(reason ?? '').trim().slice(0, 200);
+
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return fail('Training not found.');
+  const current = data as Training;
+  if (current.cancelled_at) return fail('This training is already cancelled.');
+  if (new Date(current.ends_at) < new Date()) return fail('This training has already finished.');
+
+  const { data: row, error } = await supabaseAdmin
+    .from('trainings')
+    .update({ cancelled_at: new Date().toISOString(), cancel_reason: note || null })
+    .eq('id', trainingId)
+    .select('*')
+    .single();
+  if (error || !row) {
+    console.error('Training cancel failed:', error);
+    return fail('Could not cancel the training. Run supabase/cancel-training.sql (adds the cancelled columns) in Supabase.');
+  }
+
+  const training = row as Training;
+  const divName = await divisionName(training.division_id);
+  const silent = isLateNightLondon();
+
+  if (training.discord_message_id) {
+    const channel = training.discord_channel_id || TRAININGS_CHANNEL_ID;
+    await editMessage(channel, training.discord_message_id, trainingPayload(training, divName));
+    await postMessage(channel, {
+      content: `<@&${TRAINING_PING_ROLE_ID}> **${training.id} (${training.title}) has been cancelled.**${note ? ` Reason: ${note}` : ''}`,
+      message_reference: { message_id: training.discord_message_id, fail_if_not_exists: false },
+      allowed_mentions: { roles: [TRAINING_PING_ROLE_ID] },
+      ...(silent ? { flags: 4096 } : {}), // SUPPRESS_NOTIFICATIONS: still tags the role, but no push / sound
+    });
+  }
+
+  const ids = training.attending_ids ?? [];
+  const results = await Promise.all(ids.map((id) => sendDm(id, trainingCancelDmPayload(training, divName))));
+  const dmd = results.filter(Boolean).length;
+
+  revalidatePath('/dashboard/trainings');
+  revalidatePath('/dashboard/calendar');
+  return {
+    ok: true,
+    message: `${training.id} cancelled. Role ${silent ? 'pinged silently (late night)' : 'pinged'}, ${dmd} of ${ids.length} attendee${ids.length === 1 ? '' : 's'} DMed.`,
+  };
 }
 
 export async function deleteTraining(trainingId: string): Promise<ActionResult> {

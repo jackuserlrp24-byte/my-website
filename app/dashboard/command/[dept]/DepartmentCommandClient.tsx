@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, DivisionApplication } from '@/lib/portal-types';
-import { decideApplication, setDivisionLink, setDivisionStatus } from '@/app/dashboard/divisions/actions';
+import { decideApplication, setDivisionDeadline, setDivisionLink, setDivisionStatus } from '@/app/dashboard/divisions/actions';
+import { formatCloseDate } from '@/lib/london-time';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]';
@@ -25,6 +26,7 @@ export default function DepartmentCommandClient({ title, short, accent, userName
   const [result, setResult] = useState<ActionResult | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
+  const [dateDraft, setDateDraft] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   function run(action: () => Promise<ActionResult>, onOk?: () => void) {
@@ -124,6 +126,35 @@ export default function DepartmentCommandClient({ title, short, accent, userName
                     </span>
                   </div>
                 </div>
+                {isOpen && (
+                  <div className="flex flex-wrap items-center gap-2 pl-6">
+                    <span className="text-[10px] text-neutral-500 uppercase">
+                      {d.closes_on ? `Closes after ${formatCloseDate(d.closes_on)}` : 'Closes on'}
+                    </span>
+                    <input
+                      type="date"
+                      value={dateDraft[d.id] ?? d.closes_on ?? ''}
+                      onChange={(e) => setDateDraft((x) => ({ ...x, [d.id]: e.target.value }))}
+                      className={`${inputClass} !w-auto select-text`}
+                    />
+                    <button
+                      disabled={busy}
+                      onClick={() => run(() => setDivisionDeadline(d.id, dateDraft[d.id] ?? d.closes_on ?? ''))}
+                      className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    {d.closes_on && (
+                      <button
+                        disabled={busy}
+                        onClick={() => run(() => setDivisionDeadline(d.id, ''), () => setDateDraft((x) => ({ ...x, [d.id]: '' })))}
+                        className="px-2.5 py-1 border border-neutral-700 hover:bg-neutral-800 text-neutral-500 text-[10px] uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
                 {editing && (
                   <form
                     onSubmit={(e) => {

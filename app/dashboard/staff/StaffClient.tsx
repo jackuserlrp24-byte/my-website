@@ -63,6 +63,27 @@ export default function StaffClient({
   const [scope, setScope] = useState<Scope>('game');
   const [banHours, setBanHours] = useState(24);
   const [game, setGame] = useState<GameAction[]>(gameActions);
+  const [live, setLive] = useState<{ online: boolean; count: number; max: number } | null>(null);
+
+  // How many people are in the FiveM server right now (same feed as the dashboard status widget).
+  useEffect(() => {
+    let stop = false;
+    async function poll() {
+      try {
+        const res = await fetch('/api/server-status', { cache: 'no-store' });
+        const d = res.ok ? await res.json() : null;
+        if (!stop) setLive(d ? { online: !!d.isOnline, count: (d.players ?? []).length, max: Number(d.maxClients) || 64 } : { online: false, count: 0, max: 64 });
+      } catch {
+        if (!stop) setLive({ online: false, count: 0, max: 64 });
+      }
+    }
+    poll();
+    const t = setInterval(poll, 5000);
+    return () => {
+      stop = true;
+      clearInterval(t);
+    };
+  }, []);
 
   // Keep the in-game status list fresh while something is still waiting for the server.
   const waiting = game.some((g) => g.status === 'pending' || g.status === 'sent');
@@ -149,6 +170,12 @@ export default function StaffClient({
                 Search
               </button>
             </form>
+            {live && (
+              <p className="flex items-center gap-2 text-[11px] font-mono text-neutral-400">
+                <span className={`h-2 w-2 rounded-full ${live.online ? 'bg-emerald-500' : 'bg-red-500/70'}`} aria-hidden />
+                {live.online ? `${live.count} / ${live.max} players in game` : 'Server offline'}
+              </p>
+            )}
             {results.length > 0 && (
               <div className="flex flex-col gap-1">
                 {results.map((m) => (

@@ -28,6 +28,8 @@ create table if not exists divisions (
 alter table divisions add column if not exists application_url text;
 -- Discord role given to people accepted into the division (optional)
 alter table divisions add column if not exists discord_role_id text;
+-- Day (UK date) a division closes itself. It closes once that day has finished. Optional.
+alter table divisions add column if not exists closes_on date;
 
 create table if not exists division_applications (
   id uuid primary key default gen_random_uuid(),
@@ -237,3 +239,7 @@ alter table met_training_records add column if not exists training_id text;
 -- one auto record per person per training (manually logged rows have no training_id and are unaffected)
 create unique index if not exists met_training_records_one_per_training
   on met_training_records (training_id, target_discord_id);
+
+-- ---------- Cancelled trainings ----------
+alter table trainings add column if not exists cancelled_at timestamptz;
+alter table trainings add column if not exists cancel_reason text;

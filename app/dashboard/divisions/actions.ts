@@ -6,6 +6,8 @@ import { addGuildRole, applicationsLogChannel, logEmbed } from '@/lib/discord';
 import { GOLD_MANAGED_DEPARTMENTS } from '@/lib/departments';
 import { GOLD_ROLE_ID } from '@/lib/training-config';
 import { syncDivisionsEmbed } from '@/lib/divisions-sync';
+import { closeExpiredDivisions } from '@/lib/division-deadlines';
+import { londonToday } from '@/lib/london-time';
 import type { ActionResult, Division } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -21,12 +23,14 @@ export async function setDivisionStatus(divisionId: string, status: 'open' | 'cl
   const user = await getPortalUser();
   if (!user) return fail('Please log in again.');
   if (status !== 'open' && status !== 'closed') return fail('Invalid status.');
-  const { data: target } = await supabaseAdmin.from('divisions').select('department').eq('id', divisionId).maybeSingle();
+  const { data: target } = await supabaseAdmin.from('divisions').select('*').eq('id', divisionId).maybeSingle();
   if (!canManage(user, target?.department)) return fail('You do not have permission to change division status.');
 
+  // Re-opening with a deadline that has already passed would just close it again, so drop the old date.
+  const staleDeadline = status === 'open' && !!target?.closes_on && target.closes_on < londonToday();
   const { data, error } = await supabaseAdmin
     .from('divisions')
-    .update({ status, updated_by: user.name, updated_at: new Date().toISOString() })
+    .update({ status, ...(staleDeadline ? { closes_on: null } : {}), updated_by: user.name, updated_at: new Date().toISOString() })
     .eq('id', divisionId)
     .select('name')
     .maybeSingle();
@@ -71,6 +75,38 @@ export async function setDivisionLink(divisionId: string, url: string): Promise<
   };
 }
 
+/** Sets (or clears, with an empty string) the day a division closes itself. It closes once that day (UK time) is over. */
+export async function setDivisionDeadline(divisionId: string, date: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user) return fail('Please log in again.');
+
+  const day = String(date ?? '').trim();
+  if (day && !/^\d{4}-\d{2}-\d{2}$/.test(day)) return fail('Pick a valid date.');
+  if (day && day < londonToday()) return fail('That date has already passed.');
+
+  const { data: target } = await supabaseAdmin.from('divisions').select('department').eq('id', divisionId).maybeSingle();
+  if (!canManage(user, target?.department)) return fail('You do not have permission to change this division.');
+
+  const { data, error } = await supabaseAdmin
+    .from('divisions')
+    .update({ closes_on: day || null, updated_by: user.name, updated_at: new Date().toISOString() })
+    .eq('id', divisionId)
+    .select('name')
+    .maybeSingle();
+  if (error || !data) {
+    console.error('Division deadline update failed:', error);
+    return fail('Could not save the date. Have you run the latest supabase/full-setup.sql?');
+  }
+
+  const synced = await syncDivisionsEmbed();
+  revalidatePath('/dashboard/divisions');
+  revalidatePath('/dashboard/command', 'layout');
+  return {
+    ok: true,
+    message: `${data.name}: ${day ? `will close automatically after ${day}.` : 'closing date removed.'}${synced ? '' : ' (Discord embed could not be updated.)'}`,
+  };
+}
+
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
   const user = await getPortalUser();
   if (!user) return fail('Please log in again.');
@@ -82,6 +118,7 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
 
   if (reason.length < 30) return fail('Tell us a bit more about why you want to join (at least 30 characters).');
 
+  await closeExpiredDivisions(); // make sure a division past its closing date can't take applications
   const { data: division } = await supabaseAdmin.from('divisions').select('*').eq('id', divisionId).maybeSingle();
   if (!division) return fail('Division not found.');
   if ((division as Division).status !== 'open') return fail('This division is currently closed to applications.');

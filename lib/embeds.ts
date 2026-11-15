@@ -1,3 +1,4 @@
+import { formatCloseDate } from '@/lib/london-time';
 import { PORTAL_URL } from '@/lib/portal';
 import type { Division, RoleRequest, Training } from '@/lib/portal-types';
 import { TRAINING_VC_ID } from '@/lib/training-config';
@@ -62,6 +63,16 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
   };
   if (t.image_url) embed.image = { url: t.image_url };
 
+  if (t.cancelled_at) {
+    embed.title = `CANCELLED: ${t.title}`;
+    embed.color = 15548997;
+    embed.description = `**This training has been cancelled.**${t.cancel_reason ? `\nReason: ${t.cancel_reason}` : ''}`;
+    return {
+      embeds: [embed],
+      components: [{ type: 1, components: [{ type: 2, style: 5, label: 'View Portal', url: `${PORTAL_URL}/dashboard/trainings` }] }],
+    };
+  }
+
   return {
     embeds: [embed],
     components: [
@@ -92,7 +103,7 @@ export function divisionsPayload(allDivisions: Division[]) {
       {
         name: `${dept} - OPEN (${open.length})`,
         value: open.length
-          ? open.map((d) => (d.application_url ? `**[${d.name}](${d.application_url})**` : `**${d.name}**`)).join('\n')
+          ? open.map((d) => (d.application_url ? `**[${d.name}](${d.application_url})**` : `**${d.name}**`) + (d.closes_on ? ` - closes ${formatCloseDate(d.closes_on)}` : '')).join('\n')
           : 'None currently open.',
         inline: true,
       },
@@ -245,5 +256,24 @@ export function divisionsMaintenancePayload(message: string, comingSoon = false)
       },
     ],
     components: [],
+  };
+}
+
+/** DM sent to everyone booked on when a trainer cancels the session. */
+export function trainingCancelDmPayload(t: Training, divisionName?: string | null) {
+  return {
+    embeds: [
+      {
+        title: `Training cancelled: ${t.title}`,
+        description: `This session has been cancelled, so you don't need to attend.${t.cancel_reason ? `\n**Reason:** ${t.cancel_reason}` : ''}`,
+        color: 15548997,
+        fields: [
+          { name: 'Training ID', value: t.id, inline: true },
+          { name: 'Division', value: divisionName || 'General', inline: true },
+          { name: 'Was due', value: `<t:${unix(t.starts_at)}:F>`, inline: false },
+        ],
+        footer: { text: 'Central Operations Portal' },
+      },
+    ],
   };
 }

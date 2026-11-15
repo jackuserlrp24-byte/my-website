@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, Training } from '@/lib/portal-types';
-import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining, changeTrainingHost } from './actions';
+import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining, changeTrainingHost, cancelTraining } from './actions';
 
 interface Props {
   user: { name: string; isTrainer: boolean; canSwapHost: boolean };
@@ -26,6 +26,8 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
   const [delayingId, setDelayingId] = useState<string | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState('');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [swappingId, setSwappingId] = useState<string | null>(null);
   const [newHost, setNewHost] = useState('');
 
@@ -87,15 +89,19 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
             const state = trainingState(t);
             const isAttending = t.attending.includes(user.name);
             const cantMake = (t.unattending ?? []).includes(user.name);
-            const delayed = (t.delayed_minutes ?? 0) > 0;
+            const delayed = (t.delayed_minutes ?? 0) > 0 && !t.cancelled_at;
+            const cancelled = !!t.cancelled_at;
 
             return (
-              <div key={t.id} className="bg-neutral-900 border border-neutral-800 shadow-xl overflow-hidden flex flex-col">
+              <div key={t.id} className={`bg-neutral-900 border shadow-xl overflow-hidden flex flex-col ${cancelled ? 'border-red-500/30 opacity-75' : 'border-neutral-800'}`}>
                 <div className="bg-neutral-950 border-b border-neutral-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3 text-xs font-mono text-neutral-400 uppercase tracking-wider">
                     <span>{t.id}</span>
                     <span className="text-neutral-700">/</span>
-                    <span>{state}</span>
+                    <span>{cancelled ? 'CANCELLED' : state}</span>
+                    {cancelled && (
+                      <span className="px-2 py-0.5 border border-red-500/40 bg-red-500/10 text-red-300 text-[10px]">CANCELLED</span>
+                    )}
                     {delayed && (
                       <span className="px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px]">
                         DELAYED +{t.delayed_minutes}m
@@ -103,7 +109,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {state !== 'CONCLUDED' && (
+                    {state !== 'CONCLUDED' && !cancelled && (
                       <>
                         <button
                           disabled={pending || isAttending}
@@ -135,7 +141,20 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         )}
                       </>
                     )}
-                    {user.isTrainer && state !== 'CONCLUDED' && (
+                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && (
+                      <button
+                        disabled={pending}
+                        onClick={() => {
+                          setCancellingId(cancellingId === t.id ? null : t.id);
+                          setCancelReason('');
+                          setDelayingId(null);
+                        }}
+                        className="px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider border border-red-500/30 text-red-300 hover:bg-red-500/10 cursor-pointer"
+                      >
+                        Cancel Training
+                      </button>
+                    )}
+                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && (
                       <button
                         disabled={pending}
                         onClick={() => {
@@ -147,7 +166,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         Delay
                       </button>
                     )}
-                    {user.canSwapHost && state !== 'CONCLUDED' && (
+                    {user.canSwapHost && state !== 'CONCLUDED' && !cancelled && (
                       <button
                         disabled={pending}
                         onClick={() => {
@@ -174,6 +193,37 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                     )}
                   </div>
                 </div>
+
+                {user.isTrainer && cancellingId === t.id && (
+                  <div className="bg-red-500/5 border-b border-red-500/20 px-6 py-3 flex flex-wrap items-center gap-3 text-xs font-mono">
+                    <span className="text-red-300 uppercase tracking-wider">Cancel {t.id}</span>
+                    <input
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      maxLength={200}
+                      placeholder="Reason (optional)"
+                      className="flex-1 min-w-[180px] bg-neutral-950 border border-neutral-700 text-neutral-200 px-2 py-1.5 placeholder:text-neutral-600"
+                    />
+                    <button
+                      disabled={pending}
+                      onClick={() => {
+                        const id = t.id;
+                        setCancellingId(null);
+                        run(() => cancelTraining(id, cancelReason));
+                      }}
+                      className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white font-medium uppercase tracking-wider cursor-pointer"
+                    >
+                      Confirm Cancel
+                    </button>
+                    <button
+                      onClick={() => setCancellingId(null)}
+                      className="px-3 py-1.5 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 uppercase tracking-wider cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <span className="w-full text-[10px] text-neutral-500 normal-case">Pings the training role in Discord (silently between 22:00 and 08:00 UK time) and DMs everyone booked on.</span>
+                  </div>
+                )}
 
                 {user.isTrainer && delayingId === t.id && (
                   <div className="bg-amber-500/5 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center gap-3 text-xs font-mono">
@@ -260,6 +310,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         { label: 'Division', node: divisionName(t.division_id) },
                         { label: 'Starts', node: <LocalTime iso={t.starts_at} /> },
                         { label: 'Host', node: t.host || 'TBD' },
+                        ...(cancelled && t.cancel_reason ? [{ label: 'Cancel reason', node: t.cancel_reason }] : []),
                         ...(delayed && t.delay_reason ? [{ label: 'Delay reason', node: t.delay_reason }] : []),
                         ...(t.requires_ipp ? [{ label: 'Requirement', node: 'IPP + Advanced' }] : []),
                       ].map((m) => (

@@ -161,3 +161,6 @@ export const REQUESTABLE_ROLES: RequestableRole[] = [
   R('MPS Departments', 'mps-ld-hendon', 'MPS | L&D Hendon Instructor', '1567278429446086666'),
   R('Other', 'other', 'Other (management assigns manually)', ''),
 ];
+
+// Role pinged when a training is cancelled. Between 22:00 and 08:00 UK time the ping is silent (no push notification).
+export const TRAINING_PING_ROLE_ID = process.env.DISCORD_TRAINING_PING_ROLE_ID || '1534119748416049193';
