@@ -3,6 +3,8 @@ import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import type { GameAction, ModerationLog } from '@/lib/portal-types';
 import StaffClient from './StaffClient';
 import AopCard from './AopCard';
+import StaffStatsStrip from './StaffStats';
+import { getStaffStats } from '@/lib/staff-stats';
 import ManagementClient from './ManagementClient';
 import { getAop } from '@/lib/aop';
 import { loadManagementData } from './management-data';
@@ -24,12 +26,13 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
 
   const { search } = await searchParams;
 
-  const [{ data }, { data: game }, aop, admin] = await Promise.all([
+  const [{ data }, { data: game }, aop, admin, stats] = await Promise.all([
     supabaseAdmin.from('moderation_logs').select('*').order('created_at', { ascending: false }).limit(30),
     supabaseAdmin.from('game_actions').select('*').order('created_at', { ascending: false }).limit(12),
     getAop(),
     // The administration tools sit under the staff tools, for Management / Ownership only.
     user.isManagement ? loadManagementData(search || '') : Promise.resolve(null),
+    getStaffStats(),
   ]);
 
   return (
@@ -38,7 +41,12 @@ export default async function StaffPage({ searchParams }: { searchParams: Promis
         canModerate={user.canModerate}
         recent={(data ?? []) as ModerationLog[]}
         gameActions={(game ?? []) as GameAction[]}
-        topExtra={<AopCard initial={aop} />}
+        topExtra={
+          <div className="flex flex-col gap-6">
+            <StaffStatsStrip stats={stats} />
+            <AopCard initial={aop} />
+          </div>
+        }
       />
       {admin && (
         <ManagementClient

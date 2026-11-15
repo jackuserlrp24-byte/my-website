@@ -9,6 +9,7 @@ const ICONS: Record<string, string> = {
   requests: 'M3 5h18v11H8l-5 4V5z',
   logs: 'M7 3h8l4 4v14H7V3zm8 0v4h4M10 12h6M10 16h6',
   patrols: 'M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11zm0-8a3 3 0 100-6 3 3 0 000 6z',
+  activity: 'M4 20V10m6 10V4m6 16v-7m4 7H2',
   appeals: 'M12 3v18M5 7h14M5 7l-2 6a3 3 0 006 0L7 7M19 7l-2 6a3 3 0 006 0l-2-6',
 };
 
@@ -25,6 +26,7 @@ const STAFF_ITEMS: Item[] = [
   { href: '/dashboard/staff/requests', label: 'Staff Requests', hint: 'Players asking for staff', icon: 'requests' },
   { href: '/dashboard/staff/logs', label: 'Logs', hint: 'Moderation history', icon: 'logs' },
   { href: '/dashboard/staff/patrols', label: 'Patrols', hint: 'Shifts & attendance', icon: 'patrols' },
+  { href: '/dashboard/staff/activity', label: 'Activity', hint: 'Who is moderating', icon: 'activity' },
   { href: '/dashboard/staff/appeals', label: 'Ban Appeals', hint: 'Review appeals', icon: 'appeals' },
 ];
 
