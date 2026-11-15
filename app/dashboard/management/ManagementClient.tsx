@@ -669,7 +669,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
                     <tr key={log.id} className="hover:bg-neutral-950/50 transition-colors">
                       <td className="py-3 px-3 text-neutral-500 whitespace-nowrap">{new Date(log.created_at).toLocaleString('en-GB')}</td>
                       <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-sm ${log.action_type === 'BAN' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : log.action_type === 'WARN' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded-sm ${log.action_type === 'BAN' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : (log.action_type === 'WARN' || log.action_type === 'KICK') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                           {log.action_type}
                         </span>
                       </td>

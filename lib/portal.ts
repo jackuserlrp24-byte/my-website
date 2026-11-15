@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, hasRoleId, isTrainerRoles } from '@/lib/training-config';
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,10 +12,23 @@ export const PORTAL_URL = 'https://www.centraloperationsportal.com';
 const MASTER_ROLE_ID = '1497557905275224149';
 const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 
+export const MANAGEMENT_ROLE_IDS = [MASTER_ROLE_ID, MANAGEMENT_ROLE_ALT];
+
+/** Gold command (or management) approves role requests. */
+export const canReviewRoleRequests = (roles: string[]) =>
+  hasRoleId(roles, GOLD_ROLE_ID) || MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
+
 export interface PortalUser {
   id: string;
   name: string;
   isManagement: boolean;
+  isTrainer: boolean; // can open the trainer panel and post trainings (trainer role, bronze/silver/gold, management)
+  canRequestRoles: boolean; // trainer role, gold, management
+  canReviewRoleRequests: boolean; // gold, management
+  canViewApplications: boolean; // silver, gold, management
+  canStaff: boolean; // staff panel: notes + warnings (silver, gold, management)
+  canModerate: boolean; // staff panel: kick / ban / unban (gold, management)
+  roles: string[];
 }
 
 /**
@@ -48,10 +62,25 @@ export async function getPortalUser(): Promise<PortalUser | null> {
     const member = await res.json();
     const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
 
+    const isManagement = roles.includes(MASTER_ROLE_ID) || roles.includes(MANAGEMENT_ROLE_ALT);
+
     return {
       id,
       name: member.nick || member.user?.global_name || member.user?.username || 'Unknown',
-      isManagement: roles.includes(MASTER_ROLE_ID) || roles.includes(MANAGEMENT_ROLE_ALT),
+      isManagement,
+      isTrainer:
+        isManagement ||
+        isTrainerRoles(roles) ||
+        hasRoleId(roles, GOLD_ROLE_ID) ||
+        hasRoleId(roles, SILVER_ROLE_ID) ||
+        hasRoleId(roles, BRONZE_ROLE_ID),
+      canRequestRoles: isManagement || isTrainerRoles(roles) || hasRoleId(roles, GOLD_ROLE_ID),
+      canReviewRoleRequests: canReviewRoleRequests(roles),
+      canStaff: isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID),
+      canModerate: isManagement || hasRoleId(roles, GOLD_ROLE_ID),
+      canViewApplications:
+        isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID),
+      roles,
     };
   } catch (err) {
     console.error('getPortalUser failed:', err);

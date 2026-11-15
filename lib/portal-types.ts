@@ -21,7 +21,8 @@ export interface Training {
   discord_message_id: string | null;
   discord_channel_id: string | null;
   attending: string[];
-  unattending: string[];
+  unattending: string[]; // legacy, no longer used
+  requires_ipp: boolean;
   created_at: string;
 }
 
@@ -39,4 +40,32 @@ export interface DivisionApplication {
   created_at: string;
   reviewed_at: string | null;
   divisions?: { name: string } | null;
+}
+
+export interface RoleRequest {
+  id: string;
+  target_discord_id: string;
+  target_name: string | null;
+  role_key: string;
+  reason: string | null;
+  requested_by: string;
+  requested_by_id: string;
+  status: 'pending' | 'approved' | 'denied';
+  reviewed_by: string | null;
+  discord_message_id: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+export type ModerationAction = 'NOTE' | 'WARN' | 'KICK' | 'BAN' | 'UNBAN';
+
+// Same table the Management > Moderation Logs tab reads.
+export interface ModerationLog {
+  id: string | number;
+  discord_id: string;
+  username: string | null;
+  action_type: ModerationAction;
+  reason: string;
+  moderator_name: string | null;
+  created_at: string;
 }

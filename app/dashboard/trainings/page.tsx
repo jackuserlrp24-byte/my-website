@@ -19,7 +19,7 @@ export default async function TrainingsPage() {
 
   return (
     <TrainingsClient
-      user={{ name: user.name, isManagement: user.isManagement }}
+      user={{ name: user.name, isTrainer: user.isTrainer }}
       trainings={(trainingsRes.data ?? []) as Training[]}
       divisions={(divisionsRes.data ?? []) as Division[]}
       loadError={trainingsRes.error ? 'Trainings table not found. Run supabase/trainings-divisions.sql in Supabase.' : null}

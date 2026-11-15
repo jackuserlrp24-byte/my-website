@@ -1,5 +1,6 @@
 import { PORTAL_URL } from '@/lib/portal';
-import type { Division, Training } from '@/lib/portal-types';
+import type { Division, RoleRequest, Training } from '@/lib/portal-types';
+import { TRAINING_VC_ID } from '@/lib/training-config';
 
 const unix = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
 
@@ -30,15 +31,14 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
       { name: 'Ends', value: `<t:${end}:t>`, inline: true },
       { name: '\u200b', value: '\u200b', inline: true },
       {
-        name: `Booked On (${t.attending.length})`,
-        value: rosterText(t.attending, 'No personnel booked on yet.'),
-        inline: true,
+        name: `Attending (${t.attending.length})`,
+        value: rosterText(t.attending, 'No one attending yet.'),
+        inline: false,
       },
-      {
-        name: `Not Attending (${t.unattending.length})`,
-        value: rosterText(t.unattending, 'No personnel marked absent.'),
-        inline: true,
-      },
+      ...(t.requires_ipp
+        ? [{ name: 'Requirements', value: 'IPP + trained driver (Advanced) only', inline: false }]
+        : []),
+      { name: 'Waiting VC', value: `<#${TRAINING_VC_ID}>`, inline: false },
     ],
     footer: { text: 'Central Operations Portal' },
     timestamp: t.created_at,
@@ -51,8 +51,7 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
       {
         type: 1,
         components: [
-          { type: 2, style: 3, label: 'Book On', custom_id: 'training_book_on' },
-          { type: 2, style: 4, label: 'Not Attending', custom_id: 'training_not_attending' },
+          { type: 2, style: 3, label: 'Attend', custom_id: 'training_attend' },
           { type: 2, style: 5, label: 'View Portal', url: `${PORTAL_URL}/dashboard/trainings` },
         ],
       },
@@ -104,3 +103,77 @@ export function divisionsPayload(divisions: Division[]) {
     ],
   };
 }
+
+/** The DM a member gets when they click Attend. */
+export function trainingDmPayload(t: Training, divisionName?: string | null) {
+  const start = unix(t.starts_at);
+  const vc = TRAINING_VC_ID;
+  return {
+    embeds: [
+      {
+        title: `You're booked on: ${t.title}`,
+        description:
+          `**Reminder:** be in the waiting voice channel <#${vc}> before the training starts. ` +
+          `If you aren't there when it begins you may be removed from the session.`,
+        color: 5763719,
+        fields: [
+          { name: 'Training ID', value: t.id, inline: true },
+          { name: 'Division', value: divisionName || 'General', inline: true },
+          { name: 'Host', value: t.host || 'TBD', inline: true },
+          { name: 'Starts', value: `<t:${start}:F>\n<t:${start}:R>`, inline: false },
+          { name: 'Wait in this VC', value: `<#${vc}>`, inline: false },
+        ],
+        footer: { text: 'Central Operations Portal' },
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          { type: 2, style: 5, label: 'Join Waiting VC', url: `https://discord.com/channels/${process.env.DISCORD_GUILD_ID}/${vc}` },
+        ],
+      },
+    ],
+  };
+}
+
+export function roleRequestPayload(r: RoleRequest, roleLabel: string, pending = true) {
+  const colour = r.status === 'approved' ? 5763719 : r.status === 'denied' ? 15548997 : 16705372;
+  return {
+    embeds: [
+      {
+        title: `Role Request - ${roleLabel}`,
+        color: colour,
+        fields: [
+          { name: 'Member', value: `<@${r.target_discord_id}>${r.target_name ? ` (${r.target_name})` : ''}`, inline: true },
+          { name: 'Role', value: roleLabel, inline: true },
+          { name: 'Requested by', value: r.requested_by, inline: true },
+          { name: 'Reason / Training', value: r.reason || 'No reason given.', inline: false },
+          {
+            name: 'Status',
+            value:
+              r.status === 'pending'
+                ? 'Pending review'
+                : `${r.status === 'approved' ? 'Approved' : 'Denied'} by ${r.reviewed_by ?? 'management'}`,
+            inline: false,
+          },
+        ],
+        footer: { text: `Request ${r.id}` },
+        timestamp: r.created_at,
+      },
+    ],
+    components: pending
+      ? [
+          {
+            type: 1,
+            components: [
+              { type: 2, style: 3, label: 'Approve', custom_id: `rolereq_approve:${r.id}` },
+              { type: 2, style: 4, label: 'Deny', custom_id: `rolereq_deny:${r.id}` },
+            ],
+          },
+        ]
+      : [],
+    allowed_mentions: { parse: [] },
+  };
+}
+

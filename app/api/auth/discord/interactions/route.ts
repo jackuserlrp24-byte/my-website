@@ -1,6 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { verifyKey } from 'discord-interactions';
 import { createClient } from '@supabase/supabase-js';
+import { canReviewRoleRequests, supabaseAdmin } from '@/lib/portal';
+import { sendDm } from '@/lib/discord';
+import { reviewRoleRequest } from '@/lib/role-requests';
+import { roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { bookOnTraining } from '@/lib/training-attend';
+import type { Training } from '@/lib/portal-types';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +16,73 @@ const supabase = createClient(
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY;
+
+type Interaction = {
+  application_id?: string;
+  token?: string;
+  member?: { roles?: string[]; nick?: string; user?: { username?: string; global_name?: string } };
+  message?: { id?: string };
+};
+
+const reply = (content: string) => NextResponse.json({ type: 4, data: { content, flags: 64 } });
+
+async function handleTrainingButton(body: Interaction, customId: string, userName: string, discordId: string) {
+  if (customId === 'training_not_attending') {
+    return reply('"Not Attending" has been removed - just press **Attend** if you can make it.');
+  }
+
+  const { data } = await supabaseAdmin
+    .from('trainings')
+    .select('*')
+    .eq('discord_message_id', body.message?.id)
+    .maybeSingle();
+  if (!data) return reply('Error: Could not locate active training record for this message.');
+
+  // Role check uses the roles Discord sends with the click, so it is always live.
+  const result = await bookOnTraining(data as Training, userName, body.member?.roles ?? []);
+  if (result.status === 'already') return reply('You are already booked on this training.');
+  if (result.status !== 'booked') return reply(result.message);
+
+  const training = result.training;
+  let divName: string | null = null;
+  if (training.division_id) {
+    const { data: div } = await supabaseAdmin.from('divisions').select('name').eq('id', training.division_id).maybeSingle();
+    divName = div?.name ?? null;
+  }
+
+  // Answer Discord straight away (3s limit), then DM + confirm privately.
+  after(async () => {
+    const sent = await sendDm(discordId, trainingDmPayload(training, divName));
+    if (body.application_id && body.token) {
+      await fetch(`https://discord.com/api/v10/webhooks/${body.application_id}/${body.token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flags: 64,
+          content: sent
+            ? "You're booked on. I've DMed you the details and which VC to wait in."
+            : "You're booked on, but I couldn't DM you. Turn on DMs from server members so you get the details.",
+        }),
+      }).catch(() => {});
+    }
+  });
+
+  return NextResponse.json({ type: 7, data: trainingPayload(training, divName) });
+}
+
+async function handleRoleRequestButton(body: Interaction, customId: string) {
+  if (!canReviewRoleRequests(body.member?.roles ?? [])) {
+    return reply('Only Gold Command can approve or deny role requests.');
+  }
+
+  const [action, id] = customId.split(':');
+  const reviewer = body.member?.nick || body.member?.user?.global_name || body.member?.user?.username || 'Gold Command';
+
+  const result = await reviewRoleRequest(id, action === 'rolereq_approve', reviewer);
+  if (!result.ok) return reply(result.message);
+
+  return NextResponse.json({ type: 7, data: roleRequestPayload(result.row, result.label, false) });
+}
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +113,10 @@ export async function POST(request: Request) {
 
     if (body.type === 3) {
       const customId = body.data?.custom_id;
-      const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_book_on', 'training_not_attending'];
+      if (customId?.startsWith('rolereq_')) {
+        return handleRoleRequestButton(body, customId);
+      }
+      const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending'];
       if (!customId || !BUTTON_IDS.includes(customId)) {
         return NextResponse.json({ type: 4, data: { content: 'Unknown action.', flags: 64 } });
       }
@@ -86,6 +162,10 @@ export async function POST(request: Request) {
             console.error('Failed to fetch guild member nickname:', e);
           }
         }
+      }
+
+      if (table === 'trainings') {
+        return handleTrainingButton(body, customId, userName, discordId);
       }
 
       const messageId = body.message?.id;

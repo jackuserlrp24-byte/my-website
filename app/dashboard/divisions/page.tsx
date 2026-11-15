@@ -16,14 +16,14 @@ export default async function DivisionsPage() {
       .select('*')
       .eq('discord_id', user.id)
       .order('created_at', { ascending: false }),
-    user.isManagement
+    user.canViewApplications
       ? supabaseAdmin
           .from('division_applications')
           .select('*, divisions(name)')
           .eq('status', 'pending')
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: [] }),
-    user.isManagement
+    user.canViewApplications
       ? supabaseAdmin
           .from('division_applications')
           .select('*, divisions(name)')
@@ -35,7 +35,7 @@ export default async function DivisionsPage() {
 
   return (
     <DivisionsClient
-      user={{ name: user.name, isManagement: user.isManagement }}
+      user={{ name: user.name, isManagement: user.isManagement, canViewApplications: user.canViewApplications }}
       divisions={(divisionsRes.data ?? []) as Division[]}
       myApplications={(mineRes.data ?? []) as DivisionApplication[]}
       pendingApplications={(pendingRes.data ?? []) as DivisionApplication[]}

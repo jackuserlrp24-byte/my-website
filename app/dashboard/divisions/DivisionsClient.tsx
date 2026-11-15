@@ -6,7 +6,7 @@ import type { ActionResult, Division, DivisionApplication } from '@/lib/portal-t
 import { decideApplication, setDivisionStatus, submitApplication } from './actions';
 
 interface Props {
-  user: { name: string; isManagement: boolean };
+  user: { name: string; isManagement: boolean; canViewApplications: boolean };
   divisions: Division[];
   myApplications: DivisionApplication[];
   pendingApplications: DivisionApplication[];
@@ -172,7 +172,7 @@ export default function DivisionsClient({
         </section>
       ))}
 
-      {user.isManagement && (
+      {user.canViewApplications && (
         <section className="flex flex-col gap-3">
           <h3 className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest">
             Pending applications ({pendingApplications.length})
@@ -208,6 +208,7 @@ export default function DivisionsClient({
                     {a.availability}
                   </div>
                 )}
+                {user.isManagement && (
                 <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-neutral-800">
                   <input
                     value={notes[a.id] ?? ''}
@@ -231,6 +232,7 @@ export default function DivisionsClient({
                     Reject
                   </button>
                 </div>
+                )}
               </div>
             ))
           )}

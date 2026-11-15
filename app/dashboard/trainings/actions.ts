@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, postMessage } from '@/lib/discord';
-import { trainingPayload } from '@/lib/embeds';
+import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, postMessage, sendDm } from '@/lib/discord';
+import { trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { bookOnTraining } from '@/lib/training-attend';
 import { londonLocalToUtc } from '@/lib/london-time';
 import type { ActionResult, Training } from '@/lib/portal-types';
 
@@ -18,7 +19,7 @@ async function divisionName(id: string | null): Promise<string | null> {
 
 export async function createTraining(formData: FormData): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.isManagement) return fail('You do not have permission to post trainings.');
+  if (!user?.isTrainer) return fail('Only trainers can post trainings.');
 
   const title = field(formData, 'title', 100);
   const date = field(formData, 'date', 10);
@@ -28,6 +29,7 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   const description = field(formData, 'description', 1500);
   const imageUrl = field(formData, 'imageUrl', 500);
   const ping = formData.get('ping') === 'on';
+  const requiresIpp = formData.get('requiresIpp') === 'on';
 
   if (!title) return fail('Give the training a title.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Pick a valid date.');
@@ -49,8 +51,8 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
       ends_at: endsAt.toISOString(),
       description: description || null,
       image_url: imageUrl || null,
+      requires_ipp: requiresIpp,
       attending: [],
-      unattending: [],
     })
     .select('*')
     .single();
@@ -83,41 +85,42 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   };
 }
 
-export async function setTrainingAttendance(
-  trainingId: string,
-  status: 'attending' | 'unattending'
-): Promise<ActionResult> {
+export async function attendTraining(trainingId: string): Promise<ActionResult> {
   const user = await getPortalUser();
   if (!user) return fail('Please log in again.');
 
   const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
   if (!data) return fail('Training not found.');
-  const training = data as Training;
 
-  if (new Date(training.ends_at) < new Date()) return fail('This training has already finished.');
+  const result = await bookOnTraining(data as Training, user.name, user.roles);
+  if (result.status === 'already') return { ok: true, message: 'You are already booked on this training.' };
+  if (result.status !== 'booked') return fail(result.message);
 
-  const attending = training.attending.filter((n) => n !== user.name);
-  const unattending = training.unattending.filter((n) => n !== user.name);
-  (status === 'attending' ? attending : unattending).push(user.name);
-
-  const { error } = await supabaseAdmin.from('trainings').update({ attending, unattending }).eq('id', trainingId);
-  if (error) return fail('Could not update your attendance.');
+  const training = result.training;
+  const divName = await divisionName(training.division_id);
 
   if (training.discord_message_id) {
     await editMessage(
       training.discord_channel_id || TRAININGS_CHANNEL_ID,
       training.discord_message_id,
-      trainingPayload({ ...training, attending, unattending }, await divisionName(training.division_id))
+      trainingPayload(training, divName)
     );
   }
 
+  const dmSent = await sendDm(user.id, trainingDmPayload(training, divName));
+
   revalidatePath('/dashboard/trainings');
-  return { ok: true, message: status === 'attending' ? 'Booked on.' : 'Marked as not attending.' };
+  return {
+    ok: true,
+    message: dmSent
+      ? 'Booked on. Check your Discord DMs for the details and which VC to wait in.'
+      : 'Booked on, but I could not DM you - turn on DMs from server members so you get reminders.',
+  };
 }
 
 export async function deleteTraining(trainingId: string): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.isManagement) return fail('You do not have permission to delete trainings.');
+  if (!user?.isTrainer) return fail('Only trainers can delete trainings.');
 
   const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
   if (!data) return fail('Training not found.');
