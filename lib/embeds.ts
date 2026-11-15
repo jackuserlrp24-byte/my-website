@@ -57,7 +57,6 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         ? [{ name: 'Requirements', value: 'IPP + trained driver (Advanced) only', inline: false }]
         : []),
       { name: 'Waiting VC', value: `<#${TRAINING_VC_ID}>`, inline: false },
-      ...(t.room_id ? [{ name: 'Training Room', value: `<#${t.room_id}>`, inline: false }] : []),
     ],
     footer: { text: 'Central Operations Portal' },
     timestamp: t.created_at,

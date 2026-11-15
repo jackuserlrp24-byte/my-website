@@ -196,7 +196,7 @@ export default function TrainerClient({
             Only IPP + Advanced (trained driver) can attend
           </label>
           <label className="flex items-center gap-2 text-xs text-neutral-300">
-            <input type="checkbox" name="ping" /> Ping @everyone in Discord
+            <input type="checkbox" name="ping" /> Ping the training role in Discord (silent 9pm-7am)
           </label>
           <button type="submit" disabled={pending} className={btnClass}>
             {pending ? 'Posting...' : 'Post to website & Discord'}

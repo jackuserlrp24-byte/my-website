@@ -40,10 +40,10 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000);
 }
 
-/** True between 22:00 and 08:00 UK time - used to send pings silently overnight. */
+/** True between 21:00 and 07:00 UK time - used to send pings silently overnight. */
 export function isLateNightLondon(at: Date = new Date()): boolean {
   const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hourCycle: 'h23' }).format(at));
-  return h >= 22 || h < 8;
+  return h >= 21 || h < 7;
 }
 
 /** "2026-11-20" -> "20 Nov" (for showing a deadline). */
