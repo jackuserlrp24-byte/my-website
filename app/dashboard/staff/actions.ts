@@ -101,13 +101,18 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   if (action !== 'NOTE' && action !== 'WARN' && !user.canModerate) {
     return fail('Only Gold Command and management can kick, ban or unban.');
   }
-  if (targetId === user.id) return fail('You cannot take action on yourself.');
+  // Testing yourself: a WARN, or a KICK that only applies in the FiveM server, is allowed.
+  // Anything that could remove you from Discord / ban you stays blocked.
+  const isSelf = targetId === user.id;
+  if (isSelf && !(action === 'WARN' || (action === 'KICK' && scope === 'game'))) {
+    return fail('On yourself you can only WARN, or KICK with "Apply to" set to FiveM server only.');
+  }
 
   const member = await getGuildMember(targetId);
   const targetName = member?.name ?? (String(formData.get('targetName') ?? '').slice(0, 80) || 'Unknown');
 
   // Command members are protected from kicks / bans.
-  if ((action === 'KICK' || action === 'BAN') && member) {
+  if ((action === 'KICK' || action === 'BAN') && member && !isSelf) {
     const protectedIds = [...MANAGEMENT_ROLE_IDS, GOLD_ROLE_ID].filter(Boolean);
     if (member.roles.some((r) => protectedIds.includes(r))) {
       return fail('You cannot kick or ban Command / management members.');
