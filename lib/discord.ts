@@ -377,3 +377,74 @@ export function banDmPayload(reason: string) {
     components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Central Operations Ban Appeal', url }] }],
   };
 }
+
+/** Like deleteMessage, but tells you whether the message is gone (a 404 counts as gone). */
+export async function deleteMessageChecked(channelId: string, messageId: string): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    const res = await fetch(`${API}/channels/${channelId}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    return res.ok || res.status === 404;
+  } catch {
+    return false;
+  }
+}
+
+export interface ChannelMessageLite {
+  id: string;
+  authorId: string | null;
+  referencesId: string | null; // the message this one replies to, if any
+}
+
+/** Newest-first page of a channel's messages (max 100). Pass `before` to go further back. */
+export async function listChannelMessages(channelId: string, before?: string): Promise<ChannelMessageLite[]> {
+  if (!process.env.DISCORD_BOT_TOKEN) return [];
+  try {
+    const url = `${API}/channels/${channelId}/messages?limit=100${before ? `&before=${before}` : ''}`;
+    const res = await fetch(url, { headers: headers() });
+    if (!res.ok) return [];
+    const rows = (await res.json()) as {
+      id: string;
+      author?: { id?: string };
+      message_reference?: { message_id?: string };
+    }[];
+    return rows.map((m) => ({
+      id: m.id,
+      authorId: m.author?.id ?? null,
+      referencesId: m.message_reference?.message_id ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** The bot's own Discord user ID (used to only ever delete the bot's own replies). */
+export async function getBotUserId(): Promise<string | null> {
+  if (!process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const res = await fetch(`${API}/users/@me`, { headers: headers() });
+    if (!res.ok) return null;
+    return ((await res.json()) as { id?: string }).id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Which voice channel a member is in right now: the channel ID, null if they are not in voice,
+ * or undefined if Discord could not tell us (so callers never act on a guess).
+ */
+export async function getVoiceChannelId(userId: string): Promise<string | null | undefined> {
+  const guild = process.env.DISCORD_GUILD_ID;
+  if (!process.env.DISCORD_BOT_TOKEN || !guild) return undefined;
+  try {
+    const res = await fetch(`${API}/guilds/${guild}/voice-states/${userId}`, { headers: headers(), cache: 'no-store' });
+    if (res.status === 404) return null; // not connected to voice
+    if (!res.ok) return undefined;
+    return ((await res.json()) as { channel_id?: string | null }).channel_id ?? null;
+  } catch {
+    return undefined;
+  }
+}

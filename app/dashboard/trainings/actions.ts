@@ -3,10 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, getGuildMember, postMessage, sendDm } from '@/lib/discord';
-import { trainingCancelDmPayload, trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { trainingCancelDmPayload, trainingCompleteDmPayload, trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import { isLateNightLondon, londonLocalToUtc } from '@/lib/london-time';
 import { TRAINING_PING_ROLE_ID } from '@/lib/training-config';
+import { markTrainingComplete } from '@/lib/training-complete';
+import { pickFreeRoom } from '@/lib/training-rooms';
 import type { ActionResult, Training } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -64,6 +66,14 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   }
 
   const training = row as Training;
+  // Remember who the instructor is (so the "did anyone leave?" DM reaches them). Best-effort: needs supabase/training-complete.sql.
+  await supabaseAdmin.from('trainings').update({ host_id: user.id }).eq('id', training.id);
+  // Assign a free training room (needs DISCORD_TRAINING_ROOM_IDS + supabase/training-rooms.sql).
+  const roomId = await pickFreeRoom(training.starts_at, training.ends_at, training.id);
+  if (roomId) {
+    const { error: roomErr } = await supabaseAdmin.from('trainings').update({ room_id: roomId }).eq('id', training.id);
+    if (!roomErr) training.room_id = roomId;
+  }
   const messageId = await postMessage(TRAININGS_CHANNEL_ID, {
     ...(ping ? { content: '@everyone' } : {}),
     ...trainingPayload(training, await divisionName(divisionId)),
@@ -81,7 +91,7 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   return {
     ok: true,
     message: messageId
-      ? `${training.id} posted to the website and Discord.`
+      ? `${training.id} posted to the website and Discord.${training.room_id ? ' Training room assigned.' : ''}`
       : `${training.id} saved, but posting to Discord failed (check the bot token and channel permissions).`,
   };
 }
@@ -236,6 +246,8 @@ export async function changeTrainingHost(trainingId: string, who: string): Promi
   }
 
   const training = row as Training;
+  // Keep the instructor's Discord ID in step with the host name (best-effort; needs supabase/training-complete.sql).
+  await supabaseAdmin.from('trainings').update({ host_id: /^\d{17,20}$/.test(idCandidate) ? idCandidate : null }).eq('id', training.id);
   if (training.discord_message_id) {
     const channel = training.discord_channel_id || TRAININGS_CHANNEL_ID;
     await editMessage(channel, training.discord_message_id, trainingPayload(training, await divisionName(training.division_id)));
@@ -315,4 +327,35 @@ export async function deleteTraining(trainingId: string): Promise<ActionResult> 
 
   revalidatePath('/dashboard/trainings');
   return { ok: true, message: `${trainingId} deleted.` };
+}
+
+/**
+ * Trainers only: mark a session complete. Updates the Discord post and DMs the instructor asking whether anyone
+ * left during it (Yes -> they pick who, and that person's training record is removed). Needs supabase/training-complete.sql.
+ */
+export async function completeTraining(trainingId: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.isTrainer) return fail('Only trainers can complete trainings.');
+
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return fail('Training not found.');
+  const current = data as Training;
+  if (current.cancelled_at) return fail('This training was cancelled.');
+  if (current.completed_at) return fail('This training is already marked complete.');
+  if (new Date(current.starts_at).getTime() > Date.now()) return fail("This training hasn't started yet.");
+
+  const out = await markTrainingComplete(trainingId, user.name, user.id);
+  if (!out.ok) return fail(out.message);
+  const training = out.training;
+  const toSomeoneElse = out.dmTo !== user.id;
+  const dmSent = out.dmSent;
+
+  revalidatePath('/dashboard/trainings');
+  revalidatePath('/dashboard/calendar');
+  return {
+    ok: true,
+    message: dmSent
+      ? `${training.id} marked complete. ${toSomeoneElse ? 'The instructor has' : 'You have'} been DMed to ask if anyone left.`
+      : `${training.id} marked complete, but the DM could not be sent (DMs from server members must be on).`,
+  };
 }

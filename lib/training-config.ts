@@ -43,6 +43,20 @@ export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes
 // Voice channel people wait in before a training starts.
 export const TRAINING_VC_ID = process.env.DISCORD_TRAINING_VC_ID || '1497557910283223266';
 
+// Training rooms 1-5: the voice channels a training can be assigned to. Each new training gets the first room that is
+// free at its time. To use different rooms, set DISCORD_TRAINING_ROOM_IDS to a comma-separated list of voice channel IDs.
+const DEFAULT_TRAINING_ROOMS = [
+  '1497557910283223267', // Training Room 1
+  '1497557910283223268', // Training Room 2
+  '1497557910283223269', // Training Room 3
+  '1497557910514040832', // Training Room 4
+  '1497557910514040833', // Training Room 5
+];
+export const TRAINING_ROOM_IDS: string[] = (process.env.DISCORD_TRAINING_ROOM_IDS || DEFAULT_TRAINING_ROOMS.join(','))
+  .split(',')
+  .map((id) => id.trim())
+  .filter((id) => /^\d{17,20}$/.test(id));
+
 // ONE channel for every log: staff warn / kick / ban / notes, in-game moderation, ban appeals,
 // division applications, whitelist, Met Police command and maintenance changes.
 // Change it with PORTAL_LOG_CHANNEL_ID (a deliberately unusual name so nothing else on your host can clash with it).

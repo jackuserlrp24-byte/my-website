@@ -2,10 +2,10 @@ import { NextResponse, after } from 'next/server';
 import { verifyKey } from 'discord-interactions';
 import { createClient } from '@supabase/supabase-js';
 import { canReviewRoleRequests, supabaseAdmin } from '@/lib/portal';
-import { TRAININGS_CHANNEL_ID, editMessage, sendDm } from '@/lib/discord';
+import { TRAININGS_CHANNEL_ID, editMessage, getGuildMember, sendDm } from '@/lib/discord';
 import { reviewRoleRequest } from '@/lib/role-requests';
 import { reviewAppeal } from '@/lib/appeals';
-import { cantMakeRow, roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { cantMakeRow, leftPickerComponents, roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import type { Training } from '@/lib/portal-types';
 
@@ -103,6 +103,78 @@ async function handleTrainingButton(body: Interaction, customId: string, userNam
   });
 
   return NextResponse.json({ type: 7, data: trainingPayload(training, divName) });
+}
+
+/**
+ * The instructor's "did anyone leave?" DM: Yes -> pick who left (their record for this training is removed),
+ * No / Done -> finish. Names are looked up after we acknowledge the click (Discord's 3 second limit).
+ */
+async function handleTrainingLeft(body: Interaction & { data?: { values?: string[] } }, customId: string) {
+  const [action, trainingId] = customId.split(':');
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return reply('Could not find that training.');
+  const t = data as Training;
+
+  if (action === 'training_left_no') {
+    return NextResponse.json({
+      type: 7,
+      data: { content: `Thanks - **${t.id}** is complete and nobody was removed from the training records.`, embeds: [], components: [] },
+    });
+  }
+  if (action === 'training_left_done') {
+    const n = (t.left_ids ?? []).length;
+    return NextResponse.json({
+      type: 7,
+      data: {
+        content: n
+          ? `Thanks - **${t.id}** is complete. ${n} ${n === 1 ? 'person was' : 'people were'} removed from the training records.`
+          : `Thanks - **${t.id}** is complete and nobody was removed from the training records.`,
+        embeds: [],
+        components: [],
+      },
+    });
+  }
+
+  // training_left_yes / training_left_select
+  const picked =
+    action === 'training_left_select'
+      ? (body.data?.values ?? []).filter((id) => (t.attending_ids ?? []).includes(id))
+      : [];
+
+  after(async () => {
+    const removedNames: string[] = [];
+    if (picked.length) {
+      const names = await Promise.all(picked.map(async (id) => (await getGuildMember(id))?.name ?? `<@${id}>`));
+      removedNames.push(...names);
+      await supabaseAdmin.from('met_training_records').delete().eq('training_id', t.id).in('target_discord_id', picked);
+      const left = Array.from(new Set([...(t.left_ids ?? []), ...picked]));
+      await supabaseAdmin.from('trainings').update({ left_ids: left }).eq('id', t.id);
+      t.left_ids = left;
+    }
+
+    const stillIn = (t.attending_ids ?? []).filter((id) => !(t.left_ids ?? []).includes(id)).slice(0, 100);
+    const people = await Promise.all(
+      stillIn.map(async (id) => {
+        const m = await getGuildMember(id);
+        return { id, label: m?.name || m?.username || id };
+      })
+    );
+
+    const head = removedNames.length
+      ? `Removed **${t.id}** from the record of: ${removedNames.join(', ')}.\n\n`
+      : '';
+    await editOriginal(body, {
+      content: people.length
+        ? `${head}Select everyone who left during **${t.id}**. **${t.id}** will be removed from their training record. Press Done when finished.`
+        : `${head}There is no one left to remove. **${t.id}** is complete.`,
+      embeds: [],
+      components: people.length
+        ? leftPickerComponents(t.id, people)
+        : [],
+    });
+  });
+
+  return NextResponse.json({ type: 6 });
 }
 
 async function handleRoleRequestButton(body: Interaction, customId: string) {
@@ -243,6 +315,9 @@ export async function POST(request: Request) {
       }
       if (customId?.startsWith('appeal_')) {
         return handleAppealButton(body, customId);
+      }
+      if (customId?.startsWith('training_left_')) {
+        return handleTrainingLeft(body, customId);
       }
       const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending', 'training_cant_make_it'];
       if (!customId || !(BUTTON_IDS.includes(customId) || customId.startsWith('training_cant_make_it:'))) {

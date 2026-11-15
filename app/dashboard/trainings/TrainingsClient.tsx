@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, Training } from '@/lib/portal-types';
-import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining, changeTrainingHost, cancelTraining } from './actions';
+import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining, changeTrainingHost, cancelTraining, completeTraining } from './actions';
 
 interface Props {
   user: { name: string; isTrainer: boolean; canSwapHost: boolean };
@@ -98,9 +98,12 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                   <div className="flex items-center gap-3 text-xs font-mono text-neutral-400 uppercase tracking-wider">
                     <span>{t.id}</span>
                     <span className="text-neutral-700">/</span>
-                    <span>{cancelled ? 'CANCELLED' : state}</span>
+                    <span>{cancelled ? 'CANCELLED' : t.completed_at ? 'COMPLETED' : state}</span>
                     {cancelled && (
                       <span className="px-2 py-0.5 border border-red-500/40 bg-red-500/10 text-red-300 text-[10px]">CANCELLED</span>
+                    )}
+                    {t.completed_at && !cancelled && (
+                      <span className="px-2 py-0.5 border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 text-[10px]">COMPLETE</span>
                     )}
                     {delayed && (
                       <span className="px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px]">
@@ -109,7 +112,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {state !== 'CONCLUDED' && !cancelled && (
+                    {state !== 'CONCLUDED' && !cancelled && !t.completed_at && (
                       <>
                         <button
                           disabled={pending || isAttending}
@@ -141,7 +144,20 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         )}
                       </>
                     )}
-                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && (
+                    {user.isTrainer && state !== 'UPCOMING' && !cancelled && !t.completed_at && (
+                      <button
+                        disabled={pending}
+                        onClick={() => {
+                          if (confirm(`Mark ${t.id} complete? The instructor will be DMed to ask if anyone left.`)) {
+                            run(() => completeTraining(t.id));
+                          }
+                        }}
+                        className="px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
+                      >
+                        Complete
+                      </button>
+                    )}
+                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && !t.completed_at && (
                       <button
                         disabled={pending}
                         onClick={() => {
@@ -154,7 +170,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         Cancel Training
                       </button>
                     )}
-                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && (
+                    {user.isTrainer && state !== 'CONCLUDED' && !cancelled && !t.completed_at && (
                       <button
                         disabled={pending}
                         onClick={() => {
@@ -166,7 +182,7 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         Delay
                       </button>
                     )}
-                    {user.canSwapHost && state !== 'CONCLUDED' && !cancelled && (
+                    {user.canSwapHost && state !== 'CONCLUDED' && !cancelled && !t.completed_at && (
                       <button
                         disabled={pending}
                         onClick={() => {

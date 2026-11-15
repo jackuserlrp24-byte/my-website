@@ -60,6 +60,9 @@ export async function bookOnTraining(
   if (training.cancelled_at) {
     return { status: 'blocked', message: 'This training has been cancelled.' };
   }
+  if (training.completed_at) {
+    return { status: 'finished', message: 'This training has already been completed.' };
+  }
   if (training.requires_ipp && !meetsTrainingRequirements(roles)) {
     return { status: 'blocked', message: REQUIREMENT_MESSAGE };
   }

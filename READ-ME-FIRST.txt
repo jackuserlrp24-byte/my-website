@@ -1,0 +1,22 @@
+HOW TO INSTALL
+1. Drag everything in this folder (app, lib, supabase, vercel.json) into your my-website project and
+   choose "Replace" when asked. The folder layout matches your project, so files land in the right place.
+
+2. Run these in the Supabase SQL editor, in this order (safe to re-run):
+     supabase/training-complete.sql
+     supabase/training-rooms.sql
+
+3. Training Rooms 1-5 are already built in - nothing to set. (Optional: set DISCORD_TRAINING_ROOM_IDS to a
+   comma-separated list of voice channel IDs if you ever want different rooms.)
+
+4. Make something call  /api/trainings/room-check  every minute (cron-job.org is free).
+   If you set CRON_SECRET, send the header:  Authorization: Bearer <CRON_SECRET>
+
+WHAT'S IN IT
+- Public Order 1/2/3, separate TPAC, and Pursuit Tactical Advisor training templates
+- Midnight (UK time) clean-up of finished trainings from the Discord channel (vercel.json cron)
+- Complete button on View Trainings -> DMs the instructor "did anyone leave?" -> pick who -> removed from their record
+- Training rooms assigned automatically; instructor DM sent when everyone has left the room
+
+NOTE: vercel.json replaces yours. It keeps your two existing crons and adds the cleanup ones.
+If you've changed vercel.json since uploading, merge the two "/api/trainings/cleanup" lines in by hand.

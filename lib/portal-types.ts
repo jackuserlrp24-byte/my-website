@@ -32,6 +32,13 @@ export interface Training {
   original_starts_at: string | null; // set the first time a training is delayed
   cancelled_at?: string | null; // set when a trainer cancels the session
   cancel_reason?: string | null;
+  completed_at?: string | null; // set when a trainer presses Complete
+  completed_by?: string | null;
+  host_id?: string | null; // Discord ID of the instructor
+  room_id?: string | null; // Discord voice channel assigned as the training room
+  room_seen?: boolean; // someone has been seen in the room
+  room_empty_since?: string | null; // when the room was first seen empty after being used
+  left_ids?: string[]; // Discord IDs the instructor removed from the record (they left during the session)
   created_at: string;
 }
 

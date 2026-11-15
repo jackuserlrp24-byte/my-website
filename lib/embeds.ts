@@ -57,11 +57,21 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         ? [{ name: 'Requirements', value: 'IPP + trained driver (Advanced) only', inline: false }]
         : []),
       { name: 'Waiting VC', value: `<#${TRAINING_VC_ID}>`, inline: false },
+      ...(t.room_id ? [{ name: 'Training Room', value: `<#${t.room_id}>`, inline: false }] : []),
     ],
     footer: { text: 'Central Operations Portal' },
     timestamp: t.created_at,
   };
   if (t.image_url) embed.image = { url: t.image_url };
+
+  if (t.completed_at && !t.cancelled_at) {
+    embed.title = `COMPLETED: ${t.title}`;
+    embed.color = 5763719;
+    return {
+      embeds: [embed],
+      components: [{ type: 1, components: [{ type: 2, style: 5, label: 'View Portal', url: `${PORTAL_URL}/dashboard/trainings` }] }],
+    };
+  }
 
   if (t.cancelled_at) {
     embed.title = `CANCELLED: ${t.title}`;
@@ -144,6 +154,59 @@ export const cantMakeRow = (trainingId: string) => ({
   components: [{ type: 2, style: 4, label: "Can't Make It", custom_id: `training_cant_make_it:${trainingId}` }],
 });
 
+/** DM to the instructor when a trainer presses Complete: asks whether anyone left during the session. */
+export function trainingCompleteDmPayload(t: Training, attendeeCount: number) {
+  return {
+    embeds: [
+      {
+        title: `${t.id} marked complete`,
+        description: `**${t.title}** has been marked as complete.\n\n**Did anyone leave during the training?**`,
+        color: 5763719,
+        fields: [
+          { name: 'Training ID', value: t.id, inline: true },
+          { name: 'Marked complete by', value: t.completed_by || 'A trainer', inline: true },
+          { name: 'Booked on', value: String(attendeeCount), inline: true },
+        ],
+        footer: { text: 'Central Operations Portal' },
+      },
+    ],
+    components: attendeeCount
+      ? [
+          {
+            type: 1,
+            components: [
+              { type: 2, style: 4, label: 'Yes', custom_id: `training_left_yes:${t.id}` },
+              { type: 2, style: 2, label: 'No', custom_id: `training_left_no:${t.id}` },
+            ],
+          },
+        ]
+      : [],
+  };
+}
+
+/** Pick-who-left menus (25 options max per menu, 4 menus max) plus a Done button. */
+export function leftPickerComponents(trainingId: string, people: { id: string; label: string }[]) {
+  const rows: Record<string, unknown>[] = [];
+  for (let i = 0; i < people.length && rows.length < 4; i += 25) {
+    const chunk = people.slice(i, i + 25);
+    rows.push({
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `training_left_select:${trainingId}:${rows.length}`,
+          placeholder: 'Select everyone who left...',
+          min_values: 1,
+          max_values: chunk.length,
+          options: chunk.map((p) => ({ label: (p.label || p.id).slice(0, 100), value: p.id })),
+        },
+      ],
+    });
+  }
+  rows.push({ type: 1, components: [{ type: 2, style: 2, label: 'Done', custom_id: `training_left_done:${trainingId}` }] });
+  return rows;
+}
+
 /** The DM a member gets when they click Attend. */
 export function trainingDmPayload(t: Training, divisionName?: string | null) {
   const start = unix(t.starts_at);
@@ -162,6 +225,7 @@ export function trainingDmPayload(t: Training, divisionName?: string | null) {
           { name: 'Host', value: t.host || 'TBD', inline: true },
           { name: 'Starts', value: `<t:${start}:F>\n<t:${start}:R>`, inline: false },
           { name: 'Wait in this VC', value: `<#${vc}>`, inline: false },
+          ...(t.room_id ? [{ name: 'Training Room', value: `<#${t.room_id}>`, inline: false }] : []),
         ],
         footer: { text: 'Central Operations Portal' },
       },

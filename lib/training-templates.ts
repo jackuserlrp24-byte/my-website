@@ -28,13 +28,22 @@ export const TRAINING_TEMPLATES: TrainingTemplate[] = [
       'Learn response driving, vehicle control and safe use of emergency equipment, finishing with a practical assessment.\n\n**Requirements**\n• IPP completed\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
   },
   {
-    key: 'pursuit-tpac',
-    name: 'Pursuit / TPAC Training',
-    title: 'Pursuit & TPAC Training',
+    key: 'tpac',
+    name: 'TPAC Training',
+    title: 'TPAC Training',
     durationMins: 90,
     requiresIpp: true,
     description:
-      'Pursuit policy, authority to engage, tactical contact and containment, and radio commentary during a pursuit.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
+      'Tactical Pursuit and Containment: authority to engage, tactical contact, containment and radio commentary.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
+  },
+  {
+    key: 'pursuit-tactical-advisor',
+    name: 'Pursuit Tactical Advisor',
+    title: 'Pursuit Tactical Advisor Qualification',
+    durationMins: 90,
+    requiresIpp: true,
+    description:
+      'Qualification for Pursuit Tactical Advisors: running and advising on pursuits, authorising tactics and directing units over the radio.\n\n**Requirements**\n• Hold the rank above Constable\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
   },
   {
     key: 'roads-policing',
@@ -55,12 +64,30 @@ export const TRAINING_TEMPLATES: TrainingTemplate[] = [
       'Refresher for qualified drivers: blue-light driving, junction procedure and vehicle positioning.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone',
   },
   {
-    key: 'public-order',
-    name: 'Public Order (PSU)',
-    title: 'Public Order / PSU Training',
+    key: 'public-order-1',
+    name: 'Public Order 1',
+    title: 'Public Order 1 Training',
     durationMins: 90,
     requiresIpp: true,
     description:
-      'Public order formations, shield tactics, dispersal authority and PSU radio discipline.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
+      'Public Order Level 1: PSU basics, formations, shield tactics and radio discipline.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
+  },
+  {
+    key: 'public-order-2',
+    name: 'Public Order 2',
+    title: 'Public Order 2 Training',
+    durationMins: 90,
+    requiresIpp: true,
+    description:
+      'Public Order Level 2: advanced PSU tactics, dispersal authority and incident command.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
+  },
+  {
+    key: 'public-order-3',
+    name: 'Public Order 3',
+    title: 'Public Order 3 Training',
+    durationMins: 90,
+    requiresIpp: true,
+    description:
+      'Public Order Level 3: PSU command, planning and deployment of public order operations.\n\n**Requirements**\n• IPP + Advanced Driver\n• Working microphone\n• Be in the waiting VC 5 minutes before the start',
   },
 ];
