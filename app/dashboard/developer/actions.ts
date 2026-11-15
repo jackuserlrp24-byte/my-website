@@ -5,6 +5,7 @@ import { getPortalUser } from '@/lib/portal';
 import { getMaintenance, saveMaintenance } from '@/lib/maintenance';
 import { MAINTENANCE_PANELS, type MaintenanceState } from '@/lib/maintenance-config';
 import { postMessage } from '@/lib/discord';
+import { syncDivisionsEmbed } from '@/lib/divisions-sync';
 import { MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
 import type { ActionResult } from '@/lib/portal-types';
 
@@ -37,6 +38,13 @@ export async function updateMaintenance(next: MaintenanceState): Promise<ActionR
       ],
       allowed_mentions: { parse: [] },
     });
+  }
+
+  // Keep the Discord "Division Application Status" message in step: maintenance text now, the real list again when reopened.
+  const wasDown = before.site.on || before.panels.divisions?.on;
+  const isDown = next.site.on || next.panels.divisions?.on;
+  if (wasDown !== isDown || (isDown && before.panels.divisions?.message !== next.panels.divisions?.message)) {
+    await syncDivisionsEmbed();
   }
 
   revalidatePath('/', 'layout');

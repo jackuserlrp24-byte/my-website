@@ -30,9 +30,11 @@ export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes
 // Voice channel people wait in before a training starts.
 export const TRAINING_VC_ID = process.env.DISCORD_TRAINING_VC_ID || '1497557910283223266';
 
-// Where role requests are posted for management to approve / deny.
-// Staff warn / kick / ban logs (portal + in-game) go here and ONLY here.
-export const MODERATION_LOG_CHANNEL_ID = process.env.DISCORD_MODERATION_LOG_CHANNEL_ID || '1497557910283223263';
+// ONE channel for every log: staff warn / kick / ban / notes, in-game moderation, ban appeals,
+// division applications and maintenance changes. Change it with DISCORD_LOG_CHANNEL_ID.
+// (The old per-type variables are ignored on purpose so nothing can still point at an old channel.)
+export const LOG_CHANNEL_ID = process.env.DISCORD_LOG_CHANNEL_ID || '1571300231021203476';
+export const MODERATION_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
 
 // Role requests must never be posted into the moderation log channel, even if an env var points at it.
 const ROLE_REQUESTS_FALLBACK = '1532786346920247398';

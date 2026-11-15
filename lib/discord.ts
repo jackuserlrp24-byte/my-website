@@ -1,19 +1,15 @@
+import { LOG_CHANNEL_ID } from '@/lib/training-config';
+
 const API = 'https://discord.com/api/v10';
 
 // Channel IDs. Set these in your env to post somewhere other than the patrols channel.
 const FALLBACK_CHANNEL = '1532786346920247398';
 export const TRAININGS_CHANNEL_ID = process.env.DISCORD_TRAININGS_CHANNEL_ID || FALLBACK_CHANNEL;
 export const DIVISIONS_CHANNEL_ID = process.env.DISCORD_DIVISIONS_CHANNEL_ID || FALLBACK_CHANNEL;
-export const APPLICATIONS_LOG_CHANNEL_ID =
-  process.env.DISCORD_APPLICATIONS_LOG_CHANNEL_ID || '1564285919564136711';
-
-// Ban appeal logs (new appeal, accepted, denied) go here.
-export const APPEAL_LOG_CHANNEL_ID = process.env.DISCORD_APPEAL_LOG_CHANNEL_ID || '1571300231021203476';
-
-// Division application logs. Met Police has its own channel; LAS, LFB and Control are untouched and keep using the shared one.
-export const MET_APPLICATIONS_LOG_CHANNEL_ID = process.env.DISCORD_APPLICATIONS_LOG_CHANNEL_ID_MET || '1571517865406763149';
-export const applicationsLogChannel = (department?: string | null) =>
-  department?.toUpperCase() === 'MET POLICE' ? MET_APPLICATIONS_LOG_CHANNEL_ID : APPLICATIONS_LOG_CHANNEL_ID;
+// Every log goes to the one log channel (see LOG_CHANNEL_ID in lib/training-config.ts).
+export const APPLICATIONS_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
+export const APPEAL_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
+export const applicationsLogChannel = (_department?: string | null) => LOG_CHANNEL_ID;
 
 function headers() {
   return {

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/portal';
 import { DIVISIONS_CHANNEL_ID, editMessage, postMessage } from '@/lib/discord';
-import { divisionsPayload } from '@/lib/embeds';
+import { divisionsMaintenancePayload, divisionsPayload } from '@/lib/embeds';
+import { getMaintenance } from '@/lib/maintenance';
 import type { Division } from '@/lib/portal-types';
 
 const SETTING_KEY = 'divisions_message';
@@ -17,7 +18,12 @@ export async function syncDivisionsEmbed(): Promise<boolean> {
     .order('department', { ascending: true })
     .order('sort_order', { ascending: true });
 
-  const payload = divisionsPayload((divisions ?? []) as Division[]);
+  // While Divisions (or the whole website) is under maintenance the Discord message says so instead of the open / closed list.
+  const maintenance = await getMaintenance();
+  const down = maintenance.site.on || maintenance.panels.divisions?.on;
+  const payload = down
+    ? divisionsMaintenancePayload(maintenance.panels.divisions?.on ? maintenance.panels.divisions.message : maintenance.site.message)
+    : divisionsPayload((divisions ?? []) as Division[]);
 
   const { data: setting } = await supabaseAdmin
     .from('portal_settings')

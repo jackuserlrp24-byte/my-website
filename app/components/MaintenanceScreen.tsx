@@ -22,6 +22,7 @@ export default function MaintenanceScreen({
         <span className="text-[10px] font-mono text-amber-400 tracking-widest uppercase block mb-2">Under maintenance</span>
         <h1 className="text-xl font-bold tracking-tight text-neutral-100 mb-3">{title}</h1>
         <p className="text-sm text-neutral-400 leading-relaxed whitespace-pre-line select-text">{message}</p>
+        <p className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider mt-5">This page refreshes automatically when we&apos;re back.</p>
         {devLogin && (
           <a
             href="/api/auth/discord?next=/dashboard/developer"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import LocalTime from '@/app/components/LocalTime';
 import { MAINTENANCE_PANELS, type MaintenanceState } from '@/lib/maintenance-config';
 import type { ActionResult } from '@/lib/portal-types';
@@ -30,6 +31,7 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
   const [state, setState] = useState<MaintenanceState>(initial);
   const [saved, setSaved] = useState<MaintenanceState>(initial);
   const [result, setResult] = useState<ActionResult | null>(null);
+  const router = useRouter();
   const [busy, startTransition] = useTransition();
 
   const dirty = JSON.stringify({ s: state.site, p: state.panels }) !== JSON.stringify({ s: saved.site, p: saved.panels });
@@ -46,7 +48,10 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
     startTransition(async () => {
       const r = await updateMaintenance(state);
       setResult(r);
-      if (r.ok) setSaved(state);
+      if (r.ok) {
+        setSaved(state);
+        router.refresh(); // updates the nav banner straight away
+      }
     });
   }
 

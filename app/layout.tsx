@@ -1,5 +1,6 @@
 import './globals.css';
 import { SiteGate } from './components/MaintenanceGates';
+import MaintenanceWatcher from './components/MaintenanceWatcher';
 
 export default function RootLayout({
   children,
@@ -10,6 +11,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen w-full bg-neutral-950 text-neutral-100 select-none antialiased">
         <SiteGate>{children}</SiteGate>
+        <MaintenanceWatcher />
       </body>
     </html>
   );

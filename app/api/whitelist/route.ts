@@ -12,7 +12,7 @@ const supabase = createClient(
 
 const GUILD_ID = (process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID)!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
-const LOG_CHANNEL_ID = '1563506688798236743'; // Audit Log Channel
+import { LOG_CHANNEL_ID } from '@/lib/training-config'; // the one log channel
 
 const UNVERIFIED_ROLE = '1533021619331534848';
 const WHITELIST_ROLES = [
