@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// Old address - Management is now a tab inside the Staff Panel.
+// Old address - the management tools now sit on the Staff Panel page.
 export default function Page() {
-  redirect('/dashboard/staff?view=management');
+  redirect('/dashboard/staff');
 }

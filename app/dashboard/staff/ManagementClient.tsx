@@ -89,7 +89,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
   };
 
   return (
-    <div className="flex flex-col px-8 mt-4 max-w-[1450px] mx-auto w-full gap-6 pb-16 select-none font-mono antialiased">
+    <div className="flex flex-col w-full gap-6 pb-16 select-none font-mono antialiased">
       
       {/* Header Banner */}
       <div className="w-full bg-neutral-900 border border-neutral-800 p-6 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -99,7 +99,7 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
             Administration & Overview
           </span>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">
-            Management Panel
+            Administration
           </h2>
           <p className="text-xs text-neutral-400 mt-1 font-sans">
             Centralized administration suite for user dossier lookups, shift dispatches, community broadcasts, and moderation history.
@@ -646,7 +646,6 @@ Submitted At: ${selectedUser.created_at ? new Date(selectedUser.created_at).toLo
               Global Moderation Data
             </h3>
             <form method="GET" className="flex gap-2 w-full sm:w-auto">
-              <input type="hidden" name="view" value="management" />
               <input type="text" name="search" defaultValue={modSearchQuery} placeholder="Search logs..." className="bg-neutral-950 border border-neutral-800 px-3 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] w-full sm:w-64" />
               <button type="submit" className="px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold transition-colors">Filter</button>
             </form>

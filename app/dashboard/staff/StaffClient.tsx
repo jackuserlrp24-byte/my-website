@@ -143,7 +143,7 @@ export default function StaffClient({
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Staff Panel</h2>
         <p className="text-xs text-neutral-400 mt-1">
           Add notes and warnings{canModerate ? ', kick, ban and unban' : ''} on Discord, in the FiveM server, or both - straight from the portal. Everything is logged here, in
-          Management &gt; Moderation Logs, and in the moderation log channel.
+          the Administration logs, and in the moderation log channel.
         </p>
       </div>
 
