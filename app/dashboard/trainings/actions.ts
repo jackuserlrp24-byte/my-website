@@ -30,7 +30,6 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   const title = field(formData, 'title', 100);
   const date = field(formData, 'date', 10);
   const startTime = field(formData, 'startTime', 5);
-  const endTime = field(formData, 'endTime', 5);
   const divisionId = field(formData, 'divisionId', 60) || null;
   const description = field(formData, 'description', 1500);
   const imageUrl = field(formData, 'imageUrl', 500);
@@ -39,13 +38,15 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
 
   if (!title) return fail('Give the training a title.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Pick a valid date.');
-  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return fail('Pick a start and end time.');
+  if (!/^\d{2}:\d{2}$/.test(startTime)) return fail('Pick a start time.');
   if (imageUrl && !/^https:\/\//i.test(imageUrl)) return fail('Image URL must start with https://');
 
   const startsAt = londonLocalToUtc(date, startTime);
-  const endsAt = londonLocalToUtc(date, endTime);
-  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) return fail('Invalid date or time.');
-  if (endsAt <= startsAt) return fail('End time must be after the start time.');
+  if (Number.isNaN(startsAt.getTime())) return fail('Invalid date or time.');
+  // No end time on the form: it's the template's length (default 60 min) so rooms and "finished" checks still work.
+  const tplKey = field(formData, 'templateKey', 60);
+  const durationMins = TRAINING_TEMPLATES.find((t) => t.key === tplKey)?.durationMins ?? 60;
+  const endsAt = new Date(startsAt.getTime() + durationMins * 60000);
 
   const { data: row, error } = await supabaseAdmin
     .from('trainings')
