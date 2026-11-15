@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, OWNERSHIP_ROLE_IDS, SILVER_ROLE_ID, STAFF_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
@@ -89,7 +90,7 @@ export interface PortalUser {
  * their live server membership + roles with the bot. Returns null if they
  * are logged out or not in the server.
  */
-export async function getPortalUser(): Promise<PortalUser | null> {
+async function loadPortalUser(): Promise<PortalUser | null> {
   const raw = (await cookies()).get('discord_user')?.value;
   if (!raw) return null;
 
@@ -150,3 +151,6 @@ export async function getPortalUser(): Promise<PortalUser | null> {
     return null;
   }
 }
+
+/** Same lookup, but done once per request - the staff layout and the page under it share one Discord call. */
+export const getPortalUser = cache(loadPortalUser);

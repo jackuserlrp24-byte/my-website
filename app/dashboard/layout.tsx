@@ -206,15 +206,6 @@ export default async function DashboardLayout({
             </Link>
           )}
 
-          {access.isManagement && (
-            <Link
-              href="/dashboard/management"
-              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
-            >
-              Management
-            </Link>
-          )}
-
           {/* Role-Locked Command Button */}
           {access.isCommand && (
             <Link

@@ -34,82 +34,76 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
   50%      { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
 }
-.staff-sidebar { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.staff-item    { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.staff-page-enter { animation: staff-fade-up 0.35s ease-out both; }
+.staff-sidebar { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.staff-item    { animation: staff-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.staff-page-enter { animation: staff-fade-up 0.35s ease-out backwards; }
 .staff-badge   { animation: staff-pulse-badge 1.8s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .staff-sidebar, .staff-item, .staff-page-enter, .staff-badge { animation: none; }
-}
+
 
 /* ---------- Maintenance / coming soon screen ---------- */
 @keyframes mt-card-in {
-  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 @keyframes mt-rise {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
-}
-@keyframes mt-stripes {
-  from { background-position: 0 0; }
-  to   { background-position: 56px 0; }
 }
 @keyframes mt-shimmer {
   from { background-position: 200% 0; }
   to   { background-position: -200% 0; }
 }
-@keyframes mt-spin { to { transform: rotate(360deg); } }
-@keyframes mt-spin-rev { to { transform: rotate(-360deg); } }
-@keyframes mt-float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
-}
-@keyframes mt-glow {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50%      { opacity: 0.8;  transform: scale(1.12); }
-}
 @keyframes mt-ping {
-  0%       { transform: scale(1);   opacity: 0.75; }
-  80%, 100%{ transform: scale(2.6); opacity: 0; }
+  0%        { transform: scale(1);   opacity: 0.7; }
+  80%, 100% { transform: scale(2.4); opacity: 0; }
 }
-@keyframes mt-dots {
-  0%, 20%  { opacity: 0.2; }
-  50%      { opacity: 1; }
-  100%     { opacity: 0.2; }
+@keyframes mt-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
 }
-@keyframes mt-drift {
-  from { background-position: 0 0; }
-  to   { background-position: 48px 48px; }
+.mt-card  { animation: mt-card-in 0.5s ease-out backwards; }
+.mt-rise  { animation: mt-rise 0.5s ease-out backwards; }
+.mt-ping  { animation: mt-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.mt-track > span { animation: mt-slide 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mt-card, .mt-rise, .mt-ping, .mt-track > span { animation: none; }
 }
 
-.mt-bg-grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
-  background-size: 48px 48px;
-  animation: mt-drift 6s linear infinite;
-  mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
-  -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 70%);
+/* ---------- Staff section: clean polish (stagger, hover, press) ---------- */
+@keyframes staff-row-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
 }
-.mt-card    { animation: mt-card-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.mt-rise    { animation: mt-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.mt-bar-maint {
-  background-image: repeating-linear-gradient(-45deg, #f59e0b 0 14px, #1c1917 14px 28px);
-  background-size: 56px 100%;
-  animation: mt-stripes 1.2s linear infinite;
-}
-.mt-bar-soon {
-  background-image: linear-gradient(90deg, #5865F2, #a5b4fc, #5865F2);
+/* each block on a page eases in one after another */
+.staff-page-enter > * > * { animation: staff-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.staff-page-enter > * > *:nth-child(1) { animation-delay: 40ms; }
+.staff-page-enter > * > *:nth-child(2) { animation-delay: 100ms; }
+.staff-page-enter > * > *:nth-child(3) { animation-delay: 160ms; }
+.staff-page-enter > * > *:nth-child(4) { animation-delay: 220ms; }
+.staff-page-enter > * > *:nth-child(5) { animation-delay: 280ms; }
+.staff-page-enter > * > *:nth-child(6) { animation-delay: 340ms; }
+.staff-page-enter > * > *:nth-child(n+7) { animation-delay: 400ms; }
+/* list rows cascade in (and new rows slide in when something new arrives) */
+.staff-page-enter .divide-y > * { animation: staff-row-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.staff-page-enter .divide-y > *:nth-child(1) { animation-delay: 120ms; }
+.staff-page-enter .divide-y > *:nth-child(2) { animation-delay: 170ms; }
+.staff-page-enter .divide-y > *:nth-child(3) { animation-delay: 220ms; }
+.staff-page-enter .divide-y > *:nth-child(4) { animation-delay: 270ms; }
+.staff-page-enter .divide-y > *:nth-child(5) { animation-delay: 320ms; }
+.staff-page-enter .divide-y > *:nth-child(6) { animation-delay: 370ms; }
+.staff-page-enter .divide-y > *:nth-child(n+7) { animation-delay: 400ms; }
+/* soft sweep across the blue banner bar at the top of each card */
+.staff-page-enter .absolute.top-0.h-1 {
+  background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
   background-size: 200% 100%;
-  animation: mt-shimmer 2.8s linear infinite;
+  animation: mt-shimmer 5s linear infinite;
 }
-.mt-float   { animation: mt-float 3.4s ease-in-out infinite; }
-.mt-glow    { animation: mt-glow 3s ease-in-out infinite; }
-.mt-spin    { animation: mt-spin 6s linear infinite; transform-origin: center; }
-.mt-spin-rev{ animation: mt-spin-rev 4s linear infinite; transform-origin: center; }
-.mt-ping    { animation: mt-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
-.mt-dot     { animation: mt-dots 1.4s ease-in-out infinite; }
+/* cards lift their border on hover, buttons ease and press */
+.staff-page-enter .bg-neutral-900.border { transition: border-color 0.25s ease; }
+.staff-page-enter .bg-neutral-900.border:hover { border-color: rgba(88, 101, 242, 0.35); }
+.staff-page-enter button { transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease; }
+.staff-page-enter button:not(:disabled):active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) {
-  .mt-bg-grid, .mt-card, .mt-rise, .mt-bar-maint, .mt-bar-soon, .mt-float, .mt-glow, .mt-spin, .mt-spin-rev, .mt-ping, .mt-dot { animation: none; }
+  .staff-sidebar, .staff-item, .staff-page-enter, .staff-badge,
+  .staff-page-enter > * > *, .staff-page-enter .divide-y > *, .staff-page-enter .absolute.top-0.h-1 { animation: none; }
 }

@@ -35,6 +35,7 @@ export async function postNotice(formData: FormData) {
   }
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
   revalidatePath('/dashboard');
 }
 
@@ -60,6 +61,7 @@ export async function editNotice(formData: FormData) {
   }
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
   revalidatePath('/dashboard');
 }
 
@@ -83,6 +85,7 @@ export async function deleteNotice(formData: FormData) {
   }
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
   revalidatePath('/dashboard');
 }
 
@@ -105,6 +108,7 @@ export async function issueModeration(formData: FormData) {
   }
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
 }
 
 export async function createManagementPatrol(formData: FormData) {
@@ -209,6 +213,7 @@ export async function createManagementPatrol(formData: FormData) {
   }
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
   revalidatePath('/dashboard/patrols');
 }
 
@@ -229,6 +234,7 @@ export async function deletePatrol(formData: FormData) {
   await supabase.from('patrols').delete().eq('id', patrolId);
 
   revalidatePath('/dashboard/management');
+  revalidatePath('/dashboard/staff/management');
   revalidatePath('/dashboard/patrols');
 }
 
