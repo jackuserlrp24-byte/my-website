@@ -233,12 +233,12 @@ export function roleRequestPayload(r: RoleRequest, roleLabel: string, pending = 
 
 
 /** What the Discord division status message shows while divisions / the website are under maintenance. */
-export function divisionsMaintenancePayload(message: string) {
+export function divisionsMaintenancePayload(message: string, comingSoon = false) {
   return {
     embeds: [
       {
-        title: 'DIVISION APPLICATION STATUS - UNDER MAINTENANCE',
-        description: `${message}\n\nApplications will be back shortly. We apologise for any inconvenience.`,
+        title: comingSoon ? 'DIVISION APPLICATION STATUS - COMING SOON' : 'DIVISION APPLICATION STATUS - UNDER MAINTENANCE',
+        description: comingSoon ? message : `${message}\n\nApplications will be back shortly. We apologise for any inconvenience.`,
         color: 16705372,
         footer: { text: 'Central Operations Portal - last updated' },
         timestamp: new Date().toISOString(),

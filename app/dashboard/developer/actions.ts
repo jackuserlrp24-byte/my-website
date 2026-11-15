@@ -19,11 +19,13 @@ export async function updateMaintenance(next: MaintenanceState): Promise<ActionR
 
   // Log what changed
   const changes: string[] = [];
-  if (before.site.on !== next.site.on) changes.push(`**Whole website:** ${next.site.on ? 'put under maintenance' : 'reopened'}`);
+  const word = (e: { on: boolean; mode?: string }) => (!e.on ? 'reopened' : e.mode === 'coming_soon' ? 'set to COMING SOON' : 'put under MAINTENANCE');
+  const same = (a: { on: boolean; mode?: string }, b: { on: boolean; mode?: string }) => a.on === b.on && (!a.on || a.mode === b.mode);
+  if (!same(before.site, next.site)) changes.push(`**Whole website:** ${word(next.site)}`);
   for (const p of MAINTENANCE_PANELS) {
-    if (before.panels[p.key]?.on !== !!next.panels[p.key]?.on) {
-      changes.push(`**${p.label}:** ${next.panels[p.key]?.on ? 'closed for maintenance' : 'reopened'}`);
-    }
+    const b = before.panels[p.key] ?? { on: false };
+    const n = next.panels[p.key] ?? { on: false };
+    if (!same(b, n)) changes.push(`**${p.label}:** ${word(n)}`);
   }
   if (changes.length) {
     await postMessage(LOG_CHANNEL_ID, {
@@ -43,7 +45,7 @@ export async function updateMaintenance(next: MaintenanceState): Promise<ActionR
   // Keep the Discord "Division Application Status" message in step: maintenance text now, the real list again when reopened.
   const wasDown = before.site.on || before.panels.divisions?.on;
   const isDown = next.site.on || next.panels.divisions?.on;
-  if (wasDown !== isDown || (isDown && before.panels.divisions?.message !== next.panels.divisions?.message)) {
+  if (wasDown !== isDown || (isDown && (before.panels.divisions?.message !== next.panels.divisions?.message || before.panels.divisions?.mode !== next.panels.divisions?.mode))) {
     await syncDivisionsEmbed();
   }
 

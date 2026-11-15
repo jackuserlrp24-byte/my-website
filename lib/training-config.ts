@@ -52,6 +52,9 @@ const envLogChannel = (process.env.PORTAL_LOG_CHANNEL_ID || '').trim();
 export const LOG_CHANNEL_ID = envLogChannel && !NOT_LOG_CHANNELS.includes(envLogChannel) ? envLogChannel : DEFAULT_LOG_CHANNEL;
 export const MODERATION_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
 
+// Every role request, approval and denial is logged here (the Approve / Deny post itself stays in ROLE_REQUESTS_CHANNEL_ID).
+export const ROLE_LOG_CHANNEL_ID = process.env.PORTAL_ROLE_LOG_CHANNEL_ID || '1571533229956272238';
+
 // Command LOA (leave of absence) approvals, declines and returns are logged here.
 export const LOA_LOG_CHANNEL_ID = process.env.PORTAL_LOA_LOG_CHANNEL_ID || '1571528481739636927';
 

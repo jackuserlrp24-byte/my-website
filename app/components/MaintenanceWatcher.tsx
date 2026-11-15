@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { MAINTENANCE_PANELS } from '@/lib/maintenance-config';
+import { panelsForPath } from '@/lib/maintenance-config';
 
 const POLL_MS = 4000;
 
@@ -22,8 +22,7 @@ export default function MaintenanceWatcher() {
   const offlineRef = useRef(false);
   const pathRef = useRef(pathname);
 
-  const panelKey = (path: string) => MAINTENANCE_PANELS.find((p) => path === p.path || path.startsWith(`${p.path}/`))?.key;
-  const isBlocked = (s: Status, path: string) => s.site || (!!panelKey(path) && !!s.panels[panelKey(path)!]);
+  const isBlocked = (s: Status, path: string) => s.site || panelsForPath(path).some((k) => !!s.panels[k]);
 
   useEffect(() => {
     pathRef.current = pathname;

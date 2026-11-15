@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { editMessage, postMessage } from '@/lib/discord';
-import { reviewRoleRequest } from '@/lib/role-requests';
+import { logRoleRequest, reviewRoleRequest } from '@/lib/role-requests';
 import { REQUESTABLE_ROLES, ROLE_REQUESTS_CHANNEL_ID } from '@/lib/training-config';
 import { roleRequestPayload } from '@/lib/embeds';
 import type { ActionResult, RoleRequest } from '@/lib/portal-types';
@@ -68,6 +68,7 @@ export async function requestRole(formData: FormData): Promise<ActionResult> {
     saved++;
 
     const row = data as RoleRequest;
+    await logRoleRequest('requested', row, role.label);
     const messageId = await postMessage(ROLE_REQUESTS_CHANNEL_ID, roleRequestPayload(row, role.label));
     if (messageId) {
       posted++;

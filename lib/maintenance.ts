@@ -1,8 +1,7 @@
 import { supabaseAdmin } from '@/lib/portal';
 import {
-  DEFAULT_MAINTENANCE_MESSAGE,
-  DEFAULT_SITE_MESSAGE,
   MAINTENANCE_PANELS,
+  defaultMessage,
   emptyMaintenance,
   type MaintenanceEntry,
   type MaintenanceState,
@@ -10,10 +9,11 @@ import {
 
 const KEY = 'maintenance';
 
-const entry = (raw: unknown, fallback: string): MaintenanceEntry => {
+const entry = (raw: unknown, site = false): MaintenanceEntry => {
   const r = (raw ?? {}) as Partial<MaintenanceEntry>;
+  const mode = r.mode === 'coming_soon' ? 'coming_soon' : 'maintenance';
   const msg = typeof r.message === 'string' ? r.message.trim().slice(0, 500) : '';
-  return { on: r.on === true, message: msg || fallback };
+  return { on: r.on === true, mode, message: msg || defaultMessage(mode, site) };
 };
 
 /** Reads the maintenance settings. Any problem (no table, bad JSON) means "nothing is under maintenance". */
@@ -24,8 +24,8 @@ export async function getMaintenance(): Promise<MaintenanceState> {
     if (!data?.value) return base;
     const parsed = JSON.parse(data.value) as Partial<MaintenanceState>;
     return {
-      site: entry(parsed.site, DEFAULT_SITE_MESSAGE),
-      panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(parsed.panels?.[p.key], DEFAULT_MAINTENANCE_MESSAGE)])),
+      site: entry(parsed.site, true),
+      panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(parsed.panels?.[p.key])])),
       updated_by: typeof parsed.updated_by === 'string' ? parsed.updated_by : null,
       updated_at: data.updated_at ?? null,
     };
@@ -36,8 +36,8 @@ export async function getMaintenance(): Promise<MaintenanceState> {
 
 export async function saveMaintenance(state: MaintenanceState, by: string): Promise<boolean> {
   const clean: MaintenanceState = {
-    site: entry(state.site, DEFAULT_SITE_MESSAGE),
-    panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(state.panels?.[p.key], DEFAULT_MAINTENANCE_MESSAGE)])),
+    site: entry(state.site, true),
+    panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(state.panels?.[p.key])])),
     updated_by: by,
     updated_at: null,
   };

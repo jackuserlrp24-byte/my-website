@@ -3,28 +3,48 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import LocalTime from '@/app/components/LocalTime';
-import { MAINTENANCE_PANELS, type MaintenanceState } from '@/lib/maintenance-config';
+import { MAINTENANCE_PANELS, defaultMessage, isDefaultMessage, type MaintenanceEntry, type MaintenanceMode, type MaintenanceState } from '@/lib/maintenance-config';
 import type { ActionResult } from '@/lib/portal-types';
 import { refreshDivisionsMessage, updateMaintenance } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] select-text';
 
-function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+type Status = 'open' | MaintenanceMode;
+const statusOf = (e: { on: boolean; mode: MaintenanceMode }): Status => (!e.on ? 'open' : e.mode);
+
+/** Open / Coming soon / Maintenance */
+function StatusPicker({ value, onChange, label }: { value: Status; onChange: (v: Status) => void; label: string }) {
+  const opts: { v: Status; text: string; active: string }[] = [
+    { v: 'open', text: 'Open', active: 'bg-emerald-600 border-emerald-500 text-white' },
+    { v: 'coming_soon', text: 'Coming soon', active: 'bg-[#5865F2] border-[#5865F2] text-white' },
+    { v: 'maintenance', text: 'Maintenance', active: 'bg-amber-500 border-amber-400 text-black' },
+  ];
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors cursor-pointer ${
-        on ? 'bg-amber-500 border-amber-400' : 'bg-neutral-800 border-neutral-700'
-      }`}
-    >
-      <span className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
-    </button>
+    <div role="radiogroup" aria-label={label} className="flex shrink-0">
+      {opts.map((o) => (
+        <button
+          key={o.v}
+          type="button"
+          role="radio"
+          aria-checked={value === o.v}
+          onClick={() => onChange(o.v)}
+          className={`px-3 py-1.5 border text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer -ml-px first:ml-0 ${
+            value === o.v ? o.active : 'bg-neutral-950 border-neutral-700 text-neutral-400 hover:bg-neutral-800'
+          }`}
+        >
+          {o.text}
+        </button>
+      ))}
+    </div>
   );
+}
+
+/** Applies a status to an entry, swapping the message only if it is still one of the stock messages. */
+function withStatus(e: MaintenanceEntry, v: Status, site: boolean): MaintenanceEntry {
+  if (v === 'open') return { ...e, on: false };
+  const message = !e.message.trim() || isDefaultMessage(e.message) ? defaultMessage(v, site) : e.message;
+  return { on: true, mode: v, message };
 }
 
 export default function DeveloperClient({ initial }: { initial: MaintenanceState }) {
@@ -37,11 +57,14 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
   const dirty = JSON.stringify({ s: state.site, p: state.panels }) !== JSON.stringify({ s: saved.site, p: saved.panels });
   const closedCount = MAINTENANCE_PANELS.filter((p) => state.panels[p.key]?.on).length;
 
-  const setPanel = (key: string, patch: Partial<{ on: boolean; message: string }>) =>
+  const setPanel = (key: string, patch: Partial<MaintenanceEntry>) =>
     setState((s) => ({ ...s, panels: { ...s.panels, [key]: { ...s.panels[key], ...patch } } }));
 
-  const setAll = (on: boolean) =>
-    setState((s) => ({ ...s, panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, { ...s.panels[p.key], on }])) }));
+  const setPanelStatus = (key: string, v: Status) =>
+    setState((s) => ({ ...s, panels: { ...s.panels, [key]: withStatus(s.panels[key], v, false) } }));
+
+  const setAll = (v: Status) =>
+    setState((s) => ({ ...s, panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, withStatus(s.panels[p.key], v, false)])) }));
 
   function save() {
     if (state.site.on && !saved.site.on && !confirm('Put the WHOLE website under maintenance? Everyone except founders and developers will be locked out.')) return;
@@ -62,7 +85,7 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
         <span className="text-[10px] font-mono text-amber-400 tracking-widest uppercase block mb-1">FOUNDER / DEVELOPER</span>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Developer Panel</h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Close panels or the whole website for maintenance. Visitors see your message; founders and developers can still get in. Changes are logged in the moderation log channel.
+          Set any panel, command suite (LAS, LFB, Met Police, LOA) or the whole website to Coming soon or Maintenance. Visitors see your message; founders and developers can still get in. Changes are logged in the moderation log channel.
         </p>
         {saved.updated_at && (
           <p className="text-[10px] font-mono text-neutral-600 mt-2">
@@ -89,10 +112,11 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
             <p className="text-[11px] text-neutral-500 mt-0.5">Locks every page (including the login and appeal pages) for everyone except founders and developers.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-mono font-bold uppercase ${state.site.on ? 'text-red-400' : 'text-emerald-400'}`}>
-              {state.site.on ? 'Under maintenance' : 'Live'}
-            </span>
-            <Switch on={state.site.on} onChange={(v) => setState((s) => ({ ...s, site: { ...s.site, on: v } }))} label="Whole website maintenance" />
+            <StatusPicker
+              value={statusOf(state.site)}
+              onChange={(v) => setState((s) => ({ ...s, site: withStatus(s.site, v, true) }))}
+              label="Whole website status"
+            />
           </div>
         </div>
         <textarea
@@ -110,13 +134,16 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
         <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-b border-neutral-800">
           <div>
             <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">Panels</h3>
-            <p className="text-[11px] text-neutral-500 mt-0.5">{closedCount} of {MAINTENANCE_PANELS.length} closed</p>
+            <p className="text-[11px] text-neutral-500 mt-0.5">{closedCount} of {MAINTENANCE_PANELS.length} switched off</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setAll(true)} className="px-3 py-1.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer">
-              Close all
+            <button onClick={() => setAll('coming_soon')} className="px-3 py-1.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer">
+              All coming soon
             </button>
-            <button onClick={() => setAll(false)} className="px-3 py-1.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer">
+            <button onClick={() => setAll('maintenance')} className="px-3 py-1.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer">
+              All maintenance
+            </button>
+            <button onClick={() => setAll('open')} className="px-3 py-1.5 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[10px] font-mono uppercase tracking-wider cursor-pointer">
               Reopen all
             </button>
           </div>
@@ -133,8 +160,7 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
                     <p className="text-[10px] font-mono text-neutral-600">{p.path}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-mono font-bold uppercase ${e.on ? 'text-amber-400' : 'text-emerald-400'}`}>{e.on ? 'Closed' : 'Open'}</span>
-                    <Switch on={e.on} onChange={(v) => setPanel(p.key, { on: v })} label={`${p.label} maintenance`} />
+                    <StatusPicker value={statusOf(e)} onChange={(v) => setPanelStatus(p.key, v)} label={`${p.label} status`} />
                   </div>
                 </div>
                 {e.on && (

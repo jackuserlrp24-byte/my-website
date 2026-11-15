@@ -22,7 +22,10 @@ export async function syncDivisionsEmbed(): Promise<boolean> {
   const maintenance = await getMaintenance();
   const down = maintenance.site.on || maintenance.panels.divisions?.on;
   const payload = down
-    ? divisionsMaintenancePayload(maintenance.panels.divisions?.on ? maintenance.panels.divisions.message : maintenance.site.message)
+    ? divisionsMaintenancePayload(
+        maintenance.panels.divisions?.on ? maintenance.panels.divisions.message : maintenance.site.message,
+        (maintenance.panels.divisions?.on ? maintenance.panels.divisions.mode : maintenance.site.mode) === 'coming_soon'
+      )
     : divisionsPayload((divisions ?? []) as Division[]);
 
   const { data: setting } = await supabaseAdmin

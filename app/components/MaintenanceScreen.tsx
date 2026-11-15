@@ -6,23 +6,28 @@ export default function MaintenanceScreen({
   message,
   fullPage = false,
   devLogin = false,
+  mode = 'maintenance',
 }: {
   title: string;
   message: string;
   fullPage?: boolean;
   devLogin?: boolean;
+  mode?: 'maintenance' | 'coming_soon';
 }) {
+  const soon = mode === 'coming_soon';
   return (
     <main className={`flex items-center justify-center p-6 ${fullPage ? 'min-h-screen bg-neutral-950' : 'min-h-[60vh]'}`}>
       <div className="relative w-full max-w-lg bg-neutral-900 border border-neutral-800 p-10 text-center shadow-2xl">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
+        <div className={`absolute top-0 left-0 right-0 h-1 ${soon ? 'bg-[#5865F2]' : 'bg-amber-500'}`} />
         <div className="relative w-14 h-14 mx-auto mb-5 rounded bg-neutral-800 border border-neutral-700 overflow-hidden">
           <Image src="/logo.png" alt="Logo" fill sizes="56px" className="object-cover" />
         </div>
-        <span className="text-[10px] font-mono text-amber-400 tracking-widest uppercase block mb-2">Under maintenance</span>
+        <span className={`text-[10px] font-mono tracking-widest uppercase block mb-2 ${soon ? 'text-indigo-300' : 'text-amber-400'}`}>{soon ? 'Coming soon' : 'Under maintenance'}</span>
         <h1 className="text-xl font-bold tracking-tight text-neutral-100 mb-3">{title}</h1>
         <p className="text-sm text-neutral-400 leading-relaxed whitespace-pre-line select-text">{message}</p>
-        <p className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider mt-5">This page refreshes automatically when we&apos;re back.</p>
+        <p className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider mt-5">
+          {soon ? 'This page updates automatically when it goes live.' : "This page refreshes automatically when we're back."}
+        </p>
         {devLogin && (
           <a
             href="/api/auth/discord?next=/dashboard/developer"
