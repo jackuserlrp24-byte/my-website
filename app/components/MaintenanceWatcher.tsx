@@ -73,7 +73,11 @@ export default function MaintenanceWatcher() {
 
   if (!offline) return null;
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] bg-neutral-900 border border-amber-500/40 text-amber-300 text-[11px] font-mono uppercase tracking-wider px-4 py-2 shadow-2xl">
+    <div className="mt-rise fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-neutral-900 border border-amber-500/40 text-amber-300 text-[11px] font-mono uppercase tracking-wider px-4 py-2 shadow-2xl">
+      <span className="relative flex h-2 w-2" aria-hidden>
+        <span className="mt-ping absolute inline-flex h-full w-full rounded-full bg-amber-400" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+      </span>
       Server unavailable - reconnecting... this page refreshes automatically when it&apos;s back.
     </div>
   );
