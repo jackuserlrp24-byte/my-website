@@ -11,7 +11,7 @@ const labelClass = 'block text-[11px] font-semibold uppercase text-neutral-400 m
 
 interface Props {
   userName: string;
-  status: { status: string; note: string | null; by: string | null; reviewedAt: string | null; createdAt: string } | null;
+  status: { status: string; note: string | null; by: string | null; invite?: string | null; reviewedAt: string | null; createdAt: string } | null;
 }
 
 export default function AppealForm({ userName, status }: Props) {
@@ -56,7 +56,22 @@ export default function AppealForm({ userName, status }: Props) {
               <LocalTime iso={status.reviewedAt} />
             </p>
           )}
-          {status.status === 'accepted' && <p className="mt-2 font-sans">Your ban has been lifted. Rejoin the Discord server if you were removed, then log in to the portal.</p>}
+          {status.status === 'accepted' && (
+            <div className="mt-2 font-sans space-y-2">
+              <p>Your ban has been lifted. Rejoin the Discord server if you were removed, then log in to the portal.</p>
+              {status.invite && (
+                <a
+                  href={status.invite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-semibold uppercase tracking-wider"
+                >
+                  Rejoin the Discord server
+                </a>
+              )}
+              {status.invite && <p className="text-[10px] opacity-70 font-mono">Single-use link, valid for 7 days from approval.</p>}
+            </div>
+          )}
         </div>
       )}
 

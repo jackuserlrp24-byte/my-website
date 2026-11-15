@@ -144,6 +144,9 @@ create table if not exists ban_appeals (
   created_at timestamptz not null default now(),
   reviewed_at timestamptz
 );
+-- For databases that already had ban_appeals: the single-use rejoin link created when an appeal is accepted
+alter table ban_appeals add column if not exists invite_url text;
+
 create unique index if not exists one_pending_appeal_per_user on ban_appeals (discord_id) where status = 'pending';
 create index if not exists ban_appeals_discord_idx on ban_appeals (discord_id, created_at desc);
 

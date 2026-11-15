@@ -10,11 +10,11 @@ export const metadata = { title: 'Ban Appeal - Central Operations' };
 export default async function AppealPage() {
   const session = parseSessionCookie((await cookies()).get(SESSION_COOKIE)?.value);
 
-  let latest: { status: string; review_note: string | null; created_at: string; reviewed_at: string | null; reviewed_by: string | null } | null = null;
+  let latest: { status: string; review_note: string | null; created_at: string; reviewed_at: string | null; reviewed_by: string | null; invite_url?: string | null } | null = null;
   if (session) {
     const { data } = await supabaseAdmin
       .from('ban_appeals')
-      .select('status, review_note, created_at, reviewed_at, reviewed_by')
+      .select('*') // * so the page still works before the invite_url column exists
       .eq('discord_id', session.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -51,7 +51,7 @@ export default async function AppealPage() {
         ) : (
           <AppealForm
             userName={session.global_name || session.username}
-            status={latest ? { status: latest.status, note: latest.review_note, by: latest.reviewed_by, reviewedAt: latest.reviewed_at, createdAt: latest.created_at } : null}
+            status={latest ? { status: latest.status, note: latest.review_note, by: latest.reviewed_by, invite: latest.invite_url ?? null, reviewedAt: latest.reviewed_at, createdAt: latest.created_at } : null}
           />
         )}
       </div>

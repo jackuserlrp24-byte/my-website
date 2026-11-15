@@ -115,6 +115,13 @@ export default async function DashboardLayout({
     redirect('/whitelistprocess');
   }
 
+  // Pending ban appeals badge for staff (silently 0 if the table is not set up yet)
+  let pendingAppeals = 0;
+  if (access.isStaff) {
+    const { count } = await supabase.from('ban_appeals').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+    pendingAppeals = count ?? 0;
+  }
+
   return (
     <div className="min-h-screen w-full text-neutral-100 flex flex-col justify-between select-none antialiased relative overflow-x-hidden">
       
@@ -160,6 +167,18 @@ export default async function DashboardLayout({
               className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
               Staff Panel
+            </Link>
+          )}
+
+          {access.isStaff && (
+            <Link
+              href="/dashboard/appeals"
+              className="relative px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Ban Appeals
+              {pendingAppeals > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-mono font-bold rounded-full">{pendingAppeals}</span>
+              )}
             </Link>
           )}
 

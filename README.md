@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Ban appeals dashboard + rejoin invites
+
+- Staff (Silver+) see every web appeal at `/dashboard/appeals` (nav: **Ban Appeals**, with a pending count). Gold / management can Accept & Unban or Deny there or in the Discord ticket.
+- When someone is unbanned (appeal accepted, or a Discord UNBAN from the Staff Panel) the bot DMs them a fresh single-use invite (valid 7 days). Accepted appeals also show the invite on `/appeal`.
+- Run the latest `supabase/full-setup.sql` (adds `ban_appeals.invite_url`).
+- Bot needs **Create Invite**. Optional env vars: `DISCORD_INVITE_CHANNEL_ID` (channel invites are created for), `DISCORD_INVITE_URL` (fallback permanent invite).

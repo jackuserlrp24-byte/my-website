@@ -240,3 +240,85 @@ export async function createPrivateChannel(opts: {
 }
 
 const staffRoleIdsClean = (ids: string[]) => ids.filter((i) => /^\d{17,20}$/.test(i));
+
+
+// ---- Rejoin invites (sent when someone is unbanned) ----
+
+/**
+ * Creates a fresh single-use invite that expires in 7 days.
+ * Channel used: DISCORD_INVITE_CHANNEL_ID, else the server's rules / system channel, else the first text channel.
+ * Falls back to DISCORD_INVITE_URL (a permanent invite you set in env) if the bot cannot create one.
+ * The bot needs the "Create Invite" permission.
+ */
+export async function createRejoinInvite(): Promise<string | null> {
+  const guild = process.env.DISCORD_GUILD_ID;
+  const fallback = process.env.DISCORD_INVITE_URL || null;
+  if (!process.env.DISCORD_BOT_TOKEN || !guild) return fallback;
+
+  try {
+    let channelId = process.env.DISCORD_INVITE_CHANNEL_ID || '';
+
+    if (!channelId) {
+      const g = await fetch(`${API}/guilds/${guild}`, { headers: headers(), cache: 'no-store' });
+      if (g.ok) {
+        const info = await g.json();
+        channelId = info.rules_channel_id || info.system_channel_id || '';
+      }
+    }
+    if (!channelId) {
+      const list = await fetch(`${API}/guilds/${guild}/channels`, { headers: headers(), cache: 'no-store' });
+      if (list.ok) {
+        const chans = (await list.json()) as { id: string; type: number; position: number }[];
+        channelId = chans.filter((c) => c.type === 0).sort((a, b) => a.position - b.position)[0]?.id ?? '';
+      }
+    }
+    if (!channelId) return fallback;
+
+    const res = await fetch(`${API}/channels/${channelId}/invites`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ max_age: 7 * 24 * 3600, max_uses: 1, unique: true, temporary: false }),
+    });
+    if (!res.ok) {
+      console.error('createRejoinInvite failed:', res.status, await res.text());
+      return fallback;
+    }
+    const { code } = (await res.json()) as { code: string };
+    return `https://discord.gg/${code}`;
+  } catch (err) {
+    console.error('createRejoinInvite error:', err);
+    return fallback;
+  }
+}
+
+/**
+ * DMs a player that they were unbanned, with a brand-new invite link if they are not currently in the server.
+ * DMs can fail (closed DMs, or no shared server while banned) - callers should also show the link somewhere else.
+ */
+export async function sendUnbanNotice(
+  userId: string,
+  opts: { title: string; description: string; note?: string }
+): Promise<{ dmSent: boolean; inviteUrl: string | null }> {
+  const alreadyInServer = !!(await getGuildMember(userId));
+  const inviteUrl = alreadyInServer ? null : await createRejoinInvite();
+
+  const dmSent = await sendDm(userId, {
+    embeds: [
+      {
+        title: opts.title,
+        description: inviteUrl
+          ? `${opts.description}\n\nUse the button below (or this link) to rejoin the server:\n${inviteUrl}\n*Single-use link - it expires in 7 days.*`
+          : alreadyInServer
+          ? `${opts.description}\n\nYou are still in the Discord server, so no new invite is needed.`
+          : opts.description,
+        color: 5763719,
+        fields: opts.note ? [{ name: 'Staff note', value: opts.note.slice(0, 1000) }] : [],
+        footer: { text: 'Central Operations' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    ...(inviteUrl ? { components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Rejoin the server', url: inviteUrl }] }] } : {}),
+  });
+
+  return { dmSent, inviteUrl };
+}

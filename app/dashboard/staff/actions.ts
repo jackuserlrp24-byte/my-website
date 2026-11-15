@@ -9,6 +9,7 @@ import {
   postMessage,
   searchGuildMembers,
   sendDm,
+  sendUnbanNotice,
   unbanMember,
   type GuildMemberLite,
 } from '@/lib/discord';
@@ -156,6 +157,16 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // Unbanned on Discord -> DM them a brand-new invite so they can rejoin.
+  let unbanDm: { dmSent: boolean; inviteUrl: string | null } | null = null;
+  if (action === 'UNBAN' && toDiscord) {
+    unbanDm = await sendUnbanNotice(targetId, {
+      title: 'You have been unbanned from Central Operations',
+      description: 'Your ban has been lifted.',
+      note: reason,
+    });
+  }
+
   // Queue it for the FiveM server (picked up by the CO-StaffMenu resource within a few seconds).
   let gameQueued = false;
   if (toGame) {
@@ -202,6 +213,7 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
           { name: 'Reason', value: reason.slice(0, 1000) },
           ...(action !== 'NOTE' ? [{ name: 'Applied to', value: `${where}${lengthText}`, inline: true }] : []),
           ...(dmTitle[action] && toDiscord ? [{ name: 'DM delivered', value: dmSent ? 'Yes' : 'No', inline: true }] : []),
+          ...(unbanDm ? [{ name: 'Rejoin invite', value: `${unbanDm.inviteUrl ? 'Created' : 'Not needed / unavailable'} · DM ${unbanDm.dmSent ? 'delivered' : 'not delivered'}`, inline: true }] : []),
         ],
         timestamp: new Date().toISOString(),
       },
@@ -214,6 +226,6 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   const done = { NOTE: 'Note added', WARN: 'Warning issued', KICK: 'Member kicked', BAN: 'Member banned', UNBAN: 'Member unbanned' }[action];
   return {
     ok: true,
-    message: `${done} and logged.${gameQueued ? ' Sent to the game server - it applies within a few seconds (see "In-game actions").' : ''}${error ? ' (Warning: could not save to moderation_logs - check the table columns.)' : ''}`,
+    message: `${done} and logged.${gameQueued ? ' Sent to the game server - it applies within a few seconds (see "In-game actions").' : ''}${unbanDm ? (unbanDm.inviteUrl ? ` New rejoin invite ${unbanDm.dmSent ? 'sent by DM' : 'created, but the DM could not be delivered - give them this link: ' + unbanDm.inviteUrl}.` : ' No new invite sent (already in server or bot lacks Create Invite).') : ''}${error ? ' (Warning: could not save to moderation_logs - check the table columns.)' : ''}`,
   };
 }

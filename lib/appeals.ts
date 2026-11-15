@@ -1,5 +1,5 @@
 import { supabaseAdmin, MANAGEMENT_ROLE_IDS } from '@/lib/portal';
-import { createPrivateChannel, getGuildBan, postMessage, sendDm, unbanMember } from '@/lib/discord';
+import { createPrivateChannel, getGuildBan, postMessage, sendDm, sendUnbanNotice, unbanMember } from '@/lib/discord';
 import { queueGameAction } from '@/lib/game-actions';
 import { GOLD_ROLE_ID, MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
 
@@ -16,6 +16,7 @@ export interface BanAppeal {
   review_note: string | null;
   channel_id: string | null;
   message_id: string | null;
+  invite_url?: string | null; // single-use rejoin link created when the appeal is accepted
   created_at: string;
   reviewed_at: string | null;
 }
@@ -192,22 +193,41 @@ export async function reviewAppeal(id: string, accept: boolean, reviewer: string
     moderator_name: reviewer,
   });
 
-  // Tell the player (DMs may be closed, especially if they are banned from the server - the appeal page shows the result too)
-  const dm = await sendDm(appeal.discord_id, {
-    embeds: [
-      {
-        title: accept ? 'Your ban appeal was accepted' : 'Your ban appeal was denied',
-        description: accept
-          ? 'Your ban has been lifted. If you were removed from the Discord server, use the server invite to rejoin, then log in to the portal again.'
-          : 'Staff have reviewed your appeal and decided to keep the ban in place.',
-        color: accept ? 5763719 : 15548997,
-        fields: cleanNote ? [{ name: 'Staff note', value: cleanNote }] : [],
-        footer: { text: 'Central Operations' },
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  });
-  notes.push(dm ? 'Player notified by DM.' : 'Could not DM the player (they can see the result on the appeal page).');
+  // Tell the player (DMs may be closed, especially if they are banned from the server - the appeal page shows the result + invite too)
+  let dmSent = false;
+  let inviteUrl: string | null = null;
+  if (accept) {
+    // Accepted: DM with a brand-new single-use invite so they can rejoin.
+    const res = await sendUnbanNotice(appeal.discord_id, {
+      title: 'Your ban appeal was accepted',
+      description: 'Your ban has been lifted. Welcome back - once you are in the server, log in to the portal again.',
+      note: cleanNote,
+    });
+    dmSent = res.dmSent;
+    inviteUrl = res.inviteUrl;
+    if (inviteUrl) {
+      // Stored separately so a missing column (older database) can never block the decision itself.
+      const { error: inviteErr } = await supabaseAdmin.from('ban_appeals').update({ invite_url: inviteUrl }).eq('id', id);
+      if (inviteErr) console.error('Could not save invite_url (run the latest full-setup.sql):', inviteErr.message);
+      notes.push('New rejoin invite created.');
+    } else {
+      notes.push('No new invite was created (player is already in the server, or the bot lacks Create Invite - set DISCORD_INVITE_URL as a fallback).');
+    }
+  } else {
+    dmSent = await sendDm(appeal.discord_id, {
+      embeds: [
+        {
+          title: 'Your ban appeal was denied',
+          description: 'Staff have reviewed your appeal and decided to keep the ban in place.',
+          color: 15548997,
+          fields: cleanNote ? [{ name: 'Staff note', value: cleanNote }] : [],
+          footer: { text: 'Central Operations' },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    });
+  }
+  notes.push(dmSent ? 'Player notified by DM.' : 'Could not DM the player (they can see the result on the appeal page).');
 
   await postMessage(MODERATION_LOG_CHANNEL_ID, {
     embeds: [
@@ -225,5 +245,5 @@ export async function reviewAppeal(id: string, accept: boolean, reviewer: string
     allowed_mentions: { parse: [] },
   });
 
-  return { ok: true, appeal: claimed as BanAppeal, summary: notes.join(' ') };
+  return { ok: true, appeal: { ...(claimed as BanAppeal), invite_url: inviteUrl }, summary: notes.join(' ') };
 }
