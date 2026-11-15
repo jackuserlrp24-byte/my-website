@@ -13,6 +13,12 @@ export const GOLD_ROLE_ID = process.env.DISCORD_GOLD_COMMAND_ROLE_ID || '1532828
 export const SILVER_ROLE_ID = process.env.DISCORD_SILVER_COMMAND_ROLE_ID || '1532828760410427432';
 export const BRONZE_ROLE_ID = process.env.DISCORD_BRONZE_COMMAND_ROLE_ID || '1532828869944545410';
 
+// Single-purpose roles:
+//   Developer role - sees ONLY the Developer panel
+//   Staff role     - sees ONLY the Staff Panel + Ban Appeals
+export const DEV_ROLE_ID = process.env.DISCORD_DEVELOPER_ROLE_ID || '1497557905250193506';
+export const STAFF_ROLE_ID = process.env.DISCORD_STAFF_ROLE_ID || '1497557905275224145';
+
 // Optional extra role (e.g. "Met Police Command") that can see the Command tab. Set DISCORD_MET_COMMAND_ROLE_ID in env.
 export const MET_COMMAND_ROLE_ID = process.env.DISCORD_MET_COMMAND_ROLE_ID || '';
 const COMMAND_MANAGEMENT_ROLE_IDS = ['1497557905275224149', '1497557905275224148'];
@@ -31,10 +37,23 @@ export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes
 export const TRAINING_VC_ID = process.env.DISCORD_TRAINING_VC_ID || '1497557910283223266';
 
 // ONE channel for every log: staff warn / kick / ban / notes, in-game moderation, ban appeals,
-// division applications and maintenance changes. Change it with DISCORD_LOG_CHANNEL_ID.
-// (The old per-type variables are ignored on purpose so nothing can still point at an old channel.)
-export const LOG_CHANNEL_ID = process.env.DISCORD_LOG_CHANNEL_ID || '1571300231021203476';
+// division applications, whitelist, Met Police command and maintenance changes.
+// Change it with PORTAL_LOG_CHANNEL_ID (a deliberately unusual name so nothing else on your host can clash with it).
+// Logs can NEVER go to the trainings / divisions / patrols / role-request channels: if the variable points at one, the default is used.
+const DEFAULT_LOG_CHANNEL = '1571300231021203476';
+const NOT_LOG_CHANNELS = [
+  '1532786346920247398', // shared trainings / patrols / divisions channel
+  process.env.DISCORD_TRAININGS_CHANNEL_ID,
+  process.env.PORTAL_DIVISIONS_CHANNEL_ID,
+  '1571517865406763149', // division status channel
+  process.env.DISCORD_ROLE_REQUESTS_CHANNEL_ID,
+].filter(Boolean);
+const envLogChannel = (process.env.PORTAL_LOG_CHANNEL_ID || '').trim();
+export const LOG_CHANNEL_ID = envLogChannel && !NOT_LOG_CHANNELS.includes(envLogChannel) ? envLogChannel : DEFAULT_LOG_CHANNEL;
 export const MODERATION_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
+
+// Command LOA (leave of absence) approvals, declines and returns are logged here.
+export const LOA_LOG_CHANNEL_ID = process.env.PORTAL_LOA_LOG_CHANNEL_ID || '1571528481739636927';
 
 // Role requests must never be posted into the moderation log channel, even if an env var points at it.
 const ROLE_REQUESTS_FALLBACK = '1532786346920247398';

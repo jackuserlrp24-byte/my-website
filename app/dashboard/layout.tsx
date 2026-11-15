@@ -4,9 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import BackgroundSlideshow from './BackgroundSlideshow';
-import { DEVELOPER_ROLE_IDS } from '@/lib/portal';
+import { DEVELOPER_ROLE_IDS, WHITELISTED_ROLES, limitedAccess } from '@/lib/portal';
 import { getMaintenance } from '@/lib/maintenance';
-import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
+import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, STAFF_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,19 +18,6 @@ const supabase = createClient(
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-const WHITELISTED_ROLES = [
-  '1533037093306105896',
-  '1532781088827507038',
-  '1532841715151671436',
-  '1534119748416049193',
-  '1532781271477129226',
-  '1533023231206883338',
-  '1533023096922050750',
-  '1532828055154720981',
-  '1532781330071425104',
-  '1546219971359543408'
-];
-
 const MASTER_ROLE_ID = '1497557905275224149'; // Command / Bronze Commander Role ID
 const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const TIER_ROLE_IDS = [GOLD_ROLE_ID, SILVER_ROLE_ID, BRONZE_ROLE_ID].filter(Boolean);
@@ -38,7 +25,7 @@ const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
 async function checkUserAccessAndFetchDetails(userId: string) {
   if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true, isStaff: true, isTrainer: true, isCommand: true, isDeveloper: true, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+    return { inGuild: true, hasAccess: true, isManagement: true, isStaff: true, isTrainer: true, isCommand: true, isDeveloper: true, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 
   try {
@@ -53,11 +40,11 @@ async function checkUserAccessAndFetchDetails(userId: string) {
         .delete()
         .eq('discord_id', userId);
 
-      return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+      return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+      return { inGuild: true, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
     }
 
     const member = await res.json();
@@ -67,6 +54,8 @@ async function checkUserAccessAndFetchDetails(userId: string) {
     const hasAltManagementRole = roles.includes(MANAGEMENT_ROLE_ALT);
     const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
     const hasTierRole = roles.some((role) => TIER_ROLE_IDS.includes(role));
+    // Developer-only / staff-only accounts see just their own panel(s), not the general portal.
+    const limited = limitedAccess(roles);
 
     // Live display name resolution (Server Nickname -> Global Name -> Username)
     const displayName = member.nick || member.user?.global_name || member.user?.username || 'Operator';
@@ -78,9 +67,10 @@ async function checkUserAccessAndFetchDetails(userId: string) {
 
     return {
       inGuild: true,
-      hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole || hasTierRole,
+      hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole || hasTierRole || limited !== null,
       isManagement: hasMasterRole || hasAltManagementRole,
-      isStaff: hasMasterRole || hasAltManagementRole || roles.includes(GOLD_ROLE_ID) || roles.includes(SILVER_ROLE_ID),
+      isStaff: hasMasterRole || hasAltManagementRole || roles.includes(GOLD_ROLE_ID) || roles.includes(SILVER_ROLE_ID) || (!!STAFF_ROLE_ID && roles.includes(STAFF_ROLE_ID)),
+      limited,
       isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
       isCommand: hasCommandAccess(roles),
       isDeveloper: roles.some((role) => DEVELOPER_ROLE_IDS.includes(role)),
@@ -89,7 +79,7 @@ async function checkUserAccessAndFetchDetails(userId: string) {
     };
   } catch (err) {
     console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+    return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
   }
 }
 
@@ -151,26 +141,32 @@ export default async function DashboardLayout({
         </div>
 
         <div className="flex items-center gap-4">
+          {!access.limited && (
           <Link
             href="/dashboard"
             className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
           >
             Dashboard
           </Link>
+          )}
 
+          {!access.limited && (
           <Link
             href="/dashboard/trainings"
             className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
           >
             Trainings
           </Link>
+          )}
 
+          {!access.limited && (
           <Link
             href="/dashboard/divisions"
             className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
           >
             Divisions
           </Link>
+          )}
 
           {access.isStaff && (
             <Link

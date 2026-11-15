@@ -1,7 +1,7 @@
 import { supabaseAdmin, MANAGEMENT_ROLE_IDS } from '@/lib/portal';
 import { APPEAL_LOG_CHANNEL_ID, createPrivateChannel, getGuildBan, postMessage, sendDm, sendUnbanNotice, unbanMember } from '@/lib/discord';
 import { queueGameAction } from '@/lib/game-actions';
-import { GOLD_ROLE_ID } from '@/lib/training-config';
+import { GOLD_ROLE_ID, STAFF_ROLE_ID } from '@/lib/training-config';
 
 export interface BanAppeal {
   id: string;
@@ -30,7 +30,7 @@ interface ModLog {
 
 // Staff who can see the ticket channel: management + Gold command (+ any extra roles from env, comma separated).
 const extraStaff = (process.env.DISCORD_APPEAL_STAFF_ROLE_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
-export const APPEAL_STAFF_ROLE_IDS = [...MANAGEMENT_ROLE_IDS, GOLD_ROLE_ID, ...extraStaff].filter(Boolean);
+export const APPEAL_STAFF_ROLE_IDS = [...MANAGEMENT_ROLE_IDS, GOLD_ROLE_ID, STAFF_ROLE_ID, ...extraStaff].filter(Boolean);
 const APPEAL_CATEGORY_ID = process.env.DISCORD_APPEAL_CATEGORY_ID || undefined;
 
 const unix = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, postMessage, sendDm } from '@/lib/discord';
+import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, getGuildMember, postMessage, sendDm } from '@/lib/discord';
 import { trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import { londonLocalToUtc } from '@/lib/london-time';
@@ -201,6 +201,52 @@ export async function delayTraining(trainingId: string, minutes: number, reason:
     ok: true,
     message: `${training.id} delayed by ${mins} minutes. ${dmd} of ${ids.length} attendee${ids.length === 1 ? '' : 's'} DMed.`,
   };
+}
+
+/**
+ * Gold Command + management: swap the instructor (host) of a training.
+ * Accepts a Discord ID / @mention (name is looked up in the server) or just a typed name.
+ */
+export async function changeTrainingHost(trainingId: string, who: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.canSwapHost) return fail('Only Gold Command and management can change the instructor.');
+
+  const input = String(who ?? '').trim().slice(0, 80);
+  if (!input) return fail('Enter the new instructor (Discord ID or name).');
+
+  let newHost = input;
+  const idCandidate = input.replace(/[<@!>]/g, '');
+  if (/^\d{17,20}$/.test(idCandidate)) {
+    const member = await getGuildMember(idCandidate);
+    if (!member) return fail('That user is not in the server.');
+    newHost = member.name || member.username || idCandidate;
+  }
+
+  const { data } = await supabaseAdmin.from('trainings').select('*').eq('id', trainingId).maybeSingle();
+  if (!data) return fail('Training not found.');
+  const current = data as Training;
+  if (new Date(current.ends_at) < new Date()) return fail('This training has already finished.');
+  const oldHost = current.host || 'TBD';
+
+  const { data: row, error } = await supabaseAdmin.from('trainings').update({ host: newHost }).eq('id', trainingId).select('*').single();
+  if (error || !row) {
+    console.error('Training host swap failed:', error);
+    return fail('Could not change the instructor.');
+  }
+
+  const training = row as Training;
+  if (training.discord_message_id) {
+    const channel = training.discord_channel_id || TRAININGS_CHANNEL_ID;
+    await editMessage(channel, training.discord_message_id, trainingPayload(training, await divisionName(training.division_id)));
+    await postMessage(channel, {
+      content: `**${training.id} instructor changed:** ${oldHost} -> **${newHost}** (by ${user.name})`,
+      message_reference: { message_id: training.discord_message_id, fail_if_not_exists: false },
+      allowed_mentions: { parse: [] },
+    });
+  }
+
+  revalidatePath('/dashboard/trainings');
+  return { ok: true, message: `${training.id} instructor changed from ${oldHost} to ${newHost}.` };
 }
 
 export async function deleteTraining(trainingId: string): Promise<ActionResult> {

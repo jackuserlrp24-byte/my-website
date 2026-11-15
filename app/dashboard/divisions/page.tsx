@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getPortalUser, supabaseAdmin } from '@/lib/portal';
+import { getPortalUser, limitedHome, supabaseAdmin } from '@/lib/portal';
 import type { Division, DivisionApplication } from '@/lib/portal-types';
 import DivisionsClient from './DivisionsClient';
 
@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function DivisionsPage() {
   const user = await getPortalUser();
   if (!user) redirect('/');
+  if (user.limited) redirect(limitedHome(user.limited)!);
 
   const [divisionsRes, mineRes, pendingRes, reviewedRes] = await Promise.all([
     supabaseAdmin.from('divisions').select('*').order('department').order('sort_order'),

@@ -5,7 +5,8 @@ const API = 'https://discord.com/api/v10';
 // Channel IDs. Set these in your env to post somewhere other than the patrols channel.
 const FALLBACK_CHANNEL = '1532786346920247398';
 export const TRAININGS_CHANNEL_ID = process.env.DISCORD_TRAININGS_CHANNEL_ID || FALLBACK_CHANNEL;
-export const DIVISIONS_CHANNEL_ID = process.env.DISCORD_DIVISIONS_CHANNEL_ID || FALLBACK_CHANNEL;
+// The Division Application Status message lives here. (Own variable name so an old DISCORD_DIVISIONS_CHANNEL_ID on your host can't override it.)
+export const DIVISIONS_CHANNEL_ID = process.env.PORTAL_DIVISIONS_CHANNEL_ID || '1571517865406763149';
 // Every log goes to the one log channel (see LOG_CHANNEL_ID in lib/training-config.ts).
 export const APPLICATIONS_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
 export const APPEAL_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
@@ -130,6 +131,37 @@ export const kickMember = (userId: string, reason: string) => modCall('DELETE', 
 export const banMember = (userId: string, reason: string) =>
   modCall('PUT', `/bans/${userId}`, reason, { delete_message_seconds: 0 });
 export const unbanMember = (userId: string, reason: string) => modCall('DELETE', `/bans/${userId}`, reason);
+
+/** Reads a member's raw server nickname (null = none). Returns undefined if they are not in the server. */
+export async function getMemberNick(userId: string): Promise<string | null | undefined> {
+  const guild = process.env.DISCORD_GUILD_ID;
+  if (!process.env.DISCORD_BOT_TOKEN || !guild) return undefined;
+  try {
+    const res = await fetch(`${API}/guilds/${guild}/members/${userId}`, { headers: headers(), cache: 'no-store' });
+    if (!res.ok) return undefined;
+    const m = await res.json();
+    return (m.nick as string | null) ?? null;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Sets (or clears with null) a member's server nickname. Needs the Manage Nicknames permission; can't touch the server owner or higher roles. */
+export async function setMemberNickname(userId: string, nick: string | null): Promise<boolean> {
+  const guild = process.env.DISCORD_GUILD_ID;
+  if (!process.env.DISCORD_BOT_TOKEN || !guild) return false;
+  try {
+    const res = await fetch(`${API}/guilds/${guild}/members/${userId}`, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify({ nick }),
+    });
+    if (!res.ok) console.error('Nickname change failed:', res.status, await res.text());
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 export interface GuildMemberLite {
   id: string;

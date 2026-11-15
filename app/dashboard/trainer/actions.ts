@@ -10,19 +10,24 @@ import type { ActionResult, RoleRequest } from '@/lib/portal-types';
 
 const fail = (message: string): ActionResult => ({ ok: false, message });
 
+const MAX_ROLES_PER_REQUEST = 15;
+
+/** One request can ask for several roles at once: each role becomes its own request + Discord post so it can be approved / denied separately. */
 export async function requestRole(formData: FormData): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.canRequestRoles) return fail('Only trainers and Gold Command can request roles.');
+  if (!user?.canRequestRoles) return fail('Only Bronze, Silver or Gold Command (and trainers) can request roles.');
 
   // Accept a raw ID or a pasted mention like <@123...>
   const rawTarget = String(formData.get('target') ?? '').trim();
   const targetId = rawTarget.replace(/[<@!>]/g, '');
-  const roleKey = String(formData.get('roleKey') ?? '');
+  const roleKeys = Array.from(new Set(formData.getAll('roleKey').map(String)));
   const reason = String(formData.get('reason') ?? '').trim().slice(0, 500);
 
   if (!/^\d{17,20}$/.test(targetId)) return fail("Enter the member's Discord ID (right click them > Copy User ID).");
-  const role = REQUESTABLE_ROLES.find((r) => r.key === roleKey);
-  if (!role) return fail('Pick a role.');
+  if (roleKeys.length === 0) return fail('Pick at least one role.');
+  if (roleKeys.length > MAX_ROLES_PER_REQUEST) return fail(`You can request up to ${MAX_ROLES_PER_REQUEST} roles at once.`);
+  const roles = roleKeys.map((k) => REQUESTABLE_ROLES.find((r) => r.key === k));
+  if (roles.some((r) => !r)) return fail('One of the selected roles is not valid.');
   if (!reason) return fail('Add a reason or the training they passed.');
 
   // Make sure they are actually in the server and grab their display name.
@@ -40,42 +45,53 @@ export async function requestRole(formData: FormData): Promise<ActionResult> {
     }
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('role_requests')
-    .insert({
-      target_discord_id: targetId,
-      target_name: targetName,
-      role_key: role.key,
-      reason,
-      requested_by: user.name,
-      requested_by_id: user.id,
-    })
-    .select('*')
-    .single();
+  let saved = 0;
+  let posted = 0;
+  for (const role of roles as NonNullable<(typeof roles)[number]>[]) {
+    const { data, error } = await supabaseAdmin
+      .from('role_requests')
+      .insert({
+        target_discord_id: targetId,
+        target_name: targetName,
+        role_key: role.key,
+        reason,
+        requested_by: user.name,
+        requested_by_id: user.id,
+      })
+      .select('*')
+      .single();
 
-  if (error || !data) {
-    console.error('Role request insert failed:', error);
-    return fail('Could not save the request. Have you run supabase/trainer-panel.sql?');
-  }
+    if (error || !data) {
+      console.error('Role request insert failed:', error);
+      continue;
+    }
+    saved++;
 
-  const row = data as RoleRequest;
-  const messageId = await postMessage(ROLE_REQUESTS_CHANNEL_ID, roleRequestPayload(row, role.label));
-  if (messageId) {
-    await supabaseAdmin.from('role_requests').update({ discord_message_id: messageId }).eq('id', row.id);
+    const row = data as RoleRequest;
+    const messageId = await postMessage(ROLE_REQUESTS_CHANNEL_ID, roleRequestPayload(row, role.label));
+    if (messageId) {
+      posted++;
+      await supabaseAdmin.from('role_requests').update({ discord_message_id: messageId }).eq('id', row.id);
+    }
   }
 
   revalidatePath('/dashboard/trainer');
+  if (saved === 0) return fail('Could not save the request. Have you run supabase/trainer-panel.sql?');
+
+  const noun = saved === 1 ? 'role request' : 'role requests';
+  const partial = saved < roleKeys.length ? ` (${roleKeys.length - saved} could not be saved)` : '';
   return {
     ok: true,
-    message: messageId
-      ? 'Role request sent to management in Discord.'
-      : 'Request saved, but posting to Discord failed (check the bot token and channel permissions).',
+    message:
+      posted === saved
+        ? `${saved} ${noun} sent to Silver / Gold Command in Discord${partial}.`
+        : `${saved} ${noun} saved, but ${saved - posted} failed to post to Discord (check the bot token and channel permissions)${partial}.`,
   };
 }
 
 export async function decideRoleRequest(id: string, approve: boolean): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.canReviewRoleRequests) return fail('Only Gold Command can approve or deny role requests.');
+  if (!user?.canReviewRoleRequests) return fail('Only Silver or Gold Command can approve or deny role requests.');
 
   const result = await reviewRoleRequest(id, approve, user.name);
   if (!result.ok) return fail(result.message);

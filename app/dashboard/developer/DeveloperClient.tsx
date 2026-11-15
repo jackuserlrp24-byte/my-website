@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import LocalTime from '@/app/components/LocalTime';
 import { MAINTENANCE_PANELS, type MaintenanceState } from '@/lib/maintenance-config';
 import type { ActionResult } from '@/lib/portal-types';
-import { updateMaintenance } from './actions';
+import { refreshDivisionsMessage, updateMaintenance } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] select-text';
@@ -150,6 +150,20 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
             );
           })}
         </div>
+      </section>
+
+      <section className="bg-neutral-900 border border-neutral-800 p-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">Discord division status message</h3>
+          <p className="text-[11px] text-neutral-500 mt-0.5">Re-posts or refreshes the open / closed list in its Discord channel.</p>
+        </div>
+        <button
+          disabled={busy}
+          onClick={() => startTransition(async () => setResult(await refreshDivisionsMessage()))}
+          className="px-4 py-2 border border-neutral-700 hover:bg-neutral-800 disabled:opacity-50 text-neutral-200 text-[11px] font-mono uppercase tracking-wider cursor-pointer"
+        >
+          Refresh message
+        </button>
       </section>
 
       <div className="sticky bottom-4 flex items-center justify-end gap-3">

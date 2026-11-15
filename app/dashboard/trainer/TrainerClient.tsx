@@ -46,6 +46,12 @@ export default function TrainerClient({
   const [endTime, setEndTime] = useState('');
   const [duration, setDuration] = useState<number | null>(null);
 
+  // Role request: several roles can be ticked and sent in one go.
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [roleSearch, setRoleSearch] = useState('');
+  const toggleRole = (key: string) =>
+    setSelectedRoles((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
   function applyTemplate(key: string) {
     const t = TRAINING_TEMPLATES.find((x) => x.key === key);
     if (!t) return;
@@ -192,34 +198,78 @@ export default function TrainerClient({
       {tab === 'roles' && showRoles && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {canRequestRoles && (
-          <form onSubmit={(e) => submit(e, requestRole, () => {})} className="bg-neutral-900 border border-neutral-800 p-6 space-y-4 lg:col-span-1">
+          <form onSubmit={(e) =>
+              submit(
+                e,
+                (fd) => {
+                  fd.delete('roleKey');
+                  selectedRoles.forEach((k) => fd.append('roleKey', k));
+                  return requestRole(fd);
+                },
+                () => {
+                  setSelectedRoles([]);
+                  setRoleSearch('');
+                }
+              )
+            } className="bg-neutral-900 border border-neutral-800 p-6 space-y-4 lg:col-span-1">
             <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">Request a role</h3>
             <div>
               <label className="block text-[11px] text-neutral-400 mb-1">Member Discord ID</label>
               <input name="target" required placeholder="e.g. 123456789012345678" className={inputClass} />
             </div>
             <div>
-              <label className="block text-[11px] text-neutral-400 mb-1">Role</label>
-              <select name="roleKey" defaultValue="ipp" className={inputClass}>
-                {ROLE_GROUPS.map((g) => (
-                  <optgroup key={g} label={g}>
-                    {ROLE_OPTIONS.filter((r) => r.group === g).map((r) => (
-                      <option key={r.key} value={r.key}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <label className="block text-[11px] text-neutral-400 mb-1">
+                Roles <span className="text-neutral-500">({selectedRoles.length} selected - tick as many as you need)</span>
+              </label>
+              <input
+                value={roleSearch}
+                onChange={(e) => setRoleSearch(e.target.value)}
+                placeholder="Search roles..."
+                className={`${inputClass} mb-2`}
+              />
+              {selectedRoles.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {selectedRoles.map((k) => (
+                    <button
+                      type="button"
+                      key={k}
+                      onClick={() => toggleRole(k)}
+                      className="px-2 py-0.5 bg-[#5865F2]/20 border border-[#5865F2]/40 text-[10px] font-mono text-neutral-200 hover:bg-red-500/20 cursor-pointer"
+                      title="Click to remove"
+                    >
+                      {ROLE_OPTIONS.find((o) => o.key === k)?.label ?? k} x
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="max-h-72 overflow-y-auto border border-neutral-800 bg-neutral-950 p-2 space-y-3">
+                {ROLE_GROUPS.map((g) => {
+                  const list = ROLE_OPTIONS.filter(
+                    (r) => r.group === g && (!roleSearch.trim() || r.label.toLowerCase().includes(roleSearch.trim().toLowerCase()))
+                  );
+                  if (list.length === 0) return null;
+                  return (
+                    <div key={g}>
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 mb-1">{g}</p>
+                      {list.map((r) => (
+                        <label key={r.key} className="flex items-center gap-2 py-0.5 text-xs text-neutral-300 cursor-pointer">
+                          <input type="checkbox" checked={selectedRoles.includes(r.key)} onChange={() => toggleRole(r.key)} />
+                          {r.label}
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             <div>
               <label className="block text-[11px] text-neutral-400 mb-1">Reason / training passed</label>
               <textarea name="reason" required rows={4} maxLength={500} className={inputClass} />
             </div>
-            <button type="submit" disabled={pending} className={btnClass}>
-              {pending ? 'Sending...' : 'Send request'}
+            <button type="submit" disabled={pending || selectedRoles.length === 0} className={btnClass}>
+              {pending ? 'Sending...' : selectedRoles.length > 1 ? `Send ${selectedRoles.length} requests` : 'Send request'}
             </button>
-            <p className="text-[11px] text-neutral-500">Gold Command approves or denies it. When approved, the bot gives the role on Discord automatically.</p>
+            <p className="text-[11px] text-neutral-500">Silver or Gold Command approves or denies it. When approved, the bot gives the role on Discord automatically.</p>
           </form>
           )}
 

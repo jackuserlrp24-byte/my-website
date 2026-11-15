@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getPortalUser, limitedHome } from '@/lib/portal';
 import { createClient } from '@supabase/supabase-js';
 import FiveMStatusWidget from './FiveMStatusWidget';
 
@@ -39,6 +41,9 @@ async function checkUserAccessAndFetchDetails(userId: string) {
 }
 
 export default async function DashboardPage() {
+  const portalUser = await getPortalUser();
+  if (portalUser?.limited) redirect(limitedHome(portalUser.limited)!);
+
   const cookieStore = await cookies();
   const userCookie = cookieStore.get('discord_user')?.value;
   

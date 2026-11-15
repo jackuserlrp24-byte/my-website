@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/portal';
-import { DIVISIONS_CHANNEL_ID, editMessage, postMessage } from '@/lib/discord';
+import { DIVISIONS_CHANNEL_ID, deleteMessage, editMessage, postMessage } from '@/lib/discord';
 import { divisionsMaintenancePayload, divisionsPayload } from '@/lib/embeds';
 import { getMaintenance } from '@/lib/maintenance';
 import type { Division } from '@/lib/portal-types';
@@ -38,6 +38,9 @@ export async function syncDivisionsEmbed(): Promise<boolean> {
 
   const messageId = await postMessage(DIVISIONS_CHANNEL_ID, payload);
   if (!messageId) return false;
+
+  // The message used to live in another channel: remove the old one so there is only ever one status message.
+  if (savedMessage && savedChannel && savedChannel !== DIVISIONS_CHANNEL_ID) await deleteMessage(savedChannel, savedMessage);
 
   await supabaseAdmin
     .from('portal_settings')

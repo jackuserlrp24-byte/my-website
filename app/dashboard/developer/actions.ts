@@ -6,7 +6,7 @@ import { getMaintenance, saveMaintenance } from '@/lib/maintenance';
 import { MAINTENANCE_PANELS, type MaintenanceState } from '@/lib/maintenance-config';
 import { postMessage } from '@/lib/discord';
 import { syncDivisionsEmbed } from '@/lib/divisions-sync';
-import { MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
+import { LOG_CHANNEL_ID } from '@/lib/training-config';
 import type { ActionResult } from '@/lib/portal-types';
 
 export async function updateMaintenance(next: MaintenanceState): Promise<ActionResult> {
@@ -26,7 +26,7 @@ export async function updateMaintenance(next: MaintenanceState): Promise<ActionR
     }
   }
   if (changes.length) {
-    await postMessage(MODERATION_LOG_CHANNEL_ID, {
+    await postMessage(LOG_CHANNEL_ID, {
       embeds: [
         {
           title: 'MAINTENANCE MODE CHANGED',
@@ -49,4 +49,14 @@ export async function updateMaintenance(next: MaintenanceState): Promise<ActionR
 
   revalidatePath('/', 'layout');
   return { ok: true, message: changes.length ? 'Saved. Changes are live now.' : 'Saved.' };
+}
+
+/** Re-posts / refreshes the Discord "Division Application Status" message (moves it if the channel changed). */
+export async function refreshDivisionsMessage(): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.isDeveloper) return { ok: false, message: 'Only founders and developers can do this.' };
+  const ok = await syncDivisionsEmbed();
+  return ok
+    ? { ok: true, message: 'Division status message updated in Discord.' }
+    : { ok: false, message: 'Could not post the status message - check the bot can view and send in that channel.' };
 }

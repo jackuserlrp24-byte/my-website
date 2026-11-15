@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { ActionResult, Division, Training } from '@/lib/portal-types';
-import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining } from './actions';
+import { attendTraining, cantMakeTrainingAction, deleteTraining, delayTraining, changeTrainingHost } from './actions';
 
 interface Props {
-  user: { name: string; isTrainer: boolean };
+  user: { name: string; isTrainer: boolean; canSwapHost: boolean };
   trainings: Training[];
   divisions: Division[];
   loadError: string | null;
@@ -26,6 +26,8 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
   const [delayingId, setDelayingId] = useState<string | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState('');
+  const [swappingId, setSwappingId] = useState<string | null>(null);
+  const [newHost, setNewHost] = useState('');
 
   const divisionName = (id: string | null) => divisions.find((d) => d.id === id)?.name ?? 'General';
 
@@ -145,6 +147,18 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                         Delay
                       </button>
                     )}
+                    {user.canSwapHost && state !== 'CONCLUDED' && (
+                      <button
+                        disabled={pending}
+                        onClick={() => {
+                          setSwappingId(swappingId === t.id ? null : t.id);
+                          setNewHost('');
+                        }}
+                        className="px-4 py-1.5 text-xs font-mono font-medium uppercase tracking-wider border border-sky-500/30 text-sky-300 hover:bg-sky-500/10 cursor-pointer"
+                      >
+                        Swap Host
+                      </button>
+                    )}
                     {user.isTrainer && (
                       <button
                         disabled={pending}
@@ -195,6 +209,37 @@ export default function TrainingsClient({ user, trainings, divisions, loadError 
                     </button>
                     <button
                       onClick={() => setDelayingId(null)}
+                      className="px-3 py-1.5 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 uppercase tracking-wider cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+
+                {user.canSwapHost && swappingId === t.id && (
+                  <div className="bg-sky-500/5 border-b border-sky-500/20 px-6 py-3 flex flex-wrap items-center gap-3 text-xs font-mono">
+                    <span className="text-sky-300 uppercase tracking-wider">New instructor</span>
+                    <input
+                      value={newHost}
+                      onChange={(e) => setNewHost(e.target.value)}
+                      maxLength={80}
+                      placeholder="Discord ID or name"
+                      className="flex-1 min-w-[220px] bg-neutral-950 border border-neutral-700 text-neutral-200 px-2 py-1.5 placeholder:text-neutral-600"
+                    />
+                    <button
+                      disabled={pending || !newHost.trim()}
+                      onClick={() => {
+                        const id = t.id;
+                        const who = newHost;
+                        setSwappingId(null);
+                        run(() => changeTrainingHost(id, who));
+                      }}
+                      className="px-4 py-1.5 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-black font-medium uppercase tracking-wider cursor-pointer"
+                    >
+                      Confirm Swap
+                    </button>
+                    <button
+                      onClick={() => setSwappingId(null)}
                       className="px-3 py-1.5 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 uppercase tracking-wider cursor-pointer"
                     >
                       Cancel

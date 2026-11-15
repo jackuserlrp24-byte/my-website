@@ -198,3 +198,26 @@ on conflict (id) do update set
 -- ---------- Optional ----------
 -- Existing trainings default to "IPP + Advanced only". To open every existing one up, uncomment:
 -- update trainings set requires_ipp = false;
+
+-- ---------- Command LOA (leave of absence) ----------
+-- The portal checks each LOA request, approves or declines it, puts [LOA] after the member's Discord nickname
+-- while it is active, and logs everything. Safe to re-run.
+create table if not exists loa_requests (
+  id uuid primary key default gen_random_uuid(),
+  discord_id text not null,
+  username text,
+  display_name text,
+  reason text not null,
+  start_date date not null,
+  end_date date not null,
+  status text not null default 'approved' check (status in ('approved', 'active', 'declined', 'ended', 'cancelled')),
+  decision_note text,          -- why it was approved / declined
+  original_nick text,          -- the nickname before [LOA] was added (null = they had none)
+  applied_nick text,           -- the nickname the bot set
+  nickname_changed boolean not null default false,
+  created_at timestamptz not null default now(),
+  ended_at timestamptz
+);
+create index if not exists loa_requests_status_idx on loa_requests (status, end_date);
+create index if not exists loa_requests_user_idx on loa_requests (discord_id, created_at desc);
+alter table loa_requests enable row level security;

@@ -37,6 +37,15 @@ export default async function CommandHubPage() {
       accentColor: 'bg-amber-600',
       badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30'
     },
+    {
+      title: 'Leave of Absence (LOA)',
+      subtitle: 'ALL COMMAND',
+      description: 'Submit an LOA. The portal checks it, authorises or declines it, adds [LOA] to your Discord name while you are away and logs it for command.',
+      href: '/dashboard/command/loa',
+      available: true,
+      accentColor: 'bg-[#5865F2]',
+      badgeColor: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/30'
+    },
   ];
 
   return (
@@ -59,7 +68,7 @@ export default async function CommandHubPage() {
       </div>
 
       {/* Department Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {departments.map((dept) => (
           <div 
             key={dept.href}

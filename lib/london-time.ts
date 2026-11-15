@@ -27,3 +27,15 @@ export function londonLocalToUtc(date: string, time: string): Date {
   if (second !== first) utc = guess - second * 60000;
   return new Date(utc);
 }
+
+/** Today's date in the UK as YYYY-MM-DD. */
+export function londonToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+/** Whole days from a to b (YYYY-MM-DD strings). */
+export function daysBetween(a: string, b: string): number {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000);
+}

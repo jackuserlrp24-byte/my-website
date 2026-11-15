@@ -44,7 +44,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Log channels
 
-Every log goes to ONE channel: `DISCORD_LOG_CHANNEL_ID` (default `1571300231021203476`). That covers staff actions, in-game moderation, ban appeals, division applications, whitelist and Met Police command logs, and maintenance changes. The old per-type variables (`DISCORD_MODERATION_LOG_CHANNEL_ID`, `DISCORD_APPEAL_LOG_CHANNEL_ID`, `DISCORD_APPLICATIONS_LOG_CHANNEL_ID*`) are ignored.
+Every log goes to ONE channel: `PORTAL_LOG_CHANNEL_ID` (default `1571300231021203476`; it is ignored if it points at the trainings / divisions / role-request channels). That covers staff actions, in-game moderation, ban appeals, division applications, whitelist and Met Police command logs, and maintenance changes. The old per-type variables (`DISCORD_MODERATION_LOG_CHANNEL_ID`, `DISCORD_LOG_CHANNEL_ID`, `DISCORD_APPEAL_LOG_CHANNEL_ID`, `DISCORD_APPLICATIONS_LOG_CHANNEL_ID*`) are ignored.
 
 The Divisions page (`/dashboard/divisions`) has one tab per service: Met Police, LAS, LFB, Control.
 

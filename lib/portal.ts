@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
+import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, STAFF_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,14 +15,56 @@ const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 export const MANAGEMENT_ROLE_IDS = [MASTER_ROLE_ID, MANAGEMENT_ROLE_ALT];
 
 /** Founder + developer roles: the only people who can open the Developer panel and who bypass maintenance mode. */
-export const DEVELOPER_ROLE_IDS = (process.env.DISCORD_DEVELOPER_ROLE_IDS || '1497557905275224151,1497557905275224148,1497557905250193506')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
+export const DEVELOPER_ROLE_IDS = Array.from(
+  new Set(
+    (process.env.DISCORD_DEVELOPER_ROLE_IDS || '1497557905275224151,1497557905275224148')
+      .split(',')
+      .map((s) => s.trim())
+      .concat(DEV_ROLE_ID)
+      .filter(Boolean)
+  )
+);
 
-/** Gold command (or management) approves role requests. */
+/** Roles that give normal portal access (trainings, divisions, etc). */
+export const WHITELISTED_ROLES = [
+  '1533037093306105896',
+  '1532781088827507038',
+  '1532841715151671436',
+  '1534119748416049193',
+  '1532781271477129226',
+  '1533023231206883338',
+  '1533023096922050750',
+  '1532828055154720981',
+  '1532781330071425104',
+  '1546219971359543408'
+];
+
+/** Silver + Gold command (or management) approve / deny role requests. */
 export const canReviewRoleRequests = (roles: string[]) =>
-  hasRoleId(roles, GOLD_ROLE_ID) || MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
+  hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID) || MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
+
+/**
+ * Developer-only / staff-only accounts: people whose ONLY way into the portal is the Developer role or the Staff role.
+ * Returns the single section they are allowed to see, or null for everyone else.
+ */
+export function limitedAccess(roles: string[]): 'developer' | 'staff' | null {
+  const hasOther =
+    roles.some((r) => WHITELISTED_ROLES.includes(r)) ||
+    MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r)) ||
+    hasCommandAccess(roles) ||
+    isTrainerRoles(roles) ||
+    hasRoleId(roles, GOLD_ROLE_ID) ||
+    hasRoleId(roles, SILVER_ROLE_ID) ||
+    hasRoleId(roles, BRONZE_ROLE_ID);
+  if (hasOther) return null;
+  if (hasRoleId(roles, DEV_ROLE_ID) || roles.some((r) => DEVELOPER_ROLE_IDS.includes(r))) return 'developer';
+  if (hasRoleId(roles, STAFF_ROLE_ID)) return 'staff';
+  return null;
+}
+
+/** Where a limited user must be sent instead of the general pages (dashboard home, trainings, divisions, patrols). */
+export const limitedHome = (kind: 'developer' | 'staff' | null) =>
+  kind === 'developer' ? '/dashboard/developer' : kind === 'staff' ? '/dashboard/staff' : null;
 
 export interface PortalUser {
   id: string;
@@ -31,11 +73,13 @@ export interface PortalUser {
   isDeveloper: boolean; // founder / developer - Developer panel + bypasses maintenance mode
   isCommand: boolean; // can see the Command tab and edit division application links
   isTrainer: boolean; // can open the trainer panel and post trainings (trainer role, bronze/silver/gold, management)
-  canRequestRoles: boolean; // trainer role, gold, management
-  canReviewRoleRequests: boolean; // gold, management
+  canRequestRoles: boolean; // trainer role, bronze, silver, gold, management
+  canReviewRoleRequests: boolean; // silver, gold, management
   canViewApplications: boolean; // silver, gold, management
-  canStaff: boolean; // staff panel: notes + warnings (silver, gold, management)
+  canStaff: boolean; // staff panel + ban appeals: notes + warnings (staff role, silver, gold, management)
+  canSwapHost: boolean; // gold command + management: change the instructor / host of a training
   canModerate: boolean; // staff panel: kick / ban / unban (gold, management)
+  limited: 'developer' | 'staff' | null; // developer-only / staff-only accounts only see their own panel(s)
   roles: string[];
 }
 
@@ -84,12 +128,20 @@ export async function getPortalUser(): Promise<PortalUser | null> {
         hasRoleId(roles, GOLD_ROLE_ID) ||
         hasRoleId(roles, SILVER_ROLE_ID) ||
         hasRoleId(roles, BRONZE_ROLE_ID),
-      canRequestRoles: isManagement || isTrainerRoles(roles) || hasRoleId(roles, GOLD_ROLE_ID),
+      canRequestRoles:
+        isManagement ||
+        isTrainerRoles(roles) ||
+        hasRoleId(roles, GOLD_ROLE_ID) ||
+        hasRoleId(roles, SILVER_ROLE_ID) ||
+        hasRoleId(roles, BRONZE_ROLE_ID),
       canReviewRoleRequests: canReviewRoleRequests(roles),
-      canStaff: isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID),
+      canStaff:
+        isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID) || hasRoleId(roles, STAFF_ROLE_ID),
+      canSwapHost: isManagement || hasRoleId(roles, GOLD_ROLE_ID),
       canModerate: isManagement || hasRoleId(roles, GOLD_ROLE_ID),
       canViewApplications:
         isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID),
+      limited: limitedAccess(roles),
       roles,
     };
   } catch (err) {

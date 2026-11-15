@@ -83,7 +83,7 @@ async function handleTrainingButton(body: Interaction, customId: string, userNam
 
 async function handleRoleRequestButton(body: Interaction, customId: string) {
   if (!canReviewRoleRequests(body.member?.roles ?? [])) {
-    return reply('Only Gold Command can approve or deny role requests.');
+    return reply('Only Silver or Gold Command can approve or deny role requests.');
   }
 
   const [action, id] = customId.split(':');
