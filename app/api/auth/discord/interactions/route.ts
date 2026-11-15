@@ -2,10 +2,10 @@ import { NextResponse, after } from 'next/server';
 import { verifyKey } from 'discord-interactions';
 import { createClient } from '@supabase/supabase-js';
 import { canReviewRoleRequests, supabaseAdmin } from '@/lib/portal';
-import { sendDm } from '@/lib/discord';
+import { TRAININGS_CHANNEL_ID, editMessage, sendDm } from '@/lib/discord';
 import { reviewRoleRequest } from '@/lib/role-requests';
 import { reviewAppeal } from '@/lib/appeals';
-import { roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
+import { cantMakeRow, roleRequestPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import type { Training } from '@/lib/portal-types';
 
@@ -28,18 +28,35 @@ type Interaction = {
 const reply = (content: string) => NextResponse.json({ type: 4, data: { content, flags: 64 } });
 
 async function handleTrainingButton(body: Interaction, customId: string, userName: string, discordId: string) {
-  const { data } = await supabaseAdmin
-    .from('trainings')
-    .select('*')
-    .eq('discord_message_id', body.message?.id)
-    .maybeSingle();
+  // "Can't Make It" now lives on the private confirmation / DM (custom_id carries the training id).
+  // Old public posts without the id still work and are found by their message id.
+  const trainingIdFromButton = customId.startsWith('training_cant_make_it:') ? customId.split(':')[1] : null;
+  const { data } = trainingIdFromButton
+    ? await supabaseAdmin.from('trainings').select('*').eq('id', trainingIdFromButton).maybeSingle()
+    : await supabaseAdmin.from('trainings').select('*').eq('discord_message_id', body.message?.id).maybeSingle();
   if (!data) return reply('Error: Could not locate active training record for this message.');
 
-  // "Can't Make It": take them off the roster and log it on the post.
-  if (customId === 'training_cant_make_it' || customId === 'training_not_attending') {
+  if (customId.startsWith('training_cant_make_it') || customId === 'training_not_attending') {
     const out = await cantMakeTraining(data as Training, userName, discordId);
     if (out.status === 'already') return reply("You're already marked as unable to make this training.");
     if (out.status !== 'removed') return reply(out.message);
+
+    // Pressed from the DM / private confirmation: update the public roster post and strip the button here.
+    if (trainingIdFromButton) {
+      const t = out.training;
+      let divTitle: string | null = null;
+      if (t.division_id) {
+        const { data: div } = await supabaseAdmin.from('divisions').select('name').eq('id', t.division_id).maybeSingle();
+        divTitle = div?.name ?? null;
+      }
+      if (t.discord_message_id) {
+        await editMessage(t.discord_channel_id || TRAININGS_CHANNEL_ID, t.discord_message_id, trainingPayload(t, divTitle));
+      }
+      return NextResponse.json({
+        type: 7,
+        data: { content: `You've been taken off **${t.id}** - ${t.title}.`, components: [] },
+      });
+    }
 
     let name: string | null = null;
     if (out.training.division_id) {
@@ -51,7 +68,13 @@ async function handleTrainingButton(body: Interaction, customId: string, userNam
 
   // Role check uses the roles Discord sends with the click, so it is always live.
   const result = await bookOnTraining(data as Training, userName, body.member?.roles ?? [], discordId);
-  if (result.status === 'already') return reply('You are already booked on this training.');
+  if (result.status === 'already') {
+    // Already booked: show the Can't Make It button privately (it is not on the public post).
+    return NextResponse.json({
+      type: 4,
+      data: { content: 'You are already booked on this training.', flags: 64, components: [cantMakeRow(result.training.id)] },
+    });
+  }
   if (result.status !== 'booked') return reply(result.message);
 
   const training = result.training;
@@ -73,6 +96,7 @@ async function handleTrainingButton(body: Interaction, customId: string, userNam
           content: sent
             ? "You're booked on. I've DMed you the details and which VC to wait in."
             : "You're booked on, but I couldn't DM you. Turn on DMs from server members so you get the details.",
+          components: [cantMakeRow(training.id)],
         }),
       }).catch(() => {});
     }
@@ -221,7 +245,7 @@ export async function POST(request: Request) {
         return handleAppealButton(body, customId);
       }
       const BUTTON_IDS = ['patrol_book_on', 'patrol_not_attending', 'training_attend', 'training_book_on', 'training_not_attending', 'training_cant_make_it'];
-      if (!customId || !BUTTON_IDS.includes(customId)) {
+      if (!customId || !(BUTTON_IDS.includes(customId) || customId.startsWith('training_cant_make_it:'))) {
         return NextResponse.json({ type: 4, data: { content: 'Unknown action.', flags: 64 } });
       }
 

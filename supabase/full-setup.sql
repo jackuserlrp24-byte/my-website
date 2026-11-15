@@ -221,3 +221,19 @@ create table if not exists loa_requests (
 create index if not exists loa_requests_status_idx on loa_requests (status, end_date);
 create index if not exists loa_requests_user_idx on loa_requests (discord_id, created_at desc);
 alter table loa_requests enable row level security;
+
+
+-- ---------- Training records (auto-filled when someone presses Attend) ----------
+-- met_training_records is what the Met Police command dossier reads. This is a no-op if you already have it.
+create table if not exists met_training_records (
+  id uuid primary key default gen_random_uuid(),
+  training_name text not null,
+  target_discord_id text not null,
+  notes text,
+  issuer_name text,
+  created_at timestamptz not null default now()
+);
+alter table met_training_records add column if not exists training_id text;
+-- one auto record per person per training (manually logged rows have no training_id and are unaffected)
+create unique index if not exists met_training_records_one_per_training
+  on met_training_records (training_id, target_discord_id);

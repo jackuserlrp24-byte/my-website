@@ -212,7 +212,7 @@ export default async function MetPoliceCommandPage() {
   try {
     const [reqsRes, trainingRes, whitelistsRes] = await Promise.all([
       supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }),
-      supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(50),
+      supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200)
     ]);
 

@@ -69,7 +69,6 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         type: 1,
         components: [
           { type: 2, style: 3, label: 'Attend', custom_id: 'training_attend' },
-          { type: 2, style: 4, label: "Can't Make It", custom_id: 'training_cant_make_it' },
           { type: 2, style: 5, label: 'View Portal', url: `${PORTAL_URL}/dashboard/trainings` },
         ],
       },
@@ -128,6 +127,12 @@ export function divisionsPayload(allDivisions: Division[]) {
   };
 }
 
+/** The "Can't Make It" button. It only appears after someone has pressed Attend (in their DM and private confirmation), never on the public post. */
+export const cantMakeRow = (trainingId: string) => ({
+  type: 1,
+  components: [{ type: 2, style: 4, label: "Can't Make It", custom_id: `training_cant_make_it:${trainingId}` }],
+});
+
 /** The DM a member gets when they click Attend. */
 export function trainingDmPayload(t: Training, divisionName?: string | null) {
   const start = unix(t.starts_at);
@@ -155,6 +160,7 @@ export function trainingDmPayload(t: Training, divisionName?: string | null) {
         type: 1,
         components: [
           { type: 2, style: 5, label: 'Join Waiting VC', url: `https://discord.com/channels/${process.env.DISCORD_GUILD_ID}/${vc}` },
+          { type: 2, style: 4, label: "Can't Make It", custom_id: `training_cant_make_it:${t.id}` },
         ],
       },
     ],
@@ -171,7 +177,7 @@ export function trainingDelayDmPayload(t: Training, divisionName?: string | null
         description:
           `This session has been pushed back by **${t.delayed_minutes} minutes**.` +
           (t.delay_reason ? `\n**Reason:** ${t.delay_reason}` : '') +
-          `\n\nYou're still booked on - keep waiting in <#${TRAINING_VC_ID}>. If you can no longer make the new time, press **Can't Make It** on the training post or the portal.`,
+          `\n\nYou're still booked on - keep waiting in <#${TRAINING_VC_ID}>. If you can no longer make the new time, press **Can't Make It** below or on the portal.`,
         color: 16705372,
         fields: [
           { name: 'Training ID', value: t.id, inline: true },
@@ -181,6 +187,7 @@ export function trainingDelayDmPayload(t: Training, divisionName?: string | null
         footer: { text: 'Central Operations Portal' },
       },
     ],
+    components: [cantMakeRow(t.id)],
   };
 }
 
