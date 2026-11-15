@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import LocalTime from '@/app/components/LocalTime';
-import { MAINTENANCE_PANELS, defaultMessage, isDefaultMessage, type MaintenanceEntry, type MaintenanceMode, type MaintenanceState } from '@/lib/maintenance-config';
+import { MAINTENANCE_PANELS, defaultMessage, isDefaultMessage, schedulePhase, type MaintenanceEntry, type MaintenanceMode, type MaintenanceSchedule, type MaintenanceState } from '@/lib/maintenance-config';
 import type { ActionResult } from '@/lib/portal-types';
-import { refreshDivisionsMessage, updateMaintenance } from './actions';
+import { endSchedule, refreshDivisionsMessage, scheduleMaintenance, updateMaintenance } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2] select-text';
@@ -47,7 +47,163 @@ function withStatus(e: MaintenanceEntry, v: Status, site: boolean): MaintenanceE
   return { on: true, mode: v, message };
 }
 
-export default function DeveloperClient({ initial }: { initial: MaintenanceState }) {
+
+/** datetime-local value (browser time) for "now + minutes". */
+const localInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+function ScheduleTab({ schedule, onResult }: { schedule: MaintenanceSchedule | null; onResult: (r: ActionResult) => void }) {
+  const router = useRouter();
+  const [busy, startTransition] = useTransition();
+  const [start, setStart] = useState(() => localInput(new Date(Date.now() + 60 * 60000)));
+  const [end, setEnd] = useState('');
+  const [message, setMessage] = useState('');
+  const [site, setSite] = useState(false);
+  const [panels, setPanels] = useState<string[]>([]);
+  const [fivem, setFivem] = useState(true);
+  const [channels, setChannels] = useState('');
+
+  const phase = schedule ? schedulePhase(schedule) : null;
+  const live = phase === 'scheduled' || phase === 'active';
+
+  const run = (fn: () => Promise<ActionResult>) =>
+    startTransition(async () => {
+      const r = await fn();
+      onResult(r);
+      if (r.ok) router.refresh();
+    });
+
+  const submit = (startNow: boolean) => {
+    if (!startNow && !start) return onResult({ ok: false, message: 'Pick a start date and time.' });
+    if ((startNow || site) && !confirm(`${startNow ? 'Start maintenance NOW' : 'Schedule maintenance'}${site ? ' for the WHOLE website' : ''}${fivem ? ' and kick everyone off the FiveM server (except bypass roles)' : ''}?`)) return;
+    run(() =>
+      scheduleMaintenance({
+        start_at: (startNow ? new Date() : new Date(start)).toISOString(),
+        end_at: end ? new Date(end).toISOString() : null,
+        message,
+        site,
+        panels,
+        fivem,
+        discord_channels: channels.split(/[\s,]+/).filter(Boolean),
+      })
+    );
+  };
+
+  const toggle = (k: string) => setPanels((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
+  const chk = 'accent-[#5865F2] cursor-pointer';
+
+  return (
+    <div className="space-y-6">
+      {schedule && phase !== 'ended' && phase !== 'cancelled' && (
+        <section className={`bg-neutral-900 border p-5 space-y-2 ${phase === 'active' ? 'border-red-500/50' : 'border-amber-500/40'}`}>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className={`text-[10px] font-mono tracking-widest uppercase ${phase === 'active' ? 'text-red-400' : 'text-amber-400'}`}>
+                {phase === 'active' ? 'Under maintenance now' : 'Scheduled'}
+              </span>
+              <p className="text-sm text-neutral-200 mt-1">
+                <LocalTime iso={schedule.start_at} />
+                {schedule.end_at ? (
+                  <>
+                    {' '}to <LocalTime iso={schedule.end_at} />
+                  </>
+                ) : (
+                  ' until ended manually'
+                )}
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-1">
+                {[schedule.site && 'Whole website', schedule.panels.length ? `${schedule.panels.length} panel(s)` : '', schedule.fivem && 'FiveM server', schedule.discord_channels.length ? `${schedule.discord_channels.length} Discord channel(s)` : '']
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            </div>
+            <button
+              disabled={busy}
+              onClick={() => run(endSchedule)}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-[11px] font-mono font-bold uppercase tracking-wider cursor-pointer shrink-0"
+            >
+              {phase === 'active' ? 'End maintenance now' : 'Cancel schedule'}
+            </button>
+          </div>
+        </section>
+      )}
+
+      <section className="bg-neutral-900 border border-neutral-800 p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">{live ? 'Replace schedule' : 'Schedule maintenance'}</h3>
+          <p className="text-[11px] text-neutral-500 mt-0.5">When the start time hits, everything you tick below goes under maintenance by itself. At the end time it all reopens.</p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">Starts</span>
+            <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} className={`${inputClass} mt-1`} />
+          </label>
+          <label className="block">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">Ends (optional)</span>
+            <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} className={`${inputClass} mt-1`} />
+          </label>
+        </div>
+
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={2}
+          maxLength={500}
+          className={`${inputClass} resize-none`}
+          placeholder="Message (optional) - blank uses: under maintenance, sorry for any inconvenience"
+        />
+
+        <div className="space-y-2">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">What goes under maintenance</span>
+          <label className="flex items-center gap-2 text-xs text-neutral-200 cursor-pointer">
+            <input type="checkbox" checked={fivem} onChange={(e) => setFivem(e.target.checked)} className={chk} />
+            FiveM server <span className="text-neutral-500">- blocks joining and kicks everyone without a bypass role</span>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-neutral-200 cursor-pointer">
+            <input type="checkbox" checked={site} onChange={(e) => setSite(e.target.checked)} className={chk} />
+            Whole website <span className="text-neutral-500">- founders / developers still get in</span>
+          </label>
+          {!site && (
+            <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 pl-1 pt-1">
+              {MAINTENANCE_PANELS.map((p) => (
+                <label key={p.key} className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                  <input type="checkbox" checked={panels.includes(p.key)} onChange={() => toggle(p.key)} className={chk} />
+                  {p.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <label className="block">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">Discord channel IDs (optional)</span>
+          <input value={channels} onChange={(e) => setChannels(e.target.value)} className={`${inputClass} mt-1`} placeholder="123456789012345678, 987654321098765432" />
+          <span className="text-[10px] text-neutral-600">The bot posts a notice there now, switches it to &quot;Under maintenance&quot; at the start and &quot;Complete&quot; at the end.</span>
+        </label>
+
+        <div className="flex flex-wrap justify-end gap-3 pt-1">
+          <button
+            disabled={busy}
+            onClick={() => submit(true)}
+            className="px-4 py-2.5 border border-amber-500/50 hover:bg-amber-500/10 disabled:opacity-50 text-amber-300 text-[11px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+          >
+            Start now
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => submit(false)}
+            className="px-5 py-2.5 bg-[#5865F2] hover:bg-[#4752c4] disabled:opacity-50 text-white text-[11px] font-semibold uppercase tracking-wider cursor-pointer"
+          >
+            {busy ? 'Saving...' : 'Schedule'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function DeveloperClient({ initial, schedule }: { initial: MaintenanceState; schedule: MaintenanceSchedule | null }) {
+  const [tab, setTab] = useState<'switches' | 'schedule'>('switches');
   const [state, setState] = useState<MaintenanceState>(initial);
   const [saved, setSaved] = useState<MaintenanceState>(initial);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -104,6 +260,22 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
         </div>
       )}
 
+      <div className="flex border-b border-neutral-800">
+        {([['switches', 'Switches'], ['schedule', 'Scheduled maintenance']] as const).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`px-5 py-2.5 text-[11px] font-mono font-bold uppercase tracking-wider cursor-pointer border-b-2 -mb-px ${tab === k ? 'border-amber-500 text-amber-300' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'schedule' && <ScheduleTab schedule={schedule} onResult={setResult} />}
+
+      {tab === 'switches' && (
+        <>
       {/* Whole website */}
       <section className={`bg-neutral-900 border ${state.site.on ? 'border-red-500/50' : 'border-neutral-800'} p-5 space-y-3`}>
         <div className="flex items-center justify-between gap-4">
@@ -202,6 +374,8 @@ export default function DeveloperClient({ initial }: { initial: MaintenanceState
           {busy ? 'Saving...' : 'Apply changes'}
         </button>
       </div>
+        </>
+      )}
     </main>
   );
 }

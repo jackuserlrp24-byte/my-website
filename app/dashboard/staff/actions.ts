@@ -9,6 +9,7 @@ import {
   postMessage,
   searchGuildMembers,
   sendDm,
+  banDmPayload,
   sendUnbanNotice,
   unbanMember,
   type GuildMemberLite,
@@ -128,7 +129,10 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
     BAN: 'You have been banned from Central Operations',
   };
   let dmSent = false;
-  if (dmTitle[action] && member && toDiscord) {
+  if (action === 'BAN' && member) {
+    // Bans (Discord or in-game only) always DM the appeal link.
+    dmSent = await sendDm(targetId, banDmPayload(reason));
+  } else if (dmTitle[action] && member && toDiscord) {
     dmSent = await sendDm(targetId, {
       embeds: [
         {

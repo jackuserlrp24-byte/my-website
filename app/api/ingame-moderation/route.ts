@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/portal';
-import { postMessage } from '@/lib/discord';
+import { banDmPayload, postMessage, sendDm } from '@/lib/discord';
 import { MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +63,8 @@ export async function POST(req: Request) {
     console.error('ingame moderation_logs insert failed:', error);
     return NextResponse.json({ error: 'Could not save log' }, { status: 500 });
   }
+
+  if (action === 'BAN') await sendDm(discordId, banDmPayload(reason)); // appeal link
 
   await postMessage(STAFF_LOG_CHANNEL_ID, {
     embeds: [

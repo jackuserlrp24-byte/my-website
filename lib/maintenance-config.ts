@@ -64,3 +64,72 @@ export const emptyMaintenance = (): MaintenanceState => ({
   updated_by: null,
   updated_at: null,
 });
+
+// ---------- Scheduled maintenance ----------
+
+/** Discord roles that can still join / stay on the FiveM server while it is under maintenance. */
+export const FIVEM_MAINTENANCE_BYPASS_ROLE_IDS = ['1497557905275224151', '1497557905275224148', '1497557905250193506'];
+
+export interface MaintenanceSchedule {
+  id: string;
+  start_at: string; // ISO
+  end_at: string | null; // ISO, null = stays on until ended manually
+  message: string; // '' = stock message
+  site: boolean; // whole website
+  panels: string[]; // panel keys
+  fivem: boolean; // FiveM server maintenance
+  discord_channels: string[]; // channel IDs that get the notice
+  discord_msgs: Record<string, string>; // channelId -> messageId
+  created_by: string;
+  cancelled: boolean;
+  started_done: boolean; // Discord / log effects for the start have run
+  ended_done: boolean; // Discord / log effects for the end have run
+}
+
+export type SchedulePhase = 'scheduled' | 'active' | 'ended' | 'cancelled';
+
+export function schedulePhase(s: MaintenanceSchedule, now = Date.now()): SchedulePhase {
+  if (s.cancelled) return 'cancelled';
+  if (now < new Date(s.start_at).getTime()) return 'scheduled';
+  if (s.end_at && now >= new Date(s.end_at).getTime()) return 'ended';
+  return 'active';
+}
+
+export const SCHEDULE_FIVEM_MESSAGE = 'The server is currently under maintenance. We apologise for any inconvenience.';
+
+export const SCHEDULE_KEY = 'maintenance_schedule';
+
+
+
+export function parseSchedule(raw: string | null | undefined): MaintenanceSchedule | null {
+  if (!raw) return null;
+  try {
+    const r = JSON.parse(raw) as Partial<MaintenanceSchedule>;
+    if (!r.id || !r.start_at || Number.isNaN(new Date(r.start_at).getTime())) return null;
+    const validPanels = new Set<string>(MAINTENANCE_PANELS.map((p) => p.key));
+    return {
+      id: r.id,
+      start_at: r.start_at,
+      end_at: r.end_at && !Number.isNaN(new Date(r.end_at).getTime()) ? r.end_at : null,
+      message: typeof r.message === 'string' ? r.message.slice(0, 500) : '',
+      site: r.site === true,
+      panels: Array.isArray(r.panels) ? r.panels.filter((k) => validPanels.has(k)) : [],
+      fivem: r.fivem === true,
+      discord_channels: Array.isArray(r.discord_channels) ? r.discord_channels.filter((c) => /^\d{15,25}$/.test(c)) : [],
+      discord_msgs: r.discord_msgs && typeof r.discord_msgs === 'object' ? r.discord_msgs : {},
+      created_by: typeof r.created_by === 'string' ? r.created_by : 'Unknown',
+      cancelled: r.cancelled === true,
+      started_done: r.started_done === true,
+      ended_done: r.ended_done === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+
+/** What a viewer / FiveM player is told while the schedule is active. */
+export function scheduleMessage(s: MaintenanceSchedule, site: boolean): string {
+  return s.message.trim() || defaultMessage('maintenance', site);
+}
+

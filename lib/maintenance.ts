@@ -1,6 +1,10 @@
 import { supabaseAdmin } from '@/lib/portal';
 import {
   MAINTENANCE_PANELS,
+  SCHEDULE_KEY,
+  parseSchedule,
+  scheduleMessage,
+  schedulePhase,
   defaultMessage,
   emptyMaintenance,
   type MaintenanceEntry,
@@ -16,19 +20,35 @@ const entry = (raw: unknown, site = false): MaintenanceEntry => {
   return { on: r.on === true, mode, message: msg || defaultMessage(mode, site) };
 };
 
-/** Reads the maintenance settings. Any problem (no table, bad JSON) means "nothing is under maintenance". */
-export async function getMaintenance(): Promise<MaintenanceState> {
+/**
+ * Reads the maintenance settings. Any problem (no table, bad JSON) means "nothing is under maintenance".
+ * By default an ACTIVE scheduled maintenance is laid over the saved settings, so every gate, the watcher and the
+ * Discord sync see it with no extra wiring. The Developer panel asks for `{ overlay: false }` so saving the manual
+ * switches never copies the schedule into them.
+ */
+export async function getMaintenance(opts: { overlay?: boolean } = {}): Promise<MaintenanceState> {
   const base = emptyMaintenance();
   try {
-    const { data } = await supabaseAdmin.from('portal_settings').select('value, updated_at').eq('key', KEY).maybeSingle();
-    if (!data?.value) return base;
-    const parsed = JSON.parse(data.value) as Partial<MaintenanceState>;
-    return {
-      site: entry(parsed.site, true),
-      panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(parsed.panels?.[p.key])])),
-      updated_by: typeof parsed.updated_by === 'string' ? parsed.updated_by : null,
-      updated_at: data.updated_at ?? null,
-    };
+    const { data: rows } = await supabaseAdmin.from('portal_settings').select('key, value, updated_at').in('key', [KEY, SCHEDULE_KEY]);
+    const main = rows?.find((r) => r.key === KEY);
+    let state = base;
+    if (main?.value) {
+      const parsed = JSON.parse(main.value) as Partial<MaintenanceState>;
+      state = {
+        site: entry(parsed.site, true),
+        panels: Object.fromEntries(MAINTENANCE_PANELS.map((p) => [p.key, entry(parsed.panels?.[p.key])])),
+        updated_by: typeof parsed.updated_by === 'string' ? parsed.updated_by : null,
+        updated_at: main.updated_at ?? null,
+      };
+    }
+    if (opts.overlay === false) return state;
+
+    const sched = parseSchedule(rows?.find((r) => r.key === SCHEDULE_KEY)?.value);
+    if (sched && schedulePhase(sched) === 'active') {
+      if (sched.site) state.site = { on: true, mode: 'maintenance', message: scheduleMessage(sched, true) };
+      for (const k of sched.panels) if (state.panels[k]) state.panels[k] = { on: true, mode: 'maintenance', message: scheduleMessage(sched, false) };
+    }
+    return state;
   } catch {
     return base;
   }

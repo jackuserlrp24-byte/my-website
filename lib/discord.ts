@@ -1,4 +1,5 @@
 import { LOG_CHANNEL_ID } from '@/lib/training-config';
+import { PORTAL_URL } from '@/lib/portal';
 
 const API = 'https://discord.com/api/v10';
 
@@ -358,4 +359,21 @@ export async function sendUnbanNotice(
   });
 
   return { dmSent, inviteUrl };
+}
+
+/** The ban DM: reason + a clickable appeal link (text link and a button). */
+export function banDmPayload(reason: string) {
+  const url = `${PORTAL_URL}/appeal`;
+  return {
+    embeds: [
+      {
+        title: 'You have been banned from Central Operations',
+        description: `**Reason:** ${reason}\n\nIf you think your ban was a mistake or unfair, you can apply for an appeal:\n[Central Operations Ban Appeal](${url})`,
+        color: 15548997,
+        footer: { text: 'Central Operations' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Central Operations Ban Appeal', url }] }],
+  };
 }
