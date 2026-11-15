@@ -16,7 +16,8 @@ const TARGET_CHANNEL_ID = '1532786346920247398';
 // Every action here is management only - checked again on the server, not just by hiding the tab.
 async function requireManagement() {
   const user = await getPortalUser();
-  if (!user?.isManagement) throw new Error('Not allowed');
+  // Management tools live inside the Staff Panel, so you must be allowed into the panel as well.
+  if (!user?.canStaff || !user.isManagement) throw new Error('Not allowed');
 }
 
 

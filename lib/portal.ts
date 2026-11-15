@@ -43,15 +43,15 @@ export const WHITELISTED_ROLES = [
 ];
 
 /**
- * Who counts as staff: management / ownership, Gold or Silver command, or the Staff role.
- * The Staff Panel nav link, every staff page and every staff action use this one rule,
- * so what a person can SEE and what they can DO can never drift apart.
+ * Who can SEE and USE the Staff Panel: the Staff team, Developers and Founders (and the Ownership roles).
+ * Gold / Silver / Bronze command and plain Management do NOT get in unless they also hold one of these.
+ * The nav link, every staff page and every staff action use this one rule, so what a person can see and
+ * what they can do can never drift apart. To let another role in, add it here.
  */
 export const canStaffRoles = (roles: string[]) =>
-  MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r)) ||
-  hasRoleId(roles, GOLD_ROLE_ID) ||
-  hasRoleId(roles, SILVER_ROLE_ID) ||
-  hasRoleId(roles, STAFF_ROLE_ID);
+  hasRoleId(roles, STAFF_ROLE_ID) ||
+  DEVELOPER_ROLE_IDS.some((r) => roles.includes(r)) || // founder + developer roles (includes DISCORD_DEVELOPER_ROLE_ID)
+  OWNERSHIP_ROLE_IDS.some((r) => roles.includes(r));
 
 /** Silver + Gold command (or management) approve / deny role requests. */
 export const canReviewRoleRequests = (roles: string[]) =>
@@ -90,7 +90,7 @@ export interface PortalUser {
   canRequestRoles: boolean; // trainer role, bronze, silver, gold, management
   canReviewRoleRequests: boolean; // silver, gold, management
   canViewApplications: boolean; // silver, gold, management
-  canStaff: boolean; // staff panel + ban appeals: notes + warnings (staff role, silver, gold, management)
+  canStaff: boolean; // staff panel + ban appeals: staff role, developer / founder, ownership
   canSwapHost: boolean; // gold command + management: change the instructor / host of a training
   canModerate: boolean; // staff panel: kick / ban / unban (gold, management)
   limited: 'developer' | 'staff' | null; // developer-only / staff-only accounts only see their own panel(s)

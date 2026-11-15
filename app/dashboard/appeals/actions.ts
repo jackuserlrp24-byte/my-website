@@ -24,7 +24,8 @@ export async function getAppealHistory(discordId: string): Promise<ModerationLog
 
 export async function decideAppeal(id: string, accept: boolean, note: string): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.canModerate) return fail('Only Gold Command and management can decide ban appeals.');
+  // Must be able to use the staff panel at all, AND be allowed to moderate (gold / management).
+  if (!user?.canStaff || !user.canModerate) return fail('You do not have permission to decide ban appeals.');
 
   const cleanNote = note.trim().slice(0, 800);
   if (!accept && cleanNote.length < 3) return fail('Add a reason - the player is shown it.');
