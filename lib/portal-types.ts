@@ -74,3 +74,17 @@ export interface ModerationLog {
   moderator_name: string | null;
   created_at: string;
 }
+
+export interface GameAction {
+  id: string;
+  action: 'warn' | 'kick' | 'ban' | 'unban';
+  target_discord_id: string;
+  target_name: string | null;
+  reason: string;
+  duration_hours: number;
+  requested_by: string;
+  status: 'pending' | 'sent' | 'done' | 'failed' | 'expired';
+  result: string | null;
+  created_at: string;
+  completed_at: string | null;
+}

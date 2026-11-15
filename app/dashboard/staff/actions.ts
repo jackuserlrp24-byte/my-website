@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin, MANAGEMENT_ROLE_IDS } from '@/lib/portal';
 import {
-  APPLICATIONS_LOG_CHANNEL_ID,
   banMember,
   getGuildMember,
   kickMember,
@@ -13,10 +12,12 @@ import {
   unbanMember,
   type GuildMemberLite,
 } from '@/lib/discord';
-import { GOLD_ROLE_ID } from '@/lib/training-config';
-import type { ActionResult, ModerationAction, ModerationLog } from '@/lib/portal-types';
+import { GOLD_ROLE_ID, MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
+import { queueGameAction } from '@/lib/game-actions';
+import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
 
-const STAFF_LOG_CHANNEL_ID = process.env.DISCORD_STAFF_LOG_CHANNEL_ID || APPLICATIONS_LOG_CHANNEL_ID;
+// Warn / kick / ban logs go to the moderation channel only (never the role request channel).
+const STAFF_LOG_CHANNEL_ID = MODERATION_LOG_CHANNEL_ID;
 const fail = (message: string): ActionResult => ({ ok: false, message });
 
 const COLOURS: Record<ModerationAction, number> = {
@@ -68,6 +69,17 @@ export async function getHistory(discordId: string): Promise<ModerationLog[]> {
   return (data ?? []) as ModerationLog[];
 }
 
+export async function getGameActions(): Promise<GameAction[]> {
+  const user = await getPortalUser();
+  if (!user?.canStaff) return [];
+  const { data } = await supabaseAdmin
+    .from('game_actions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(12);
+  return (data ?? []) as GameAction[];
+}
+
 export async function takeAction(formData: FormData): Promise<ActionResult> {
   const user = await getPortalUser();
   if (!user?.canStaff) return fail('You do not have access to the staff panel.');
@@ -75,6 +87,13 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   const action = String(formData.get('action') ?? '').toUpperCase() as ModerationAction;
   const targetId = String(formData.get('targetId') ?? '').replace(/[<@!>]/g, '').trim();
   const reason = String(formData.get('reason') ?? '').trim().slice(0, 1500);
+
+  // Where the action is applied: Discord, the FiveM server, or both. Notes are portal-only.
+  const rawScope = String(formData.get('scope') ?? 'discord');
+  const scope: 'discord' | 'game' | 'both' = rawScope === 'game' || rawScope === 'both' ? rawScope : 'discord';
+  const toDiscord = action === 'NOTE' || scope !== 'game';
+  const toGame = action !== 'NOTE' && scope !== 'discord';
+  const banHours = Math.min(Math.max(Math.round(Number(formData.get('banHours') ?? 0)) || 0, 0), 24 * 365);
 
   if (!['NOTE', 'WARN', 'KICK', 'BAN', 'UNBAN'].includes(action)) return fail('Pick an action.');
   if (!/^\d{17,20}$/.test(targetId)) return fail('Select a member (or enter a valid Discord ID).');
@@ -94,7 +113,7 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
       return fail('You cannot kick or ban Command / management members.');
     }
   }
-  if (action === 'KICK' && !member) return fail('That user is not in the server.');
+  if (action === 'KICK' && toDiscord && !member) return fail('That user is not in the Discord server.');
 
   // DM first - once they are kicked or banned the bot can no longer reach them.
   const dmTitle: Partial<Record<ModerationAction, string>> = {
@@ -103,7 +122,7 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
     BAN: 'You have been banned from Central Operations',
   };
   let dmSent = false;
-  if (dmTitle[action] && member) {
+  if (dmTitle[action] && member && toDiscord) {
     dmSent = await sendDm(targetId, {
       embeds: [
         {
@@ -118,7 +137,7 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   }
 
   // Do the real Discord action.
-  if (action === 'KICK' || action === 'BAN' || action === 'UNBAN') {
+  if (toDiscord && (action === 'KICK' || action === 'BAN' || action === 'UNBAN')) {
     const fn = action === 'KICK' ? kickMember : action === 'BAN' ? banMember : unbanMember;
     const res = await fn(targetId, `${action} by ${user.name} via portal: ${reason}`);
     if (!res.ok) {
@@ -132,12 +151,37 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // Queue it for the FiveM server (picked up by the CO-StaffMenu resource within a few seconds).
+  let gameQueued = false;
+  if (toGame) {
+    const q = await queueGameAction({
+      action: action.toLowerCase() as 'warn' | 'kick' | 'ban' | 'unban',
+      targetDiscordId: targetId,
+      targetName,
+      reason,
+      durationHours: action === 'BAN' ? banHours : 0,
+      requestedBy: user.name,
+    });
+    if (!q.ok) {
+      return fail(
+        toDiscord
+          ? 'The Discord action went through, but it could not be queued for the game server. Have you run the latest supabase/full-setup.sql?'
+          : 'Could not queue the in-game action. Have you run the latest supabase/full-setup.sql?'
+      );
+    }
+    gameQueued = true;
+  }
+
+  const where = scope === 'both' && action !== 'NOTE' ? 'Discord + In-game' : toGame ? 'In-game' : 'Discord';
+  const lengthText = toGame && action === 'BAN' ? (banHours > 0 ? ` - ${banHours >= 24 && banHours % 24 === 0 ? `${banHours / 24} day(s)` : `${banHours}h`}` : ' - permanent') : '';
+  const loggedReason = action === 'NOTE' || where === 'Discord' ? reason : `[${where}${lengthText}] ${reason}`;
+
   // Log it in the same table the Management > Moderation Logs tab uses.
   const { error } = await supabaseAdmin.from('moderation_logs').insert({
     discord_id: targetId,
     username: targetName,
     action_type: action,
-    reason,
+    reason: loggedReason,
     moderator_name: user.name,
   });
   if (error) console.error('moderation_logs insert failed:', error);
@@ -151,7 +195,8 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
           { name: 'Member', value: `<@${targetId}> (${targetName})`, inline: true },
           { name: 'Staff', value: `${user.name} (<@${user.id}>)`, inline: true },
           { name: 'Reason', value: reason.slice(0, 1000) },
-          ...(dmTitle[action] ? [{ name: 'DM delivered', value: dmSent ? 'Yes' : 'No', inline: true }] : []),
+          ...(action !== 'NOTE' ? [{ name: 'Applied to', value: `${where}${lengthText}`, inline: true }] : []),
+          ...(dmTitle[action] && toDiscord ? [{ name: 'DM delivered', value: dmSent ? 'Yes' : 'No', inline: true }] : []),
         ],
         timestamp: new Date().toISOString(),
       },
@@ -164,6 +209,6 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   const done = { NOTE: 'Note added', WARN: 'Warning issued', KICK: 'Member kicked', BAN: 'Member banned', UNBAN: 'Member unbanned' }[action];
   return {
     ok: true,
-    message: `${done} and logged.${error ? ' (Warning: could not save to moderation_logs - check the table columns.)' : ''}`,
+    message: `${done} and logged.${gameQueued ? ' Sent to the game server - it applies within a few seconds (see "In-game actions").' : ''}${error ? ' (Warning: could not save to moderation_logs - check the table columns.)' : ''}`,
   };
 }

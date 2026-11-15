@@ -31,8 +31,14 @@ export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes
 export const TRAINING_VC_ID = process.env.DISCORD_TRAINING_VC_ID || '1497557910283223266';
 
 // Where role requests are posted for management to approve / deny.
+// Staff warn / kick / ban logs (portal + in-game) go here and ONLY here.
+export const MODERATION_LOG_CHANNEL_ID = process.env.DISCORD_MODERATION_LOG_CHANNEL_ID || '1497557910283223263';
+
+// Role requests must never be posted into the moderation log channel, even if an env var points at it.
+const ROLE_REQUESTS_FALLBACK = '1532786346920247398';
+const roleRequestsEnv = process.env.DISCORD_ROLE_REQUESTS_CHANNEL_ID || ROLE_REQUESTS_FALLBACK;
 export const ROLE_REQUESTS_CHANNEL_ID =
-  process.env.DISCORD_ROLE_REQUESTS_CHANNEL_ID || '1532786346920247398';
+  roleRequestsEnv === MODERATION_LOG_CHANNEL_ID ? ROLE_REQUESTS_FALLBACK : roleRequestsEnv;
 
 export const REQUIREMENT_MESSAGE =
   'You need to be IPP and a trained driver first before you can attend this training.';

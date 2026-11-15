@@ -8,7 +8,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_AUDIT_CHANNEL_ID = '1564285919564136711';
+const DISCORD_AUDIT_CHANNEL_ID = '1564285919564136711'; // never the moderation log channel (1497557910283223263)
 
 // Helper to send Discord embed logs without emojis
 async function sendDiscordEmbedLog(title: string, description: string, fields: { name: string; value: string; inline?: boolean }[]) {

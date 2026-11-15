@@ -106,6 +106,24 @@ create table if not exists moderation_logs (
   created_at timestamptz not null default now()
 );
 
+-- ---------- In-game actions (portal staff panel -> FiveM server) ----------
+-- The CO-StaffMenu resource polls /api/ingame-moderation/queue and applies these in the game.
+create table if not exists game_actions (
+  id uuid primary key default gen_random_uuid(),
+  action text not null check (action in ('warn', 'kick', 'ban', 'unban')),
+  target_discord_id text not null,
+  target_name text,
+  reason text not null,
+  duration_hours int not null default 0,   -- bans only; 0 = permanent
+  requested_by text not null,
+  status text not null default 'pending' check (status in ('pending', 'sent', 'done', 'failed', 'expired')),
+  result text,
+  sent_at timestamptz,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+create index if not exists game_actions_status_idx on game_actions (status, created_at);
+
 -- ---------- Lock out the anon key (the site uses the service-role key) ----------
 alter table portal_settings enable row level security;
 alter table divisions enable row level security;
@@ -113,6 +131,7 @@ alter table division_applications enable row level security;
 alter table trainings enable row level security;
 alter table role_requests enable row level security;
 alter table moderation_logs enable row level security;
+alter table game_actions enable row level security;
 
 -- ---------- Seed / refresh divisions ----------
 -- Updates names, descriptions and order, but never touches open/closed status.

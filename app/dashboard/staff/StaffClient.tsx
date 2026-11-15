@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { GuildMemberLite } from '@/lib/discord';
-import type { ActionResult, ModerationAction, ModerationLog } from '@/lib/portal-types';
-import { getHistory, searchMembers, takeAction } from './actions';
+import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
+import { getGameActions, getHistory, searchMembers, takeAction } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]';
@@ -21,7 +21,36 @@ const Badge = ({ type }: { type: ModerationAction }) => (
   <span className={`px-2 py-0.5 text-[10px] font-mono font-bold border ${BADGE[type] ?? BADGE.NOTE}`}>{type}</span>
 );
 
-export default function StaffClient({ canModerate, recent }: { canModerate: boolean; recent: ModerationLog[] }) {
+type Scope = 'discord' | 'game' | 'both';
+const SCOPES: { key: Scope; label: string }[] = [
+  { key: 'game', label: 'FiveM server' },
+  { key: 'discord', label: 'Discord' },
+  { key: 'both', label: 'Both' },
+];
+const BAN_LENGTHS = [
+  { hours: 24, label: '1 day' },
+  { hours: 72, label: '3 days' },
+  { hours: 168, label: '7 days' },
+  { hours: 720, label: '30 days' },
+  { hours: 0, label: 'Permanent' },
+];
+const STATUS_STYLE: Record<GameAction['status'], string> = {
+  pending: 'text-neutral-400',
+  sent: 'text-amber-300',
+  done: 'text-emerald-400',
+  failed: 'text-red-400',
+  expired: 'text-neutral-500',
+};
+
+export default function StaffClient({
+  canModerate,
+  recent,
+  gameActions,
+}: {
+  canModerate: boolean;
+  recent: ModerationLog[];
+  gameActions: GameAction[];
+}) {
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GuildMemberLite[]>([]);
@@ -31,6 +60,17 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
   const [reason, setReason] = useState('');
   const [result, setResult] = useState<ActionResult | null>(null);
   const [feed, setFeed] = useState<ModerationLog[]>(recent);
+  const [scope, setScope] = useState<Scope>('game');
+  const [banHours, setBanHours] = useState(24);
+  const [game, setGame] = useState<GameAction[]>(gameActions);
+
+  // Keep the in-game status list fresh while something is still waiting for the server.
+  const waiting = game.some((g) => g.status === 'pending' || g.status === 'sent');
+  useEffect(() => {
+    if (!waiting) return;
+    const t = setInterval(async () => setGame(await getGameActions()), 4000);
+    return () => clearInterval(t);
+  }, [waiting]);
 
   const actions: ModerationAction[] = canModerate ? ['NOTE', 'WARN', 'KICK', 'BAN', 'UNBAN'] : ['NOTE', 'WARN'];
   const counts = (t: ModerationAction) => history.filter((h) => h.action_type === t).length;
@@ -50,17 +90,21 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
   function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!target) return;
-    if ((action === 'KICK' || action === 'BAN') && !confirm(`${action} ${target.name}? This happens on Discord immediately.`)) return;
+    const placeText = scope === 'game' ? 'in the FiveM server' : scope === 'discord' ? 'on Discord' : 'on Discord and in the FiveM server';
+    if ((action === 'KICK' || action === 'BAN') && !confirm(`${action} ${target.name} ${placeText}?`)) return;
     const fd = new FormData();
     fd.set('action', action);
     fd.set('targetId', target.id);
     fd.set('targetName', target.name);
     fd.set('reason', reason);
+    fd.set('scope', scope);
+    fd.set('banHours', String(banHours));
     startTransition(async () => {
       const r = await takeAction(fd);
       setResult(r);
       if (r.ok) {
         setReason('');
+        setGame(await getGameActions());
         const h = await getHistory(target.id);
         setHistory(h);
         if (h[0]) setFeed((f) => [h[0], ...f].slice(0, 30));
@@ -75,8 +119,8 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
         <span className="text-[10px] font-mono text-[#5865F2] tracking-widest uppercase block mb-1">STAFF</span>
         <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Staff Panel</h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Add notes and warnings{canModerate ? ', kick, ban and unban' : ''} straight from the portal. Everything is logged here, in
-          Management &gt; Moderation Logs, and in the staff log channel.
+          Add notes and warnings{canModerate ? ', kick, ban and unban' : ''} on Discord, in the FiveM server, or both - straight from the portal. Everything is logged here, in
+          Management &gt; Moderation Logs, and in the moderation log channel.
         </p>
       </div>
 
@@ -155,6 +199,43 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
                     </button>
                   ))}
                 </div>
+                {action !== 'NOTE' && (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">Apply to</span>
+                      {SCOPES.map((s) => (
+                        <button
+                          type="button"
+                          key={s.key}
+                          onClick={() => setScope(s.key)}
+                          className={`px-3 py-1 text-[11px] font-mono uppercase tracking-wider border cursor-pointer ${
+                            scope === s.key
+                              ? 'bg-[#5865F2]/20 border-[#5865F2] text-neutral-100'
+                              : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:bg-neutral-800'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                    {action === 'BAN' && scope !== 'discord' && (
+                      <label className="flex items-center gap-2 text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
+                        Game ban length
+                        <select
+                          value={banHours}
+                          onChange={(e) => setBanHours(Number(e.target.value))}
+                          className="bg-neutral-950 border border-neutral-700 text-neutral-200 px-2 py-1 text-xs normal-case"
+                        >
+                          {BAN_LENGTHS.map((b) => (
+                            <option key={b.hours} value={b.hours}>
+                              {b.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                )}
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -197,6 +278,31 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
           )}
         </div>
 
+        <div className="flex flex-col gap-6">
+        <div className="bg-neutral-900 border border-neutral-800 p-6">
+          <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-1">In-game actions</h3>
+          <p className="text-[11px] text-neutral-500 mb-4">Sent to the FiveM server and applied within a few seconds.</p>
+          {game.length === 0 ? (
+            <p className="text-xs font-mono text-neutral-600">Nothing sent yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+              {game.map((g) => (
+                <div key={g.id} className="bg-neutral-950 border border-neutral-800 p-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase">{g.action}</span>
+                    <span className="text-xs font-semibold text-neutral-200 truncate">{g.target_name ?? g.target_discord_id}</span>
+                    <span className={`ml-auto text-[10px] font-mono uppercase ${STATUS_STYLE[g.status]}`}>{g.status}</span>
+                  </div>
+                  {g.result && <p className="text-[11px] text-neutral-400 mt-1">{g.result}</p>}
+                  <p className="text-[10px] font-mono text-neutral-600 mt-1">
+                    {g.requested_by} - <LocalTime iso={g.created_at} />
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="bg-neutral-900 border border-neutral-800 p-6">
           <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-4">Recent activity</h3>
           {feed.length === 0 ? (
@@ -217,6 +323,7 @@ export default function StaffClient({ canModerate, recent }: { canModerate: bool
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
     </main>
