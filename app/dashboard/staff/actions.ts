@@ -113,11 +113,13 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   const member = await getGuildMember(targetId);
   const targetName = member?.name ?? (String(formData.get('targetName') ?? '').slice(0, 80) || 'Unknown');
 
-  // Command members are protected from kicks / bans.
+  // Gold Command is protected from kicks / bans. Management and Ownership CAN be kicked / banned
+  // (only by someone who can moderate, and never yourself).
   if ((action === 'KICK' || action === 'BAN') && member && !isSelf) {
-    const protectedIds = [...MANAGEMENT_ROLE_IDS, GOLD_ROLE_ID].filter(Boolean);
-    if (member.roles.some((r) => protectedIds.includes(r))) {
-      return fail('You cannot kick or ban Command / management members.');
+    const isGold = !!GOLD_ROLE_ID && member.roles.includes(GOLD_ROLE_ID);
+    const isMgmt = member.roles.some((r) => MANAGEMENT_ROLE_IDS.includes(r));
+    if (isGold && !isMgmt) {
+      return fail('You cannot kick or ban Gold Command members.');
     }
   }
   if (action === 'KICK' && toDiscord && !member) return fail('That user is not in the Discord server.');

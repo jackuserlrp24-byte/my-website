@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import BackgroundSlideshow from './BackgroundSlideshow';
-import { DEVELOPER_ROLE_IDS, WHITELISTED_ROLES, limitedAccess } from '@/lib/portal';
+import { DEVELOPER_ROLE_IDS, MANAGEMENT_ROLE_IDS, WHITELISTED_ROLES, limitedAccess } from '@/lib/portal';
 import { getMaintenance } from '@/lib/maintenance';
 import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, STAFF_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
@@ -18,8 +18,6 @@ const supabase = createClient(
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-const MASTER_ROLE_ID = '1497557905275224149'; // Command / Bronze Commander Role ID
-const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 const TIER_ROLE_IDS = [GOLD_ROLE_ID, SILVER_ROLE_ID, BRONZE_ROLE_ID].filter(Boolean);
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
@@ -50,8 +48,9 @@ async function checkUserAccessAndFetchDetails(userId: string) {
     const member = await res.json();
     const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
     
-    const hasMasterRole = roles.includes(MASTER_ROLE_ID);
-    const hasAltManagementRole = roles.includes(MANAGEMENT_ROLE_ALT);
+    // Management + Ownership roles: in with no whitelist / RP account needed.
+    const hasMasterRole = MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
+    const hasAltManagementRole = false;
     const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
     const hasTierRole = roles.some((role) => TIER_ROLE_IDS.includes(role));
     // Developer-only / staff-only accounts see just their own panel(s), not the general portal.
@@ -179,6 +178,15 @@ export default async function DashboardLayout({
 
           {access.isStaff && (
             <Link
+              href="/dashboard/staff/requests"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Staff Requests
+            </Link>
+          )}
+
+          {access.isStaff && (
+            <Link
               href="/dashboard/appeals"
               className="relative px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
@@ -204,6 +212,15 @@ export default async function DashboardLayout({
               className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
               Trainer Panel
+            </Link>
+          )}
+
+          {access.isManagement && (
+            <Link
+              href="/dashboard/roster"
+              className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Roster
             </Link>
           )}
 

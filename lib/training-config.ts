@@ -19,9 +19,16 @@ export const BRONZE_ROLE_ID = process.env.DISCORD_BRONZE_COMMAND_ROLE_ID || '153
 export const DEV_ROLE_ID = process.env.DISCORD_DEVELOPER_ROLE_ID || '1497557905250193506';
 export const STAFF_ROLE_ID = process.env.DISCORD_STAFF_ROLE_ID || '1497557905275224145';
 
+// Ownership role(s): treated exactly like Management (log in with no whitelist, full management access).
+// Set DISCORD_OWNERSHIP_ROLE_ID in Vercel (comma-separate several IDs if needed).
+export const OWNERSHIP_ROLE_IDS = (process.env.DISCORD_OWNERSHIP_ROLE_ID || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 // Optional extra role (e.g. "Met Police Command") that can see the Command tab. Set DISCORD_MET_COMMAND_ROLE_ID in env.
 export const MET_COMMAND_ROLE_ID = process.env.DISCORD_MET_COMMAND_ROLE_ID || '';
-const COMMAND_MANAGEMENT_ROLE_IDS = ['1497557905275224149', '1497557905275224148'];
+const COMMAND_MANAGEMENT_ROLE_IDS = ['1497557905275224149', '1497557905275224148', ...OWNERSHIP_ROLE_IDS];
 
 /** Who can see the Command tab and open /dashboard/command: management, Gold/Silver/Bronze command, or the Met Command role. */
 export function hasCommandAccess(roles: string[]): boolean {

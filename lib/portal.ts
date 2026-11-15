@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, STAFF_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
+import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, OWNERSHIP_ROLE_IDS, SILVER_ROLE_ID, STAFF_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
 
 export const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,7 +12,8 @@ export const PORTAL_URL = 'https://www.centraloperationsportal.com';
 const MASTER_ROLE_ID = '1497557905275224149';
 const MANAGEMENT_ROLE_ALT = '1497557905275224148';
 
-export const MANAGEMENT_ROLE_IDS = [MASTER_ROLE_ID, MANAGEMENT_ROLE_ALT];
+/** Management + Ownership: full access, and they can log in with no whitelist / RP account. */
+export const MANAGEMENT_ROLE_IDS = [MASTER_ROLE_ID, MANAGEMENT_ROLE_ALT, ...OWNERSHIP_ROLE_IDS];
 
 /** Founder + developer roles: the only people who can open the Developer panel and who bypass maintenance mode. */
 export const DEVELOPER_ROLE_IDS = Array.from(
@@ -114,7 +115,7 @@ export async function getPortalUser(): Promise<PortalUser | null> {
     const member = await res.json();
     const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
 
-    const isManagement = roles.includes(MASTER_ROLE_ID) || roles.includes(MANAGEMENT_ROLE_ALT);
+    const isManagement = MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
 
     return {
       id,

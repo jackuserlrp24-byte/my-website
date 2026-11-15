@@ -55,7 +55,9 @@ export default async function DashboardPage() {
     : { username: 'Operator', id: '0000' };
 
   // Fetch live display name and role access directly from Discord API
-  const { hasAccess, displayName } = await checkUserAccessAndFetchDetails(user.id);
+  const access = await checkUserAccessAndFetchDetails(user.id);
+  const displayName = access.displayName;
+  const hasAccess = access.hasAccess || !!portalUser?.isManagement; // management + ownership always have it
 
   // Fetch live notices from Supabase
   let notices: any[] = [];
@@ -153,11 +155,12 @@ export default async function DashboardPage() {
               <p className="text-xs text-neutral-400 leading-relaxed">View active department personnel, division assignments, ranks, and operational readiness statuses.</p>
             </div>
             {hasAccess ? (
-              <button 
-                className="mt-6 w-full py-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
+              <Link
+                href="/dashboard/roster"
+                className="mt-6 block w-full py-3 text-center bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors cursor-pointer"
               >
                 View Roster
-              </button>
+              </Link>
             ) : (
               <button 
                 disabled

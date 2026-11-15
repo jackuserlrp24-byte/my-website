@@ -243,3 +243,20 @@ create unique index if not exists met_training_records_one_per_training
 -- ---------- Cancelled trainings ----------
 alter table trainings add column if not exists cancelled_at timestamptz;
 alter table trainings add column if not exists cancel_reason text;
+
+
+-- ---------- Staff requests (/staffrequest in game -> shown on the portal Staff Panel) ----------
+create table if not exists staff_requests (
+  id uuid primary key default gen_random_uuid(),
+  external_ref text unique,        -- "<server start>-<in-game request number>" so the game can update the same row
+  game_id int,
+  player_name text,
+  discord_id text,
+  reason text not null,
+  status text not null default 'open' check (status in ('open', 'accepted', 'denied')),
+  handled_by text,
+  created_at timestamptz not null default now(),
+  handled_at timestamptz
+);
+create index if not exists staff_requests_created_idx on staff_requests (created_at desc);
+alter table staff_requests enable row level security;
