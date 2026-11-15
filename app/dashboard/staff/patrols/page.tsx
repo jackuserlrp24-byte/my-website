@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getPortalUser } from '@/lib/portal';
-import PatrolsPage from '../../patrols/page';
+import StaffPatrols from './StaffPatrols';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,5 +9,5 @@ export default async function StaffPatrolsPage() {
   if (!user) redirect('/');
   if (!user.canStaff) redirect('/dashboard');
   if (user.limited) redirect('/dashboard/staff'); // same rule as the main patrols page
-  return <PatrolsPage />;
+  return <StaffPatrols />;
 }
