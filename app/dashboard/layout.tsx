@@ -1,12 +1,13 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import BackgroundSlideshow from './BackgroundSlideshow';
-import { DEVELOPER_ROLE_IDS, MANAGEMENT_ROLE_IDS, WHITELISTED_ROLES, limitedAccess } from '@/lib/portal';
+import { DEVELOPER_ROLE_IDS, MANAGEMENT_ROLE_IDS, WHITELISTED_ROLES, canStaffRoles, limitedAccess } from '@/lib/portal';
 import { getMaintenance } from '@/lib/maintenance';
-import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, STAFF_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
+import { getDiscordSession } from '@/lib/discord-session';
+import { getGuildMember } from '@/lib/discord-member';
+import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,71 +16,68 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
-
 const TIER_ROLE_IDS = [GOLD_ROLE_ID, SILVER_ROLE_ID, BRONZE_ROLE_ID].filter(Boolean);
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
+const DEFAULT_AVATAR = 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+const DENIED = {
+  inGuild: false,
+  hasAccess: false,
+  isManagement: false,
+  isStaff: false,
+  isTrainer: false,
+  isCommand: false,
+  isDeveloper: false,
+  limited: null as 'developer' | 'staff' | null,
+  displayName: 'Operator',
+  avatarUrl: DEFAULT_AVATAR,
+};
+
 async function checkUserAccessAndFetchDetails(userId: string) {
-  if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    return { inGuild: true, hasAccess: true, isManagement: true, isStaff: true, isTrainer: true, isCommand: true, isDeveloper: true, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
+  // Cached + retried Discord lookup. NOTE: this used to delete the user's whitelist row on any 404 and
+  // treat any Discord hiccup as "no access" – that is what was wiping accounts / bouncing people out.
+  const result = await getGuildMember(userId);
+
+  if (result.status === 'error' || result.status === 'unconfigured') {
+    return { ...DENIED, state: result.status };
+  }
+  if (result.status === 'not_member') {
+    return { ...DENIED, state: 'not_member' as const };
   }
 
-  try {
-    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
-      headers: { 'Authorization': `Bot ${DISCORD_BOT_TOKEN}` },
-      cache: 'no-store'
-    });
-    
-    if (res.status === 404) {
-      await supabase
-        .from('user_whitelists')
-        .delete()
-        .eq('discord_id', userId);
+  const member = result.member;
+  const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
 
-      return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
-    }
+  // Management + Ownership roles: in with no whitelist / RP account needed.
+  const hasMasterRole = MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
+  const hasAltManagementRole = false;
+  const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
+  const hasTierRole = roles.some((role) => TIER_ROLE_IDS.includes(role));
+  // Developer-only / staff-only accounts see just their own panel(s), not the general portal.
+  const limited = limitedAccess(roles);
 
-    if (!res.ok) {
-      return { inGuild: true, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
-    }
+  // Live display name resolution (Server Nickname -> Global Name -> Username)
+  const displayName = member.nick || member.user?.global_name || member.user?.username || 'Operator';
 
-    const member = await res.json();
-    const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
-    
-    // Management + Ownership roles: in with no whitelist / RP account needed.
-    const hasMasterRole = MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
-    const hasAltManagementRole = false;
-    const hasAnyWhitelistRole = roles.some((role) => WHITELISTED_ROLES.includes(role));
-    const hasTierRole = roles.some((role) => TIER_ROLE_IDS.includes(role));
-    // Developer-only / staff-only accounts see just their own panel(s), not the general portal.
-    const limited = limitedAccess(roles);
+  // Live avatar resolution
+  const avatarUrl = member.user?.avatar
+    ? `https://cdn.discordapp.com/avatars/${userId}/${member.user.avatar}.png`
+    : DEFAULT_AVATAR;
 
-    // Live display name resolution (Server Nickname -> Global Name -> Username)
-    const displayName = member.nick || member.user?.global_name || member.user?.username || 'Operator';
-    
-    // Live avatar resolution
-    const avatarUrl = member.user?.avatar 
-      ? `https://cdn.discordapp.com/avatars/${userId}/${member.user.avatar}.png` 
-      : 'https://cdn.discordapp.com/embed/avatars/0.png';
-
-    return {
-      inGuild: true,
-      hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole || hasTierRole || limited !== null,
-      isManagement: hasMasterRole || hasAltManagementRole,
-      isStaff: hasMasterRole || hasAltManagementRole || roles.includes(GOLD_ROLE_ID) || roles.includes(SILVER_ROLE_ID) || (!!STAFF_ROLE_ID && roles.includes(STAFF_ROLE_ID)),
-      limited,
-      isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
-      isCommand: hasCommandAccess(roles),
-      isDeveloper: roles.some((role) => DEVELOPER_ROLE_IDS.includes(role)),
-      displayName,
-      avatarUrl
-    };
-  } catch (err) {
-    console.error('Discord membership check error:', err);
-    return { inGuild: false, hasAccess: false, isManagement: false, isStaff: false, isTrainer: false, isCommand: false, isDeveloper: false, limited: null as 'developer' | 'staff' | null, displayName: 'Operator', avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png' };
-  }
+  return {
+    state: 'ok' as const,
+    inGuild: true,
+    hasAccess: hasAnyWhitelistRole || hasMasterRole || hasAltManagementRole || hasTierRole || limited !== null,
+    isManagement: hasMasterRole || hasAltManagementRole,
+    isStaff: canStaffRoles(roles), // same rule as the staff pages/actions
+    limited,
+    isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
+    isCommand: hasCommandAccess(roles),
+    isDeveloper: roles.some((role) => DEVELOPER_ROLE_IDS.includes(role)),
+    displayName,
+    avatarUrl,
+  };
 }
 
 export default async function DashboardLayout({
@@ -87,21 +85,33 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('discord_user')?.value;
-  
-  let user: { id?: string } = { id: '0000' };
-  try {
-    if (userCookie) user = JSON.parse(userCookie);
-  } catch {
-    user = { id: '0000' };
-  }
+  const session = await getDiscordSession();
 
-  if (!user.id || user.id === '0000') {
+  if (!session?.id) {
     redirect('/');
   }
 
-  const access = await checkUserAccessAndFetchDetails(user.id);
+  const access = await checkUserAccessAndFetchDetails(session.id);
+
+  // Discord is rate limiting / down, or the bot is misconfigured. That is NOT the user's fault, so
+  // don't bounce them to the whitelist page (and certainly don't touch their account): ask them to retry.
+  if (access.state === 'error' || access.state === 'unconfigured') {
+    return (
+      <main className="min-h-screen w-full bg-neutral-950 text-neutral-100 flex items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-xl font-bold">Couldn&apos;t reach Discord</h1>
+          <p className="text-sm text-neutral-400">
+            {access.state === 'unconfigured'
+              ? 'The portal is missing its Discord configuration. Please let a developer know.'
+              : 'Discord is busy right now. You are still signed in – give it a few seconds and try again.'}
+          </p>
+          <a href="/dashboard" className="inline-block px-4 py-2 rounded border border-neutral-700 text-sm hover:bg-neutral-800">
+            Try again
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   if (!access.inGuild || !access.hasAccess) {
     redirect('/whitelistprocess');

@@ -29,17 +29,11 @@ export default function PatrolsPage() {
   useEffect(() => {
     async function loadInitialData() {
       try {
-        // Read user nickname directly from discord_user cookie or session endpoint
-        const match = document.cookie.match(new RegExp('(^| )discord_user=([^;]+)'));
-        if (match) {
-          const cookieUser = JSON.parse(decodeURIComponent(match[2]));
-          setUserNickname(cookieUser.nickname || cookieUser.username || '');
-        } else {
-          const sessionRes = await fetch('/api/auth/discord/session').catch(() => null);
-          if (sessionRes && sessionRes.ok) {
-            const sessionData = await sessionRes.json();
-            setUserNickname(sessionData?.user?.name || sessionData?.name || sessionData?.displayName || '');
-          }
+        // The session cookie is httpOnly (and signed), so the browser asks the server for the name.
+        const sessionRes = await fetch('/api/auth/discord/session').catch(() => null);
+        if (sessionRes && sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          setUserNickname(sessionData?.user?.name || sessionData?.name || sessionData?.displayName || '');
         }
 
         const patrolsRes = await fetch('/api/patrols');

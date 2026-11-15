@@ -1,6 +1,7 @@
 import { cache } from 'react';
-import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { getDiscordSession } from '@/lib/discord-session';
+import { getGuildMember } from '@/lib/discord-member';
 import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, OWNERSHIP_ROLE_IDS, SILVER_ROLE_ID, STAFF_ROLE_ID, hasCommandAccess, hasRoleId, isTrainerRoles } from '@/lib/training-config';
 
 export const supabaseAdmin = createClient(
@@ -40,6 +41,17 @@ export const WHITELISTED_ROLES = [
   '1532781330071425104',
   '1546219971359543408'
 ];
+
+/**
+ * Who counts as staff: management / ownership, Gold or Silver command, or the Staff role.
+ * The Staff Panel nav link, every staff page and every staff action use this one rule,
+ * so what a person can SEE and what they can DO can never drift apart.
+ */
+export const canStaffRoles = (roles: string[]) =>
+  MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r)) ||
+  hasRoleId(roles, GOLD_ROLE_ID) ||
+  hasRoleId(roles, SILVER_ROLE_ID) ||
+  hasRoleId(roles, STAFF_ROLE_ID);
 
 /** Silver + Gold command (or management) approve / deny role requests. */
 export const canReviewRoleRequests = (roles: string[]) =>
@@ -86,34 +98,20 @@ export interface PortalUser {
 }
 
 /**
- * Resolves the logged-in user from the discord_user cookie and re-checks
+ * Resolves the logged-in user from the signed session cookie and re-checks
  * their live server membership + roles with the bot. Returns null if they
  * are logged out or not in the server.
  */
 async function loadPortalUser(): Promise<PortalUser | null> {
-  const raw = (await cookies()).get('discord_user')?.value;
-  if (!raw) return null;
-
-  let id: unknown;
-  try {
-    id = JSON.parse(raw)?.id;
-  } catch {
-    return null;
-  }
-  if (typeof id !== 'string' || !id) return null;
-
-  const token = process.env.DISCORD_BOT_TOKEN;
-  const guild = process.env.DISCORD_GUILD_ID;
-  if (!token || !guild) return null;
+  const session = await getDiscordSession();
+  const id = session?.id;
+  if (!id) return null;
 
   try {
-    const res = await fetch(`https://discord.com/api/v10/guilds/${guild}/members/${id}`, {
-      headers: { Authorization: `Bot ${token}` },
-      cache: 'no-store',
-    });
-    if (!res.ok) return null;
+    const result = await getGuildMember(id);
+    if (result.status !== 'ok') return null;
 
-    const member = await res.json();
+    const member = result.member;
     const roles: string[] = Array.isArray(member.roles) ? member.roles : [];
 
     const isManagement = MANAGEMENT_ROLE_IDS.some((r) => roles.includes(r));
@@ -137,8 +135,7 @@ async function loadPortalUser(): Promise<PortalUser | null> {
         hasRoleId(roles, SILVER_ROLE_ID) ||
         hasRoleId(roles, BRONZE_ROLE_ID),
       canReviewRoleRequests: canReviewRoleRequests(roles),
-      canStaff:
-        isManagement || hasRoleId(roles, GOLD_ROLE_ID) || hasRoleId(roles, SILVER_ROLE_ID) || hasRoleId(roles, STAFF_ROLE_ID),
+      canStaff: canStaffRoles(roles),
       canSwapHost: isManagement || hasRoleId(roles, GOLD_ROLE_ID),
       canModerate: isManagement || hasRoleId(roles, GOLD_ROLE_ID),
       canViewApplications:

@@ -1,50 +1,26 @@
 import { PanelGate } from '@/app/components/MaintenanceGates';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { hasCommandAccess } from '@/lib/training-config';
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+import { getDiscordSession } from '@/lib/discord-session';
+import { getGuildMember } from '@/lib/discord-member';
 
 export default async function CommandLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('discord_user')?.value;
-
-  if (!userCookie) {
+  const session = await getDiscordSession();
+  if (!session?.id) {
     redirect('/dashboard');
   }
 
-  const user = JSON.parse(userCookie);
-  const userId = user.id || user.discord_id;
+  // Live roles from Discord (cached ~60s, retried on rate limits).
+  const result = await getGuildMember(session.id);
+  const roles = result.status === 'ok' && Array.isArray(result.member.roles) ? result.member.roles : [];
 
-  if (!userId || !DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID) {
-    redirect('/dashboard');
-  }
-
-  try {
-    // Fetch live member roles from Discord API
-    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
-      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-      cache: 'no-store'
-    });
-
-    if (!res.ok) {
-      redirect('/dashboard');
-    }
-
-    const member = await res.json();
-    const hasRole = Array.isArray(member.roles) && hasCommandAccess(member.roles);
-
-    // If the user does not have the required role ID, block access and redirect back
-    if (!hasRole) {
-      redirect('/dashboard');
-    }
-  } catch (err) {
-    console.error('Role lock check failed:', err);
+  // If the user does not have the required role ID, block access and redirect back
+  if (!hasCommandAccess(roles)) {
     redirect('/dashboard');
   }
 

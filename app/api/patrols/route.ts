@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getPortalUser } from '@/lib/portal';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +33,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Posting a patrol is a staff action (same rule as the Staff Panel's own patrol form).
+  // This route used to have no login check at all, so anyone could post to the Discord patrol channel.
+  const user = await getPortalUser();
+  if (!user) return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
+  if (!user.canStaff || user.limited) return NextResponse.json({ success: false, error: 'Staff only' }, { status: 403 });
+
   try {
     const body = await request.json();
     const { title, date, startTime, endTime, description } = body;

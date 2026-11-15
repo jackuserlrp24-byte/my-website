@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { SESSION_MAX_AGE, signSession, verifySession } from '@/lib/session-token';
 
 /**
  * One source of truth for the Discord login flow.
@@ -21,22 +22,40 @@ export function siteUrl(path: string): URL {
   return new URL(path, getSiteOrigin());
 }
 
-export const SESSION_COOKIE = 'discord_user';
-export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days, sliding on every login
+export { SESSION_MAX_AGE };
+
+// New name on purpose: old unsigned `discord_user` cookies are ignored (and cleared on next login),
+// and can't shadow the new cookie now that it is shared between www and the bare domain.
+export const SESSION_COOKIE = 'cop_session';
+export const LEGACY_SESSION_COOKIE = 'discord_user';
+
+/**
+ * Share the cookie between centraloperationsportal.com and www.centraloperationsportal.com.
+ * Login always completes on the bare domain, but the Discord embeds link to www – with a host-only
+ * cookie that looked like being logged out.
+ */
+function cookieDomain(): string | undefined {
+  if (process.env.NODE_ENV !== 'production') return undefined;
+  const host = new URL(getRedirectUri()).hostname;
+  if (host === 'localhost' || /^[\d.]+$/.test(host) || host.endsWith('.vercel.app')) return undefined;
+  return host.replace(/^www\./, '');
+}
 
 export function setSessionCookie(res: NextResponse, value: object) {
-  const json = JSON.stringify(value);
+  const token = signSession(value);
   // Browsers silently drop cookies over ~4KB, which looks like a login loop. Warn loudly in the logs.
-  if (encodeURIComponent(json).length > 3500) {
-    console.error('Session cookie is close to / over the 4KB browser limit:', json.length);
+  if (token.length > 3500) {
+    console.error('Session cookie is close to / over the 4KB browser limit:', token.length);
   }
-  res.cookies.set(SESSION_COOKIE, json, {
+  res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax', // survives the redirect back from discord.com on every browser / device
     path: '/',
     maxAge: SESSION_MAX_AGE,
+    domain: cookieDomain(),
   });
+  res.cookies.delete(LEGACY_SESSION_COOKIE); // drop the old forgeable cookie
 }
 
 /** Retry on Discord rate limits / transient 5xx so a login never fails just because of a blip. */
@@ -57,15 +76,9 @@ export async function fetchWithRetry(url: string, init: RequestInit, attempts = 
   return last as Response;
 }
 
-/** Safe cookie parse – never throws, returns null if missing/garbled. */
+/** Verifies the signature + expiry. Never throws, returns null if missing / tampered / expired. */
 export function parseSessionCookie(raw: string | undefined | null): DiscordSessionUser | null {
-  if (!raw) return null;
-  try {
-    const v = JSON.parse(raw);
-    return v && typeof v === 'object' && typeof v.id === 'string' && v.id ? (v as DiscordSessionUser) : null;
-  } catch {
-    return null;
-  }
+  return verifySession<DiscordSessionUser>(raw);
 }
 
 /** Where to send people after login. Only these paths are allowed (no open redirects). */

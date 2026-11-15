@@ -1,9 +1,8 @@
-import { cookies } from 'next/headers';
+import { getDiscordSession } from '@/lib/discord-session';
+import { getGuildMember } from '@/lib/discord-member';
 import Image from 'next/image';
 import WhitelistForm from './WhitelistForm';
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_INVITE_LINK = 'https://discord.gg/yourinvite';
 
 const slides = [
@@ -12,38 +11,19 @@ const slides = [
   '/slide3.png',
 ];
 
+// Only show the "join the server" screen when Discord says they are definitely not a member
+// (not when Discord is merely rate limiting / unreachable).
 async function checkInGuild(discordId: string) {
-  if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !discordId) {
-    return true;
-  }
-  try {
-    const res = await fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${discordId}`, {
-      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-      cache: 'no-store'
-    });
-    if (res.status === 404) return false;
-    return res.ok;
-  } catch (err) {
-    return false;
-  }
+  const result = await getGuildMember(discordId);
+  return result.status !== 'not_member';
 }
 
 export default async function WhitelistPage() {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('discord_user')?.value;
-
-  let user = null;
+  const user: DiscordSessionUser | null = await getDiscordSession();
   let inServer = true;
 
-  if (userCookie) {
-    try {
-      user = JSON.parse(userCookie);
-      if (user?.id && user.id !== '0000') {
-        inServer = await checkInGuild(user.id);
-      }
-    } catch (e) {
-      user = null;
-    }
+  if (user?.id) {
+    inServer = await checkInGuild(user.id);
   }
 
   // If user is logged in but not in server, show join server screen with background slideshow
@@ -103,5 +83,5 @@ export default async function WhitelistPage() {
   }
 
   // Passes user data (or null) to the form component
-  return <WhitelistForm initialUser={user} />;
+  return <WhitelistForm initialUser={user ? { ...user, avatar: user.avatar ?? undefined } : null} />;
 }

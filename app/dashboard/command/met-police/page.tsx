@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { getDiscordSession } from '@/lib/discord-session';
 import { LOG_CHANNEL_ID } from '@/lib/training-config';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
@@ -200,9 +200,8 @@ async function fetchDiscordMemberInfo(userId: string) {
 // --- PAGE COMPONENT ---
 
 export default async function MetPoliceCommandPage() {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('discord_user')?.value;
-  const user = userCookie ? JSON.parse(userCookie) : { username: 'Bronze Commander' };
+  const session = await getDiscordSession();
+  const user: Partial<DiscordSessionUser> = session ?? { username: 'Bronze Commander' };
   const currentCommandName = user.nickname || user.username || 'Bronze Commander';
 
   let roleRequests: any[] = [];

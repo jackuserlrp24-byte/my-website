@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { getDiscordSession } from '@/lib/discord-session';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -99,12 +99,9 @@ async function fetchUserWhitelistData(userId: string) {
 }
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies();
-  const userCookie = cookieStore.get('discord_user')?.value;
-  
-  const user = userCookie 
-    ? JSON.parse(userCookie) 
-    : { username: 'Operator', nickname: 'Operator', global_name: 'Operator', id: '', avatar: null };
+  const session = await getDiscordSession();
+
+  const user = session ?? { username: 'Operator', nickname: 'Operator', global_name: 'Operator', id: '', avatar: null };
 
   const avatarUrl = user.avatar 
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
