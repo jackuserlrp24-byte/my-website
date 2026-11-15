@@ -24,7 +24,11 @@ export async function POST(req: Request) {
   if (!process.env.FIVEM_MOD_SECRET) return NextResponse.json({ error: 'FIVEM_MOD_SECRET is not set.' }, { status: 503 });
   if (!authorised(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  await runScheduleEffects();
+  try {
+    await runScheduleEffects();
+  } catch (err) {
+    console.error('runScheduleEffects failed:', err);
+  }
   const s = await getSchedule();
   const active = !!s && s.fivem && schedulePhase(s) === 'active';
   const headers = { 'Cache-Control': 'no-store' };
@@ -46,7 +50,10 @@ export async function POST(req: Request) {
     )
   ).filter((x): x is string => !!x);
 
-  const back = s.end_at ? `\nExpected back: ${new Date(s.end_at).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} (UK time)` : '';
-  const message = `${s.message.trim() || SCHEDULE_FIVEM_MESSAGE}${back}`;
+  const until = s.end_at
+    ? new Date(s.end_at).toLocaleString('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : null;
+  const note = s.message.trim();
+  const message = `${note ? `${note}\n\n` : ''}The server is under maintenance${until ? ` until ${until} (UK time)` : ''}. Sorry for any inconvenience.`;
   return NextResponse.json({ active: true, message, allowed }, { headers });
 }
