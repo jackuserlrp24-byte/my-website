@@ -65,8 +65,49 @@
 .mt-rise  { animation: mt-rise 0.5s ease-out backwards; }
 .mt-ping  { animation: mt-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
 .mt-track > span { animation: mt-slide 1.8s ease-in-out infinite; }
+
+/* little construction crew */
+@keyframes mt-hammer {
+  0%, 35%  { transform: rotate(-60deg); }
+  50%      { transform: rotate(14deg); }
+  62%, 100%{ transform: rotate(-60deg); }
+}
+@keyframes mt-spark {
+  0%, 46%  { opacity: 0; transform: scale(0.4); }
+  50%      { opacity: 1; transform: scale(1); }
+  64%, 100%{ opacity: 0; transform: scale(1.5); }
+}
+@keyframes mt-wrench {
+  0%, 100% { transform: rotate(18deg); }
+  50%      { transform: rotate(42deg); }
+}
+@keyframes mt-scratch {
+  0%, 100% { transform: rotate(-108deg); }
+  50%      { transform: rotate(-128deg); }
+}
+@keyframes mt-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.2px); }
+}
+@keyframes mt-led {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}
+@keyframes mt-think {
+  0%, 15%  { opacity: 0; }
+  30%, 75% { opacity: 1; }
+  90%, 100%{ opacity: 0; }
+}
+.mt-hammer  { animation: mt-hammer 1.1s ease-in-out infinite; }
+.mt-spark   { animation: mt-spark 1.1s ease-out infinite; }
+.mt-wrench  { animation: mt-wrench 0.7s ease-in-out infinite; }
+.mt-scratch { animation: mt-scratch 0.55s ease-in-out infinite; }
+.mt-bob     { animation: mt-bob 1.1s ease-in-out infinite; }
+.mt-led     { animation: mt-led 1.2s ease-in-out infinite; }
+.mt-think   { animation: mt-think 3s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .mt-card, .mt-rise, .mt-ping, .mt-track > span { animation: none; }
+  .mt-card, .mt-rise, .mt-ping, .mt-track > span,
+  .mt-hammer, .mt-spark, .mt-wrench, .mt-scratch, .mt-bob, .mt-led, .mt-think { animation: none; }
 }
 
 /* ---------- Staff section: clean polish (stagger, hover, press) ---------- */
