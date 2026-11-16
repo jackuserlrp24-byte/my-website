@@ -229,7 +229,7 @@ export default async function DashboardLayout({
           {/* Services Hub: opens in a new browser tab */}
           {access.isCommand && (
             <Link
-              href="/dashboard/services"
+              href="/services"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 bg-[#5865F2]/20 hover:bg-[#5865F2]/30 border border-[#5865F2]/40 text-indigo-200 text-xs font-semibold tracking-wider uppercase transition-colors"

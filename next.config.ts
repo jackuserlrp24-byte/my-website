@@ -10,6 +10,8 @@ const twinHost = canonicalHost.startsWith('www.') ? canonicalHost.slice(4) : `ww
 const nextConfig: NextConfig = {
   async redirects() {
     return [
+      // The Services Hub is now its own standalone page.
+      { source: '/dashboard/services', destination: '/services', permanent: false },
       {
         source: '/:path*',
         has: [{ type: 'host', value: twinHost }],
