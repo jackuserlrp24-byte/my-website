@@ -18,7 +18,6 @@ export function rosterText(names: string[], empty: string): string {
 
 export function trainingPayload(t: Training, divisionName?: string | null) {
   const start = unix(t.starts_at);
-  const end = unix(t.ends_at);
   const delayed = (t.delayed_minutes ?? 0) > 0;
   const cantMake = t.unattending ?? [];
 
@@ -43,8 +42,6 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
       { name: 'Division', value: divisionName || 'General', inline: true },
       { name: 'Host', value: t.host || 'TBD', inline: true },
       { name: 'Starts', value: `<t:${start}:F>\n<t:${start}:R>`, inline: true },
-      { name: 'Ends', value: `<t:${end}:t>`, inline: true },
-      { name: '\u200b', value: '\u200b', inline: true },
       {
         name: `Attending (${t.attending.length})`,
         value: rosterText(t.attending, 'No one attending yet.'),
@@ -57,7 +54,6 @@ export function trainingPayload(t: Training, divisionName?: string | null) {
         ? [{ name: 'Requirements', value: 'IPP + trained driver (Advanced) only', inline: false }]
         : []),
       { name: 'Waiting VC', value: `<#${TRAINING_VC_ID}>`, inline: false },
-      ...(t.room_id ? [{ name: 'Training Room', value: `<#${t.room_id}>`, inline: false }] : []),
     ],
     footer: { text: 'Central Operations Portal' },
     timestamp: t.created_at,

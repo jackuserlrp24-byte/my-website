@@ -19,8 +19,8 @@ export interface TrainingCleanupResult {
 
 /**
  * Clears the trainings channel of finished trainings.
- * - A training is "finished" once its end time has passed. Anything that ends in the future
- *   (a later date, or later today) is left completely alone.
+ * - A training is "finished" once it has been marked Complete OR its end time has passed.
+ *   Anything still upcoming / running (and not completed) is left completely alone.
  * - Only the training's own Discord post and the bot's replies to it (delay/cancel pings) are deleted.
  *   Other messages in the channel are never touched.
  * - The training stays on the website (history/calendar); only the Discord post goes.
@@ -33,7 +33,7 @@ export async function clearFinishedTrainingPosts(): Promise<TrainingCleanupResul
     .from('trainings')
     .select('id, discord_message_id, discord_channel_id, ends_at')
     .not('discord_message_id', 'is', null)
-    .lte('ends_at', new Date().toISOString());
+    .or(`ends_at.lte.${new Date().toISOString()},completed_at.not.is.null`);
   if (error || !data?.length) return result;
 
   const finished = data as Pick<Training, 'id' | 'discord_message_id' | 'discord_channel_id' | 'ends_at'>[];

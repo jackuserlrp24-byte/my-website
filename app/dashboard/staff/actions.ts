@@ -14,14 +14,13 @@ import {
   unbanMember,
   type GuildMemberLite,
 } from '@/lib/discord';
-import { GOLD_ROLE_ID, MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
+import { GOLD_ROLE_ID, moderationLogChannel } from '@/lib/training-config';
 import { queueGameAction } from '@/lib/game-actions';
 import { getAop, saveAop } from '@/lib/aop';
 import { AOP_AREAS, formatAop } from '@/lib/aop-config';
 import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
 
 // Warn / kick / ban logs go to the moderation channel only (never the role request channel).
-const STAFF_LOG_CHANNEL_ID = MODERATION_LOG_CHANNEL_ID;
 const fail = (message: string): ActionResult => ({ ok: false, message });
 
 const COLOURS: Record<ModerationAction, number> = {
@@ -210,7 +209,7 @@ export async function takeAction(formData: FormData): Promise<ActionResult> {
   });
   if (error) console.error('moderation_logs insert failed:', error);
 
-  await postMessage(STAFF_LOG_CHANNEL_ID, {
+  await postMessage(moderationLogChannel(action), {
     embeds: [
       {
         title: `STAFF ${action}`,

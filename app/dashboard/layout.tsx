@@ -226,6 +226,18 @@ export default async function DashboardLayout({
             </Link>
           )}
 
+          {/* Services Hub: opens in a new browser tab */}
+          {access.isCommand && (
+            <Link
+              href="/dashboard/services"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-[#5865F2]/20 hover:bg-[#5865F2]/30 border border-[#5865F2]/40 text-indigo-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+            >
+              Services Hub &#8599;
+            </Link>
+          )}
+
           {/* Profile Dropdown */}
           <details className="relative group ml-2">
             <summary className="flex items-center gap-2.5 bg-neutral-950 border border-neutral-800 hover:border-neutral-700 px-3 py-1.5 cursor-pointer list-none transition-colors">

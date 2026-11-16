@@ -2,14 +2,12 @@ import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { supabaseAdmin } from '@/lib/portal';
 import { banDmPayload, postMessage, sendDm } from '@/lib/discord';
-import { MODERATION_LOG_CHANNEL_ID } from '@/lib/training-config';
+import { moderationLogChannel } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
 
 // Called by the CO-StaffMenu FiveM resource when staff warn / kick / ban (or unban) someone in game.
 // Auth: "Authorization: Bearer <FIVEM_MOD_SECRET>". If FIVEM_MOD_SECRET is not set the route stays closed.
-
-const STAFF_LOG_CHANNEL_ID = MODERATION_LOG_CHANNEL_ID;
 
 const COLOURS: Record<string, number> = { WARN: 16705372, KICK: 15105570, BAN: 15548997, UNBAN: 5763719 };
 
@@ -66,7 +64,7 @@ export async function POST(req: Request) {
 
   if (action === 'BAN') await sendDm(discordId, banDmPayload(reason)); // appeal link
 
-  await postMessage(STAFF_LOG_CHANNEL_ID, {
+  await postMessage(moderationLogChannel(action), {
     embeds: [
       {
         title: `IN-GAME ${action}`,

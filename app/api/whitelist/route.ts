@@ -12,7 +12,7 @@ const supabase = createClient(
 
 const GUILD_ID = (process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID)!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
-import { LOG_CHANNEL_ID } from '@/lib/training-config'; // the one log channel
+import { WHITELIST_LOG_CHANNEL_ID } from '@/lib/training-config'; // whitelist logs channel
 
 const UNVERIFIED_ROLE = '1533021619331534848';
 const WHITELIST_ROLES = [
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
 
     // 4. Send Channel Audit Log Embed (Cleaned without emojis)
     try {
-      await fetch(`https://discord.com/api/v10/channels/${LOG_CHANNEL_ID}/messages`, {
+      await fetch(`https://discord.com/api/v10/channels/${WHITELIST_LOG_CHANNEL_ID}/messages`, {
         method: 'POST',
         headers: {
           Authorization: `Bot ${BOT_TOKEN}`,

@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import BodycamTab, { type BodycamIncident } from './BodycamTab';
 
 interface Props {
   currentCommandName: string;
   allUsers: any[];
   roleRequests: any[];
   trainingRecords: any[];
+  bodycam?: BodycamIncident[];
+  initialTab?: 'search' | 'roles' | 'training' | 'drive' | 'bodycam';
   actions: {
     submitRoleRequest: (formData: FormData) => Promise<void>;
     handleRoleRequestDecision: (formData: FormData) => Promise<void>;
@@ -65,9 +68,11 @@ export default function MetPoliceClient({
   allUsers,
   roleRequests,
   trainingRecords,
+  bodycam = [],
+  initialTab = 'search',
   actions
 }: Props) {
-  const [activeTab, setActiveTab] = useState<'search' | 'roles' | 'training' | 'drive'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'roles' | 'training' | 'drive' | 'bodycam'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -233,7 +238,21 @@ export default function MetPoliceClient({
         >
           Department Google Drive
         </button>
+
+        <button
+          onClick={() => setActiveTab('bodycam')}
+          className={`px-5 py-2.5 text-xs font-semibold tracking-wider transition-colors cursor-pointer border shrink-0 ${
+            activeTab === 'bodycam'
+              ? 'bg-[#00247D] border-[#00247D] text-white shadow-md'
+              : 'bg-neutral-950/60 hover:bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+          }`}
+        >
+          Bodycam Footage ({bodycam.length})
+        </button>
       </div>
+
+      {/* TAB 5: BODYCAM FOOTAGE */}
+      {activeTab === 'bodycam' && <BodycamTab incidents={bodycam} />}
 
       {/* TAB 1: OFFICER SEARCH & DOSSIERS */}
       {activeTab === 'search' && (

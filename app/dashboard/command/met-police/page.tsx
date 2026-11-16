@@ -1,7 +1,9 @@
 import { getDiscordSession } from '@/lib/discord-session';
+import { getGuildMember } from '@/lib/discord-member';
 import { LOG_CHANNEL_ID } from '@/lib/training-config';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { purgeOldBodycam } from '@/lib/bodycam';
 import MetPoliceClient from './MetPoliceClient';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -151,55 +153,73 @@ export async function logTrainingRecord(formData: FormData) {
   revalidatePath('/dashboard/command/met-police');
 }
 
-async function fetchDiscordMemberInfo(userId: string) {
-  const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
-  if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !userId) return null;
+type DiscordInfo = {
+  nickname: string | null;
+  username: string;
+  avatar: string | null;
+  roles: { id: string; name: string; position: number; color: string }[];
+} | null;
+
+const discordHeaders = { Authorization: `Bot ${DISCORD_BOT_TOKEN}` };
+
+async function fetchGuildRoleMap() {
+  const guild = process.env.DISCORD_GUILD_ID;
+  const map = new Map<string, { name: string; color: number; position: number }>();
+  if (!DISCORD_BOT_TOKEN || !guild) return map;
   try {
-    const [memberRes, rolesRes] = await Promise.all([
-      fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/members/${userId}`, {
-        headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-        next: { revalidate: 60 }
-      }),
-      fetch(`https://discord.com/api/v10/guilds/${DISCORD_GUILD_ID}/roles`, {
-        headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-        next: { revalidate: 3600 }
-      })
-    ]);
+    const res = await fetch(`https://discord.com/api/v10/guilds/${guild}/roles`, { headers: discordHeaders, next: { revalidate: 3600 } });
+    if (res.ok) {
+      const roles = (await res.json()) as { id: string; name: string; color: number; position: number }[];
+      roles.forEach((r) => map.set(r.id, { name: r.name, color: r.color, position: r.position }));
+    }
+  } catch {}
+  return map;
+}
 
-    if (!memberRes.ok || !rolesRes.ok) return null;
+// ONE request per 1000 members (cached 2 min) instead of one request per officer.
+async function fetchGuildMembersById(wanted: Set<string>) {
+  const guild = process.env.DISCORD_GUILD_ID;
+  const found = new Map<string, any>();
+  if (!DISCORD_BOT_TOKEN || !guild) return found;
+  try {
+    let after = '0';
+    for (let page = 0; page < 5 && found.size < wanted.size; page++) {
+      const res = await fetch(`https://discord.com/api/v10/guilds/${guild}/members?limit=1000&after=${after}`, {
+        headers: discordHeaders,
+        next: { revalidate: 120 },
+      });
+      if (!res.ok) break;
+      const members = (await res.json()) as any[];
+      if (!members.length) break;
+      for (const m of members) if (m.user?.id && wanted.has(m.user.id)) found.set(m.user.id, m);
+      if (members.length < 1000) break;
+      after = members[members.length - 1].user.id;
+    }
+  } catch {}
+  return found;
+}
 
-    const member = await memberRes.json();
-    const guildRoles = await rolesRes.json();
-
-    const roleMap = new Map();
-    guildRoles.forEach((r: { id: string; name: string; color: number; position: number }) => 
-      roleMap.set(r.id, { name: r.name, color: r.color, position: r.position })
-    );
-
-    const resolvedRoles = (member.roles || []).map((id: string) => {
+function shapeDiscordInfo(userId: string, member: any, roleMap: Awaited<ReturnType<typeof fetchGuildRoleMap>>): DiscordInfo {
+  if (!member) return null;
+  const roles = (member.roles || [])
+    .map((id: string) => {
       const r = roleMap.get(id);
-      return r ? { 
-        id, 
-        name: r.name, 
-        position: r.position,
-        color: r.color !== 0 ? `#${r.color.toString(16).padStart(6, '0')}` : '#a3a3a3' 
-      } : null;
-    }).filter(Boolean);
-
-    return {
-      nickname: member.nick || null,
-      username: member.user?.username || 'Unknown',
-      avatar: member.user?.avatar ? `https://cdn.discordapp.com/avatars/${userId}/${member.user.avatar}.png` : null,
-      roles: resolvedRoles
-    };
-  } catch {
-    return null;
-  }
+      return r ? { id, name: r.name, position: r.position, color: r.color !== 0 ? `#${r.color.toString(16).padStart(6, '0')}` : '#a3a3a3' } : null;
+    })
+    .filter(Boolean);
+  return {
+    nickname: member.nick || null,
+    username: member.user?.username || 'Unknown',
+    avatar: member.user?.avatar ? `https://cdn.discordapp.com/avatars/${userId}/${member.user.avatar}.png` : null,
+    roles,
+  };
 }
 
 // --- PAGE COMPONENT ---
 
-export default async function MetPoliceCommandPage() {
+export default async function MetPoliceCommandPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab } = await searchParams;
+  const initialTab = ['search', 'roles', 'training', 'drive', 'bodycam'].includes(tab ?? '') ? tab : 'search';
   const session = await getDiscordSession();
   const user: Partial<DiscordSessionUser> = session ?? { username: 'Bronze Commander' };
   const currentCommandName = user.nickname || user.username || 'Bronze Commander';
@@ -207,27 +227,48 @@ export default async function MetPoliceCommandPage() {
   let roleRequests: any[] = [];
   let trainingRecords: any[] = [];
   let allWhitelistedUsers: any[] = [];
+  let bodycam: any[] = [];
 
   try {
-    const [reqsRes, trainingRes, whitelistsRes] = await Promise.all([
-      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }),
+    const [reqsRes, trainingRes, whitelistsRes, bodycamRes] = await Promise.all([
+      supabase.from('met_role_requests').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('met_training_records').select('*').order('created_at', { ascending: false }).limit(300),
-      supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200)
+      supabase.from('user_whitelists').select('*').order('collar_number', { ascending: true }).limit(200),
+      // Newest bodycam clips (cleaning up expired ones at the same time).
+      purgeOldBodycam().then(() =>
+        supabase
+          .from('bodycam_incidents')
+          .select('id, created_at, officer_name, officer_discord_id, target_name, target_discord_id, serial, coords, trigger, total_ms, segments')
+          .eq('status', 'ready')
+          .order('created_at', { ascending: false })
+          .limit(60)
+      ),
     ]);
+    bodycam = (bodycamRes.data || []).map(({ segments, ...rest }: any) => ({ ...rest, segment_count: Array.isArray(segments) ? segments.length : 0 }));
 
     roleRequests = reqsRes.data || [];
     trainingRecords = trainingRes.data || [];
 
     const rawWhitelists = whitelistsRes.data || [];
-    allWhitelistedUsers = await Promise.all(
-      rawWhitelists.map(async (w) => {
-        const discordInfo = await fetchDiscordMemberInfo(w.discord_id);
-        return {
-          ...w,
-          discord: discordInfo
-        };
-      })
-    );
+    const ids = new Set<string>(rawWhitelists.map((w: any) => String(w.discord_id)).filter(Boolean));
+    const [roleMap, members] = await Promise.all([fetchGuildRoleMap(), fetchGuildMembersById(ids)]);
+
+    // Anyone the bulk list missed (bot without the members intent, or a huge server) falls back to the
+    // cached single lookup, a few at a time so Discord doesn't rate limit us.
+    const missing = Array.from(ids).filter((id) => !members.has(id));
+    for (let i = 0; i < missing.length; i += 8) {
+      await Promise.all(
+        missing.slice(i, i + 8).map(async (id) => {
+          const r = await getGuildMember(id);
+          if (r.status === 'ok') members.set(id, r.member);
+        })
+      );
+    }
+
+    allWhitelistedUsers = rawWhitelists.map((w: any) => ({
+      ...w,
+      discord: shapeDiscordInfo(String(w.discord_id), members.get(String(w.discord_id)), roleMap),
+    }));
   } catch (err) {
     console.error('Met Police command page fetch error:', err);
   }
@@ -238,6 +279,8 @@ export default async function MetPoliceCommandPage() {
       allUsers={allWhitelistedUsers}
       roleRequests={roleRequests}
       trainingRecords={trainingRecords}
+      bodycam={bodycam}
+      initialTab={initialTab as 'search' | 'roles' | 'training' | 'drive' | 'bodycam'}
       actions={{
         submitRoleRequest,
         handleRoleRequestDecision,

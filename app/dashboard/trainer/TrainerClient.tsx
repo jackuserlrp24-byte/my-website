@@ -6,6 +6,7 @@ import type { ActionResult, Division, RoleRequest, TrainingBar } from '@/lib/por
 import { REQUESTABLE_ROLES } from '@/lib/training-config';
 import { TRAINING_TEMPLATES } from '@/lib/training-templates';
 import { createTraining } from '@/app/dashboard/trainings/actions';
+import { londonToday } from '@/lib/london-time';
 import { barFromTrainings, decideRoleRequest, liftTrainingBar, requestRole } from './actions';
 
 const inputClass =
@@ -15,12 +16,6 @@ const btnClass =
 
 const ROLE_OPTIONS = REQUESTABLE_ROLES.map(({ key, label, group }) => ({ key, label, group }));
 const ROLE_GROUPS = Array.from(new Set(ROLE_OPTIONS.map((r) => r.group)));
-
-const addMinutes = (time: string, mins: number) => {
-  const [h, m] = time.split(':').map(Number);
-  const total = (h * 60 + m + mins) % (24 * 60);
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-};
 
 export default function TrainerClient({
   divisions,
@@ -45,9 +40,10 @@ export default function TrainerClient({
   const [description, setDescription] = useState('');
   const [requiresIpp, setRequiresIpp] = useState(true);
   const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [duration, setDuration] = useState<number | null>(null);
+  const [month, setMonth] = useState(() => Number(londonToday().split('-')[1]));
+  const [day, setDay] = useState(() => Number(londonToday().split('-')[2]));
   const [templateKey, setTemplateKey] = useState('');
+  const [divisionId, setDivisionId] = useState('');
 
   // Role request: several roles can be ticked and sent in one go.
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -62,14 +58,18 @@ export default function TrainerClient({
     setTitle(t.title);
     setDescription(t.description);
     setRequiresIpp(t.requiresIpp);
-    setDuration(t.durationMins);
-    if (startTime) setEndTime(addMinutes(startTime, t.durationMins));
+    // Every template defaults to the Emergency Response team (still changeable).
+    const ert = divisions.find((d) => /emergency response/i.test(d.name));
+    if (ert) setDivisionId(ert.id);
   }
 
-  function onStartChange(v: string) {
-    setStartTime(v);
-    if (duration && v) setEndTime(addMinutes(v, duration));
-  }
+  // Year is preset (this year; next year if the chosen month has already passed).
+  const [todayY, todayM, todayD] = londonToday().split('-').map(Number);
+  const year = month < todayM ? todayY + 1 : todayY;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const safeDay = Math.min(day, daysInMonth);
+  const dateValue = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   function submit(e: React.FormEvent<HTMLFormElement>, action: (fd: FormData) => Promise<ActionResult>, reset: () => void) {
     e.preventDefault();
@@ -87,11 +87,12 @@ export default function TrainerClient({
 
   const clearTraining = () => {
     setTemplateKey('');
+    setDivisionId('');
     setTitle('');
     setDescription('');
     setStartTime('');
-    setEndTime('');
-    setDuration(null);
+    setMonth(todayM);
+    setDay(todayD);
     setRequiresIpp(true);
   };
 
@@ -149,7 +150,7 @@ export default function TrainerClient({
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-neutral-500 mt-2">Pick a template, then choose the date and start time. Everything can still be edited.</p>
+            <p className="text-[11px] text-neutral-500 mt-2">Pick a template, then choose the day and start time. Everything can still be edited.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -159,7 +160,7 @@ export default function TrainerClient({
             </div>
             <div>
               <label className="block text-[11px] text-neutral-400 mb-1">Division (optional)</label>
-              <select name="divisionId" defaultValue="" className={inputClass}>
+              <select name="divisionId" value={divisionId} onChange={(e) => setDivisionId(e.target.value)} className={inputClass}>
                 <option value="">General</option>
                 {divisions.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -170,17 +171,28 @@ export default function TrainerClient({
             </div>
             <div>
               <label className="block text-[11px] text-neutral-400 mb-1">Date (UK time)</label>
-              <input type="date" name="date" required className={inputClass} />
+              <input type="hidden" name="date" value={dateValue} />
+              <div className="grid grid-cols-3 gap-2">
+                <div className={`${inputClass} text-neutral-400`}>{year}</div>
+                <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={inputClass}>
+                  {MONTHS.map((m, i) => (
+                    <option key={m} value={i + 1}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <select value={safeDay} onChange={(e) => setDay(Number(e.target.value))} className={inputClass}>
+                  {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">Start</label>
-                <input type="time" name="startTime" required value={startTime} onChange={(e) => onStartChange(e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className="block text-[11px] text-neutral-400 mb-1">End</label>
-                <input type="time" name="endTime" required value={endTime} onChange={(e) => setEndTime(e.target.value)} className={inputClass} />
-              </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Start</label>
+              <input type="time" name="startTime" required value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} />
             </div>
           </div>
           <div>
@@ -196,7 +208,7 @@ export default function TrainerClient({
             Only IPP + Advanced (trained driver) can attend
           </label>
           <label className="flex items-center gap-2 text-xs text-neutral-300">
-            <input type="checkbox" name="ping" /> Ping @everyone in Discord
+            <input type="checkbox" name="ping" /> Ping the training role in Discord (silent 9pm-7am)
           </label>
           <button type="submit" disabled={pending} className={btnClass}>
             {pending ? 'Posting...' : 'Post to website & Discord'}

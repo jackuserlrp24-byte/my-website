@@ -6,7 +6,7 @@ import { TRAININGS_CHANNEL_ID, deleteMessage, editMessage, getGuildMember, postM
 import { trainingCancelDmPayload, trainingCompleteDmPayload, trainingDelayDmPayload, trainingDmPayload, trainingPayload } from '@/lib/embeds';
 import { bookOnTraining, cantMakeTraining } from '@/lib/training-attend';
 import { isLateNightLondon, londonLocalToUtc } from '@/lib/london-time';
-import { TRAINING_PING_ROLE_ID } from '@/lib/training-config';
+import { TRAINING_PING_ROLE_ID, TRAINING_ROOM_IDS } from '@/lib/training-config';
 import { markTrainingComplete } from '@/lib/training-complete';
 import { pickFreeRoom } from '@/lib/training-rooms';
 import { liftBarsForKey } from '@/lib/training-bars';
@@ -30,7 +30,6 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
   const title = field(formData, 'title', 100);
   const date = field(formData, 'date', 10);
   const startTime = field(formData, 'startTime', 5);
-  const endTime = field(formData, 'endTime', 5);
   const divisionId = field(formData, 'divisionId', 60) || null;
   const description = field(formData, 'description', 1500);
   const imageUrl = field(formData, 'imageUrl', 500);
@@ -39,13 +38,15 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
 
   if (!title) return fail('Give the training a title.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Pick a valid date.');
-  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return fail('Pick a start and end time.');
+  if (!/^\d{2}:\d{2}$/.test(startTime)) return fail('Pick a start time.');
   if (imageUrl && !/^https:\/\//i.test(imageUrl)) return fail('Image URL must start with https://');
 
   const startsAt = londonLocalToUtc(date, startTime);
-  const endsAt = londonLocalToUtc(date, endTime);
-  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) return fail('Invalid date or time.');
-  if (endsAt <= startsAt) return fail('End time must be after the start time.');
+  if (Number.isNaN(startsAt.getTime())) return fail('Invalid date or time.');
+  // No end time on the form: it's the template's length (default 60 min) so rooms and "finished" checks still work.
+  const tplKey = field(formData, 'templateKey', 60);
+  const durationMins = TRAINING_TEMPLATES.find((t) => t.key === tplKey)?.durationMins ?? 60;
+  const endsAt = new Date(startsAt.getTime() + durationMins * 60000);
 
   const { data: row, error } = await supabaseAdmin
     .from('trainings')
@@ -82,11 +83,29 @@ export async function createTraining(formData: FormData): Promise<ActionResult> 
     const { error: roomErr } = await supabaseAdmin.from('trainings').update({ room_id: roomId }).eq('id', training.id);
     if (!roomErr) training.room_id = roomId;
   }
+  const silent = isLateNightLondon();
   const messageId = await postMessage(TRAININGS_CHANNEL_ID, {
-    ...(ping ? { content: '@everyone' } : {}),
+    ...(ping ? { content: `<@&${TRAINING_PING_ROLE_ID}>` } : {}),
     ...trainingPayload(training, await divisionName(divisionId)),
-    allowed_mentions: ping ? { parse: ['everyone'] } : { parse: [] },
+    allowed_mentions: ping ? { roles: [TRAINING_PING_ROLE_ID] } : { parse: [] },
+    ...(ping && silent ? { flags: 4096 } : {}), // SUPPRESS_NOTIFICATIONS: still tags the role, but no push / sound
   });
+
+  // Tell the instructor which room they were given (by DM, not on the public post).
+  if (training.room_id) {
+    const roomNumber = TRAINING_ROOM_IDS.indexOf(training.room_id) + 1;
+    await sendDm(user.id, {
+      embeds: [
+        {
+          title: roomNumber > 0 ? `You've been assigned to Training Room ${roomNumber}` : "You've been assigned a training room",
+          description: `**${training.title}** (${training.id}) will run in <#${training.room_id}>.`,
+          color: 5763719,
+          footer: { text: 'Central Operations Portal' },
+        },
+      ],
+      allowed_mentions: { parse: [] },
+    });
+  }
 
   if (messageId) {
     await supabaseAdmin

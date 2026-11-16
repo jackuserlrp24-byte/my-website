@@ -73,6 +73,28 @@ const envLogChannel = (process.env.PORTAL_LOG_CHANNEL_ID || '').trim();
 export const LOG_CHANNEL_ID = envLogChannel && !NOT_LOG_CHANNELS.includes(envLogChannel) ? envLogChannel : DEFAULT_LOG_CHANNEL;
 export const MODERATION_LOG_CHANNEL_ID = LOG_CHANNEL_ID;
 
+// Separate log channels (each can be changed with its own env variable).
+export const WHITELIST_LOG_CHANNEL_ID = process.env.PORTAL_WHITELIST_LOG_CHANNEL_ID || '1563506688798236743';
+export const BAN_LOG_CHANNEL_ID = process.env.PORTAL_BAN_LOG_CHANNEL_ID || '1572027383203233812';
+export const KICK_LOG_CHANNEL_ID = process.env.PORTAL_KICK_LOG_CHANNEL_ID || '1572027629530386493';
+export const WARN_LOG_CHANNEL_ID = process.env.PORTAL_WARN_LOG_CHANNEL_ID || '1572027701143801926';
+export const AOP_LOG_CHANNEL_ID = process.env.PORTAL_AOP_LOG_CHANNEL_ID || '1572027869113090129';
+
+/** Ban + unban -> ban logs, kick -> kick logs, warn -> warning logs. Notes (and anything else) stay in the main log channel. */
+export function moderationLogChannel(action: string): string {
+  switch (String(action).toUpperCase()) {
+    case 'BAN':
+    case 'UNBAN':
+      return BAN_LOG_CHANNEL_ID;
+    case 'KICK':
+      return KICK_LOG_CHANNEL_ID;
+    case 'WARN':
+      return WARN_LOG_CHANNEL_ID;
+    default:
+      return MODERATION_LOG_CHANNEL_ID;
+  }
+}
+
 // Every role request, approval and denial is logged here (the Approve / Deny post itself stays in ROLE_REQUESTS_CHANNEL_ID).
 export const ROLE_LOG_CHANNEL_ID = process.env.PORTAL_ROLE_LOG_CHANNEL_ID || '1571533229956272238';
 
