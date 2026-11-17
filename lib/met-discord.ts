@@ -161,7 +161,8 @@ export async function getMetRoster(): Promise<RosterResult> {
       rank: rank?.rank ?? d?.rank ?? null,
       rankLevel: rank?.level ?? 99,
       station: d?.station ?? null,
-      division: divisions.length ? divisions.join(', ') : null,
+      // Gold Command oversees every division
+      division: tierIndex === 0 ? 'All Divisions' : divisions.length ? divisions.join(', ') : null,
       tier: tierIndex < 0 ? DIVISION_TIER.label : TIERS[tierIndex].label,
       tierLevel: tierIndex < 0 ? DIVISION_TIER.level : tierIndex,
     });
