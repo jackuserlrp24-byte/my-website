@@ -7,6 +7,7 @@ import { canManageMet, getOfficer } from '@/lib/met-access';
 const refresh = () => {
   revalidatePath('/met-police/communications');
   revalidatePath('/met-police/announcements');
+  revalidatePath('/met-police/command/announcements');
 };
 
 export async function postAnnouncement(formData: FormData) {

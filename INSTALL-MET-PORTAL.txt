@@ -49,3 +49,10 @@ MDT LINK, INCIDENTS, PNC AND E-FORMS (new)
   Copy web_bridge.lua, fxmanifest.lua and server.lua over the MDT files and restart the resource.
 - The MDT sends incidents, PNC and e-forms to the website every 10 seconds. PNC records made on the website are collected by the MDT.
 - Old tables (met_reports, met_pnc_*, met_statements...) are left alone; nothing is deleted from the database.
+
+COMMAND AREA (new layout)
+- The Command tab opens its own area with tabs along the top: Dashboard, Submitted Forms, Announcements, LOA, then Police Collisions /
+  Firearms PIP / Anti-Corruption & Abuse (each only for the roles that can open it).
+- Dashboard: quick numbers (active incidents, forms waiting review, notices) and the section cards.
+- Submitted Forms: every e-form, filter by form and status (command only). Announcements: post / delete notices and bulletins (command only).
+- LOA: only the request form. The duty rota and the "on leave" lists are no longer shown on it.
