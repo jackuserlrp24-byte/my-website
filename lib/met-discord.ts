@@ -42,6 +42,13 @@ const DIVISION_ROLES: { label: string; id: string }[] = [
   { label: 'MO19', id: '1532845445993468034' },
   { label: 'Anti-Corruption & Abuse Team', id: '1566858721340948641' },
 ];
+/** Stations that command decides from roles alone: Gold -> New Scotland Yard, MO7 / MO8 -> Chadwell Heath. null = not forced. */
+export function forcedStation(roles: string[]): string | null {
+  if (GOLD_ROLE_ID && roles.includes(GOLD_ROLE_ID)) return GOLD_STATION;
+  const mo = DIVISION_ROLES.filter((d) => d.label === 'MO7' || d.label === 'MO8');
+  return mo.some((d) => roles.includes(d.id)) ? MO8_STATION : null;
+}
+
 const ACAT_LABEL = 'Anti-Corruption & Abuse Team';
 /**
  * What the Division column shows.
@@ -211,4 +218,18 @@ export async function getMetRoster(): Promise<RosterResult> {
   const value = { rows, error: null };
   cached = { at: Date.now(), value };
   return value;
+}
+
+/** One officer's rank from their Discord roles (null if they have no rank role or Discord is not set up). */
+export async function getMemberRank(discordId: string): Promise<string | null> {
+  const guild = process.env.DISCORD_GUILD_ID || process.env.DISCORD_SERVER_ID;
+  if (!process.env.DISCORD_BOT_TOKEN || !guild) return null;
+  const [rolesRes, memberRes] = await Promise.all([
+    discord<{ id: string; name: string }[]>(`/guilds/${guild}/roles`),
+    discord<RawMember>(`/guilds/${guild}/members/${discordId}`),
+  ]);
+  if (!rolesRes.data || !memberRes.data) return null;
+  const names = new Map(rolesRes.data.map((r) => [r.id, r.name]));
+  const found = rankFromRoleNames((memberRes.data.roles ?? []).map((r) => names.get(r)).filter(Boolean) as string[]);
+  return found?.rank ?? null;
 }

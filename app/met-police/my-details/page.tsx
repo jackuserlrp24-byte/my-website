@@ -3,7 +3,8 @@ import { getOfficerOptions } from '@/lib/met-officers';
 import { supabaseAdmin } from '@/lib/portal';
 import { BRONZE_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, hasRoleId } from '@/lib/training-config';
 import { ui } from '@/lib/met-util';
-import { saveOfficerDetails } from './actions';
+import { forcedStation } from '@/lib/met-discord';
+import { saveMyProfile, saveOfficerDetails } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +15,14 @@ const Row = ({ label, value }: { label: string; value: string | number | null | 
   </div>
 );
 
-export default async function MyDetailsPage() {
+export default async function MyDetailsPage({ searchParams }: { searchParams: Promise<{ err?: string; saved?: string }> }) {
+  const { err, saved } = await searchParams;
   const officer = (await getOfficer())!;
   const manager = canManageMet(officer);
 
   const [wl, det] = await Promise.all([
     supabaseAdmin.from('user_whitelists').select('rp_name, collar_number, forename, surname').eq('discord_id', officer.id).maybeSingle(),
-    supabaseAdmin.from('met_officer_details').select('rank, station, team').eq('discord_id', officer.id).maybeSingle(),
+    supabaseAdmin.from('met_officer_details').select('rank, station, team, officer_name, warrant_card').eq('discord_id', officer.id).maybeSingle(),
   ]);
 
   const command = hasRoleId(officer.roles, GOLD_ROLE_ID) ? 'Gold Command' : hasRoleId(officer.roles, SILVER_ROLE_ID) ? 'Silver Command' : hasRoleId(officer.roles, BRONZE_ROLE_ID) ? 'Bronze Command' : null;
@@ -46,14 +48,37 @@ export default async function MyDetailsPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Row label="Name" value={wl.data?.rp_name || officer.name} />
-        <Row label="Collar number" value={wl.data?.collar_number} />
+        <Row label="Name" value={det.data?.officer_name || wl.data?.rp_name || officer.name} />
+        <Row label="Warrant card" value={det.data?.warrant_card || wl.data?.collar_number} />
         <Row label="Rank" value={det.data?.rank} />
-        <Row label="Station" value={command === 'Gold Command' ? 'New Scotland Yard' : det.data?.station} />
+        <Row label="Station" value={forcedStation(officer.roles) ?? det.data?.station} />
         <Row label="Team" value={det.data?.team} />
         <Row label="Command role" value={command ?? (officer.isManagement ? 'Management' : null)} />
       </div>
       {wl.error && <p className={ui.warn}>Could not read your whitelist record.</p>}
+
+      {err && <p className={ui.warn}>{err}</p>}
+      {saved && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-4 py-3">Profile saved.</p>}
+
+      <section className="space-y-3">
+        <h2 className={ui.eyebrow}>{det.data?.officer_name ? 'Your officer profile' : 'Create your officer profile'}</h2>
+        <form action={saveMyProfile} className={ui.panel}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className={ui.label}>Officer name</label>
+              <input name="officer_name" required minLength={3} maxLength={60} defaultValue={det.data?.officer_name ?? ''} placeholder="e.g. James Carter" className={ui.input} />
+            </div>
+            <div>
+              <label className={ui.label}>Warrant card number</label>
+              <input name="warrant_card" required maxLength={12} defaultValue={det.data?.warrant_card ?? ''} placeholder="e.g. 4821" className={ui.input} />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500">
+            Your station is set for you: MO7 / MO8 officers are at Chadwell Heath Police Base, Frontline officers are shared evenly between Plumstead and Bexleyheath.
+          </p>
+          <button type="submit" className={ui.btn}>{det.data?.officer_name ? 'Update profile' : 'Create profile'}</button>
+        </form>
+      </section>
 
       {manager && (
         <section className="space-y-4 border-t border-slate-200 pt-6">
