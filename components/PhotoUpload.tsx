@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 // Drop <PhotoUpload /> into the My Details page. Crops to a 3:4 portrait, shrinks it, and saves it.
 export default function PhotoUpload() {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [warrant, setWarrant] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetch('/api/portal/photo').then((r) => r.json()).then((d) => d?.ok && setPhoto(d.photo)).catch(() => {});
+    fetch('/api/portal/warrant').then((r) => r.json()).then((d) => d?.ok && setWarrant(d.warrantCard)).catch(() => {});
   }, []);
 
   async function onFile(file: File | undefined) {
@@ -37,6 +39,7 @@ export default function PhotoUpload() {
         {photo && <img src={photo} alt="Your warrant card photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
       </div>
       <div>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Warrant card no: {warrant ?? '...'}</div>
         <label style={{ cursor: 'pointer', fontWeight: 700 }}>
           {busy ? 'Saving...' : photo ? 'Replace photo' : 'Upload a photo'}
           <input type="file" accept="image/*" disabled={busy} style={{ display: 'none' }} onChange={(e) => onFile(e.target.files?.[0])} />

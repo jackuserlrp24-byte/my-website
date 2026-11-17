@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/portal';
 import { getMemberRank } from '@/lib/met-discord';
+import { getOrCreateWarrant } from '@/lib/warrant';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,19 +14,24 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('discord') ?? '';
   if (!/^\d{15,25}$/.test(id)) return NextResponse.json({ ok: false, error: 'bad discord id' }, { status: 400 });
 
+  const warrant = await getOrCreateWarrant(id);
+  if (!warrant) return NextResponse.json({ ok: false, error: 'could not create a warrant number' }, { status: 500 });
+
   const { data } = await supabaseAdmin
     .from('met_officer_details')
-    .select('officer_name, warrant_card, rank, station, team')
+    .select('officer_name, rank, station, team')
     .eq('discord_id', id)
     .maybeSingle();
-  if (!data || !data.officer_name || !data.warrant_card) return NextResponse.json({ ok: false, error: 'no profile' }, { status: 404 });
 
   // photo (uniform photo taken in game, or uploaded on the website) - shown on the warrant card
   const { data: ph } = await supabaseAdmin.from('met_officer_photos').select('photo').eq('discord_id', id).maybeSingle();
 
-  const rank = data.rank || (await getMemberRank(id));
+  const rank = data?.rank || (await getMemberRank(id));
   return NextResponse.json({
     ok: true,
-    profile: { officerName: data.officer_name, warrantCard: data.warrant_card, rank, station: data.station, division: data.team, photo: ph?.photo ?? null },
+    profile: {
+      officerName: data?.officer_name ?? null,   // empty until they fill in My Details; the game then uses the MDT name
+      warrantCard: warrant, rank, station: data?.station ?? null, division: data?.team ?? null, photo: ph?.photo ?? null,
+    },
   });
 }
