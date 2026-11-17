@@ -87,9 +87,12 @@ export interface ModerationLog {
   created_at: string;
 }
 
+/** Server-wide clean-up commands queued from the staff panel (picked up by the CO-StaffEssentials resource). */
+export type WorldActionKind = 'massdv' | 'delnpcs' | 'delnpcvehicles';
+
 export interface GameAction {
   id: string;
-  action: 'warn' | 'kick' | 'ban' | 'unban';
+  action: 'warn' | 'kick' | 'ban' | 'unban' | WorldActionKind;
   target_discord_id: string;
   target_name: string | null;
   reason: string;

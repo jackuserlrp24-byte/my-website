@@ -15,10 +15,10 @@ import {
   type GuildMemberLite,
 } from '@/lib/discord';
 import { GOLD_ROLE_ID, moderationLogChannel } from '@/lib/training-config';
-import { queueGameAction } from '@/lib/game-actions';
+import { WORLD_ACTION_LABELS, queueGameAction, queueWorldAction } from '@/lib/game-actions';
 import { getAop, saveAop } from '@/lib/aop';
 import { AOP_AREAS, formatAop } from '@/lib/aop-config';
-import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
+import type { ActionResult, GameAction, ModerationAction, ModerationLog, WorldActionKind } from '@/lib/portal-types';
 
 // Warn / kick / ban logs go to the moderation channel only (never the role request channel).
 const fail = (message: string): ActionResult => ({ ok: false, message });
@@ -258,4 +258,18 @@ export async function setAop(areas: string[]): Promise<ActionResult> {
 
   revalidatePath('/staff');
   return { ok: true, message: `AOP set to ${aop}. It shows in game within a few seconds.` };
+}
+
+
+/** Server-wide clean-up from the staff panel: mass DV, delete all NPCs, delete NPC cars. Gold Command / management only. */
+export async function runWorldAction(kind: string): Promise<ActionResult> {
+  const user = await getPortalUser();
+  if (!user?.canStaff) return fail('You do not have access to the staff panel.');
+  if (!user.canModerate) return fail('Only Gold Command and management can run server-wide clean-ups.');
+  if (!(kind in WORLD_ACTION_LABELS)) return fail('Unknown clean-up.');
+
+  const q = await queueWorldAction({ action: kind as WorldActionKind, requestedBy: user.name });
+  if (!q.ok) return fail('Could not queue that. Run supabase/world-actions.sql in Supabase first.');
+  revalidatePath('/staff');
+  return { ok: true, message: `${WORLD_ACTION_LABELS[kind as WorldActionKind]} sent to the server. It runs within a few seconds.` };
 }

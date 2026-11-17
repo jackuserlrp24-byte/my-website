@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
 import type { GuildMemberLite } from '@/lib/discord';
 import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
-import { getGameActions, getHistory, searchMembers, takeAction } from './actions';
+import { getGameActions, getHistory, runWorldAction, searchMembers, takeAction } from './actions';
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]';
@@ -33,6 +33,12 @@ const BAN_LENGTHS = [
   { hours: 168, label: '7 days' },
   { hours: 720, label: '30 days' },
   { hours: 0, label: 'Permanent' },
+];
+const ACTION_LABEL: Record<string, string> = { massdv: 'Mass DV', delnpcs: 'Del NPCs', delnpcvehicles: 'Del NPC cars' };
+const WORLD_TOOLS = [
+  { kind: 'massdv', title: 'Mass DV', hint: 'Warns everyone, then after 30 seconds deletes every empty vehicle (and AI peds).', confirm: 'Run a Mass DV? Everyone gets a 30 second warning, then all empty vehicles are deleted.' },
+  { kind: 'delnpcs', title: 'Delete all NPCs', hint: 'Removes every NPC, including ones sitting in cars. The cars stay.', confirm: 'Delete ALL NPCs on the server (including NPCs inside cars)?' },
+  { kind: 'delnpcvehicles', title: 'Delete NPC cars', hint: 'Removes every car that has an NPC in it, plus the NPCs. Player cars and empty cars stay.', confirm: 'Delete every NPC and the car they are in? Player cars are not touched.' },
 ];
 const STATUS_STYLE: Record<GameAction['status'], string> = {
   pending: 'text-neutral-400',
@@ -108,6 +114,15 @@ export default function StaffClient({
     setResults([]);
     setResult(null);
     startTransition(async () => setHistory(await getHistory(m.id)));
+  }
+
+  function world(kind: string, confirmText: string) {
+    if (!confirm(confirmText)) return;
+    startTransition(async () => {
+      const r = await runWorldAction(kind);
+      setResult(r);
+      if (r.ok) setGame(await getGameActions());
+    });
   }
 
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -310,6 +325,26 @@ export default function StaffClient({
         </div>
 
         <div className="flex flex-col gap-6">
+        {canModerate && (
+          <div className="bg-neutral-900 border border-neutral-800 p-6">
+            <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-1">Server clean-up</h3>
+            <p className="text-[11px] text-neutral-500 mb-4">Affects the whole FiveM server. Players are never deleted.</p>
+            <div className="flex flex-col gap-2">
+              {WORLD_TOOLS.map((t) => (
+                <button
+                  key={t.kind}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => world(t.kind, t.confirm)}
+                  className="text-left bg-neutral-950 hover:bg-neutral-800 disabled:opacity-50 border border-neutral-800 hover:border-red-500/50 p-3 cursor-pointer transition-colors"
+                >
+                  <p className="text-xs font-bold text-neutral-100 uppercase tracking-wider">{t.title}</p>
+                  <p className="text-[11px] text-neutral-500 mt-1">{t.hint}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="bg-neutral-900 border border-neutral-800 p-6">
           <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider mb-1">In-game actions</h3>
           <p className="text-[11px] text-neutral-500 mb-4">Sent to the FiveM server and applied within a few seconds.</p>
@@ -320,7 +355,7 @@ export default function StaffClient({
               {game.map((g) => (
                 <div key={g.id} className="bg-neutral-950 border border-neutral-800 p-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase">{g.action}</span>
+                    <span className="text-[10px] font-mono font-bold text-neutral-300 uppercase">{ACTION_LABEL[g.action] ?? g.action}</span>
                     <span className="text-xs font-semibold text-neutral-200 truncate">{g.target_name ?? g.target_discord_id}</span>
                     <span className={`ml-auto text-[10px] font-mono uppercase ${STATUS_STYLE[g.status]}`}>{g.status}</span>
                   </div>

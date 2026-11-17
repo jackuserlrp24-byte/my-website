@@ -114,7 +114,7 @@ create table if not exists moderation_logs (
 -- The CO-StaffMenu resource polls /api/ingame-moderation/queue and applies these in the game.
 create table if not exists game_actions (
   id uuid primary key default gen_random_uuid(),
-  action text not null check (action in ('warn', 'kick', 'ban', 'unban')),
+  action text not null check (action in ('warn', 'kick', 'ban', 'unban', 'massdv', 'delnpcs', 'delnpcvehicles')),
   target_discord_id text not null,
   target_name text,
   reason text not null,

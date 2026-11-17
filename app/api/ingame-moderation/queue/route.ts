@@ -17,6 +17,11 @@ function authorised(req: Request): boolean {
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
+// Warn / kick / ban / unban are collected by CO-StaffMenu (default). The server-wide clean-ups (mass DV, delete NPCs)
+// are collected by CO-StaffEssentials with ?scope=world, so the two resources never take each other's actions.
+const MOD_ACTIONS = ['warn', 'kick', 'ban', 'unban'];
+const WORLD_ACTIONS = ['massdv', 'delnpcs', 'delnpcvehicles'];
+
 const COLUMNS = 'id, action, target_discord_id, target_name, reason, duration_hours, requested_by';
 
 export async function GET(req: Request) {
@@ -24,19 +29,22 @@ export async function GET(req: Request) {
   if (!authorised(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const now = Date.now();
+  const world = new URL(req.url).searchParams.get('scope') === 'world';
+  const kinds = world ? WORLD_ACTIONS : MOD_ACTIONS;
 
   // Warns and kicks that nobody collected within 10 minutes are dropped so they don't fire hours later.
   await supabaseAdmin
     .from('game_actions')
     .update({ status: 'expired', result: 'Server did not collect this in time.', completed_at: new Date().toISOString() })
     .eq('status', 'pending')
-    .in('action', ['warn', 'kick'])
+    .in('action', world ? WORLD_ACTIONS : ['warn', 'kick'])
     .lt('created_at', new Date(now - 10 * 60 * 1000).toISOString());
 
   const { data: pending } = await supabaseAdmin
     .from('game_actions')
     .select('id')
     .eq('status', 'pending')
+    .in('action', kinds)
     .order('created_at', { ascending: true })
     .limit(20);
 
@@ -58,6 +66,7 @@ export async function GET(req: Request) {
     .from('game_actions')
     .update({ sent_at: new Date().toISOString() })
     .eq('status', 'sent')
+    .in('action', kinds)
     .lt('sent_at', new Date(now - 2 * 60 * 1000).toISOString())
     .select(COLUMNS);
 
