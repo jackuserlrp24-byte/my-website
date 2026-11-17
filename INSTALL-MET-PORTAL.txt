@@ -19,6 +19,12 @@ MET POLICE OFFICER PORTAL UPDATE
 
 5. Redeploy.
 
+MAINTENANCE / COMING SOON
+Developer panel > Panels now has a row for the whole Met Police portal and one for each tab (My Incidents, Reports, Checks, Evidence,
+Statements, Roster, Policies, Communications, Command, Collisions, Firearms PIP, My Details). Pick Under maintenance or Coming soon,
+then Apply changes. Developers still see through it. Switched-off tabs get a small "Maint." / "Soon" label in the menu.
+For anything new you add: add a line to MAINTENANCE_PANELS in lib/maintenance-config.ts and wrap the page in PanelGate (a layout.tsx in its folder does it).
+
 CHANGES IN THIS UPDATE
 - New Roster tab (/met-police/roster): every officer with collar, rank, station, team.
 - Communications: only command (and management) can post or delete notices and bulletins.

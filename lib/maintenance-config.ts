@@ -18,6 +18,8 @@ export const defaultMessage = (mode: MaintenanceMode, site = false) =>
 export const isDefaultMessage = (m: string) =>
   [DEFAULT_MAINTENANCE_MESSAGE, DEFAULT_SITE_MESSAGE, DEFAULT_COMING_SOON_MESSAGE, DEFAULT_COMING_SOON_SITE_MESSAGE].includes(m.trim());
 
+// ADD EVERY NEW PAGE / SECTION HERE (and wrap it in <PanelGate panel="...">, e.g. with a layout.tsx in its folder).
+// It then shows up in the Developer panel automatically, where it can be set to Under maintenance or Coming soon.
 // `exact` = only that exact path (not the pages under it). Longer paths take priority over shorter ones.
 export const MAINTENANCE_PANELS = [
   { key: 'home', label: 'Dashboard home', path: '/dashboard', exact: true },
@@ -29,10 +31,24 @@ export const MAINTENANCE_PANELS = [
   { key: 'appeals', label: 'Ban Appeals (staff dashboard)', path: '/dashboard/appeals' },
   { key: 'trainer', label: 'Trainer Panel', path: '/dashboard/trainer' },
   { key: 'command', label: 'Command (everything inside)', path: '/dashboard/command' },
-  { key: 'command-met', label: 'Command: Metropolitan Police', path: '/dashboard/command/met-police' },
+  { key: 'command-met', label: 'Command: Metropolitan Police (old command page)', path: '/dashboard/command/met-police' },
   { key: 'command-las', label: 'Command: London Ambulance Service (LAS)', path: '/dashboard/command/las' },
   { key: 'command-lfb', label: 'Command: London Fire Brigade (LFB)', path: '/dashboard/command/lfb' },
   { key: 'command-loa', label: 'Command: Leave of Absence (LOA)', path: '/dashboard/command/loa' },
+  // Met Police officer portal (/met-police). "Whole portal" covers every tab below it; the tabs can also be switched one by one.
+  { key: 'met-portal', label: 'Met Police portal (whole portal)', path: '/met-police' },
+  { key: 'met-incidents', label: 'Met Police: My Incidents', path: '/met-police/incidents' },
+  { key: 'met-reports', label: 'Met Police: Reports', path: '/met-police/reports' },
+  { key: 'met-checks', label: 'Met Police: Checks', path: '/met-police/checks' },
+  { key: 'met-evidence', label: 'Met Police: Evidence', path: '/met-police/evidence' },
+  { key: 'met-statements', label: 'Met Police: Statements', path: '/met-police/statements' },
+  { key: 'met-roster', label: 'Met Police: Roster', path: '/met-police/roster' },
+  { key: 'met-policies', label: 'Met Police: Policies', path: '/met-police/policies' },
+  { key: 'met-communications', label: 'Met Police: Communications', path: '/met-police/communications' },
+  { key: 'met-command', label: 'Met Police: Command (everything inside)', path: '/met-police/command' },
+  { key: 'met-collisions', label: 'Met Police: Command - Police Collisions', path: '/met-police/command/collisions' },
+  { key: 'met-firearms', label: 'Met Police: Command - Firearms PIP', path: '/met-police/command/firearms' },
+  { key: 'met-my-details', label: 'Met Police: My Details', path: '/met-police/my-details' },
   { key: 'whitelist', label: 'Whitelist process', path: '/whitelistprocess' },
   { key: 'appeal', label: 'Ban Appeal form (public)', path: '/appeal' },
 ] as const;

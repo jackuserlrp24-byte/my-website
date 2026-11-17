@@ -19,7 +19,7 @@ export default async function MetPoliceLayout({ children }: { children: React.Re
   if (!officer) redirect('/dashboard');
 
   return (
-    <PanelGate panel="command-met">
+    <PanelGate panel="met-portal">
       <div className="min-h-screen w-full flex flex-col md:flex-row bg-white text-slate-900 antialiased">
         <aside className="md:w-64 md:min-h-screen shrink-0 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
           <div className="px-5 py-5 flex items-start justify-between gap-3">
