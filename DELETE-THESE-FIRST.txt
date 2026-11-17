@@ -1,0 +1,13 @@
+BEFORE copying the files in, DELETE these folders from your project:
+  app/met-police/duty
+  app/met-police/training
+  app/met-police/command
+  app/dashboard/staff        (the zip brings back just a small redirect)
+  app/dashboard/developer    (the zip brings back just a small redirect)
+
+THEN copy app/ and lib/ from this zip over your project (Replace when asked).
+
+SET in Vercel: DISCORD_LAS_MEMBER_ROLE_ID = the "all LAS staff" role ID
+(without it only LAS command / management / developers can open /las).
+
+Redeploy and hard refresh (Ctrl+Shift+R).
