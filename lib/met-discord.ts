@@ -36,6 +36,20 @@ const DIVISION_ROLES: { label: string; id: string }[] = [
   { label: 'Anti-Corruption & Abuse Team', id: '1566858721340948641' },
 ];
 const ACAT_LABEL = 'Anti-Corruption & Abuse Team';
+/**
+ * What the Division column shows.
+ *  - collar 1010CO  -> only "Anti-Corruption & Abuse Team"
+ *  - collar 1050T   -> only "MO8"
+ *  - everyone else  -> never ACAT (even Gold Command who hold the role). Gold shows "All Divisions", others their other divisions.
+ */
+function divisionLabel(collar: string | null, isGold: boolean, divisions: string[]): string | null {
+  const c = (collar ?? '').trim().toUpperCase();
+  if (c === '1010CO') return ACAT_LABEL;
+  if (c === '1050T') return 'MO8';
+  if (isGold) return 'All Divisions';
+  const rest = divisions.filter((d) => d !== ACAT_LABEL);
+  return rest.length ? rest.join(', ') : null;
+}
 const DIVISION_TIER = { label: 'Division Command', level: TIERS.length };
 
 // Met ranks, most senior first (lower level = more senior). A Discord role is treated as a rank when its name contains one of
@@ -163,11 +177,7 @@ export async function getMetRoster(): Promise<RosterResult> {
       rank: rank?.rank ?? d?.rank ?? null,
       rankLevel: rank?.level ?? 99,
       station: d?.station ?? null,
-      // Gold Command oversees every division, but a division they hold the role for (e.g. ACAT) is still named
-      division:
-        tierIndex === 0
-          ? divisions.includes(ACAT_LABEL) ? `All Divisions, ${ACAT_LABEL}` : 'All Divisions'
-          : divisions.length ? divisions.join(', ') : null,
+      division: divisionLabel(nick.collar || wl.get(id)?.collar || null, tierIndex === 0, divisions),
       tier: tierIndex < 0 ? DIVISION_TIER.label : TIERS[tierIndex].label,
       tierLevel: tierIndex < 0 ? DIVISION_TIER.level : tierIndex,
     });

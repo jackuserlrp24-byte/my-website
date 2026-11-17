@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PanelGate } from '@/app/components/MaintenanceGates';
@@ -22,13 +23,10 @@ export default async function LasLayout({ children }: { children: React.ReactNod
       <div className="min-h-screen w-full flex flex-col md:flex-row bg-white text-slate-900 antialiased">
         <aside className="md:w-64 md:min-h-screen shrink-0 bg-emerald-50/60 border-b md:border-b-0 md:border-r border-emerald-100 flex flex-col">
           <div className="px-5 py-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-md bg-emerald-700 text-white text-sm font-bold tracking-wider">LAS</span>
-              <div>
-                <p className="text-sm font-bold leading-tight text-slate-900">London Ambulance Service</p>
-                <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-500">Staff Portal</p>
-              </div>
+            <div className="relative h-14 w-52">
+              <Image src="/las-logo.png" alt="London Ambulance Service NHS Trust" fill sizes="208px" className="object-contain object-left" priority />
             </div>
+            <p className="mt-2 text-[11px] font-semibold tracking-widest uppercase text-slate-500">Staff Portal</p>
           </div>
 
           <LasNav showCommand={canLasCommand(member)} />

@@ -1,5 +1,6 @@
 import { LAS_GOLD_ROLE_ID } from '@/lib/training-config';
 import { parseNick } from '@/lib/met-discord';
+import { lasRankFromRoles } from '@/lib/las-ranks';
 
 const API = 'https://discord.com/api/v10';
 
@@ -119,7 +120,8 @@ export async function getLasRoster(): Promise<RosterResult> {
     const tierIndex = TIERS.findIndex((t) => roles.includes(t.id));
     if (tierIndex < 0) continue;
     const nick = parseNick(m.nick);
-    const rank = rankFromRoleNames(roles.map((r) => roleName.get(r)).filter(Boolean) as string[]);
+    // Rank comes from the LAS rank role IDs (lib/las-ranks.ts); role names are only a fallback.
+    const rank = lasRankFromRoles(roles) ?? rankFromRoleNames(roles.map((r) => roleName.get(r)).filter(Boolean) as string[]);
     rows.push({
       id: m.user.id,
       name: nick.name || m.user.global_name || m.user.username,
