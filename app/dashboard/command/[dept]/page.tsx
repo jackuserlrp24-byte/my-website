@@ -46,6 +46,7 @@ export default async function DepartmentCommandPage({ params }: { params: Promis
       short={dept.short}
       accent={dept.accent}
       userName={user.name}
+      rosterHref={slug === 'las' ? '/dashboard/command/las/roster' : undefined}
       divisions={(divisionsRes.data ?? []) as Division[]}
       pending={(pendingRes.data ?? []) as DivisionApplication[]}
       reviewed={(reviewedRes.data ?? []) as DivisionApplication[]}

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getPortalUser, supabaseAdmin } from '@/lib/portal';
 import { addGuildRole, applicationsLogChannel, logEmbed } from '@/lib/discord';
-import { GOLD_MANAGED_DEPARTMENTS } from '@/lib/departments';
+import { GOLD_MANAGED_DEPARTMENTS, canManageLasDepartment } from '@/lib/departments';
 import { GOLD_ROLE_ID } from '@/lib/training-config';
 import { syncDivisionsEmbed } from '@/lib/divisions-sync';
 import { closeExpiredDivisions } from '@/lib/division-deadlines';
@@ -14,6 +14,7 @@ const fail = (message: string): ActionResult => ({ ok: false, message });
 /** Management can manage every division. Gold Command can manage the LAS / LFB / Control recruitment divisions. */
 function canManage(user: NonNullable<Awaited<ReturnType<typeof getPortalUser>>>, department: string | null | undefined) {
   if (user.isManagement) return true;
+  if (canManageLasDepartment(user.roles, department)) return true; // LAS Gold Command + developers: LAS / Control only
   return !!department && GOLD_MANAGED_DEPARTMENTS.includes(department) && !!GOLD_ROLE_ID && user.roles.includes(GOLD_ROLE_ID);
 }
 
@@ -50,7 +51,11 @@ export async function setDivisionStatus(divisionId: string, status: 'open' | 'cl
 /** Command / management: set the Google Form link that opens when someone clicks the division name. */
 export async function setDivisionLink(divisionId: string, url: string): Promise<ActionResult> {
   const user = await getPortalUser();
-  if (!user?.isCommand && !user?.isManagement) return fail('You do not have permission to edit application links.');
+  if (!user) return fail('Please log in again.');
+  const { data: linkTarget } = await supabaseAdmin.from('divisions').select('department').eq('id', divisionId).maybeSingle();
+  if (!user.isCommand && !user.isManagement && !canManageLasDepartment(user.roles, linkTarget?.department)) {
+    return fail('You do not have permission to edit application links.');
+  }
 
   const link = String(url ?? '').trim().slice(0, 500);
   if (link && !/^https:\/\//i.test(link)) return fail('The link must start with https://');

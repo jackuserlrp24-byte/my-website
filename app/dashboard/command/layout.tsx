@@ -2,6 +2,7 @@ import { PanelGate } from '@/app/components/MaintenanceGates';
 import { redirect } from 'next/navigation';
 
 import { hasCommandAccess } from '@/lib/training-config';
+import { hasLasAccess } from '@/lib/departments';
 import { getDiscordSession } from '@/lib/discord-session';
 import { getGuildMember } from '@/lib/discord-member';
 
@@ -20,7 +21,7 @@ export default async function CommandLayout({
   const roles = result.status === 'ok' && Array.isArray(result.member.roles) ? result.member.roles : [];
 
   // If the user does not have the required role ID, block access and redirect back
-  if (!hasCommandAccess(roles)) {
+  if (!hasCommandAccess(roles) && !hasLasAccess(roles)) {
     redirect('/dashboard');
   }
 

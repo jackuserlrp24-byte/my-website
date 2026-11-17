@@ -40,6 +40,10 @@ export function hasCommandAccess(roles: string[]): boolean {
 
 export const hasRoleId = (roles: string[], id: string) => !!id && roles.includes(id);
 
+// London Ambulance Service Gold Command. Opens the LAS command suite + LAS roster (and manages LAS / Control recruitment).
+// DISCORD_LAS_GOLD_COMMAND_ROLE_ID in Vercel overrides it.
+export const LAS_GOLD_ROLE_ID = process.env.DISCORD_LAS_GOLD_COMMAND_ROLE_ID || '1545762280199688252';
+
 // Voice channel people wait in before a training starts.
 export const TRAINING_VC_ID = process.env.DISCORD_TRAINING_VC_ID || '1497557910283223266';
 

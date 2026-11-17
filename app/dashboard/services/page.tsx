@@ -33,8 +33,8 @@ export default async function ServicesHubPage() {
       title: 'Metropolitan Police Command',
       description: 'Officer dossiers, collar numbers, role requests, training records and bodycam footage.',
       href: met,
-      available: true,
-      lockedText: '',
+      available: !!user?.isCommand,
+      lockedText: 'Met Police command only',
       bar: 'bg-blue-600',
       badge: 'text-blue-300 bg-blue-500/10 border-blue-500/30',
       links: [
@@ -51,8 +51,11 @@ export default async function ServicesHubPage() {
       description: 'Open or close divisions, set application links and review applications.',
       href: '/dashboard/command/las',
       available: can('las'),
-      lockedText: 'Met Police Gold Command only',
+      lockedText: 'LAS Gold Command only',
       bar: 'bg-emerald-600',
+      links: [
+        { label: 'LAS Roster', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
+      ],
       badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
     },
     {

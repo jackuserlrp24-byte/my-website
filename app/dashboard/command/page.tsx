@@ -15,7 +15,7 @@ export default async function CommandHubPage() {
       subtitle: 'MET POLICE',
       description: 'Manage Met Police officer dossiers, look up collar numbers, issue role assignments, audit training records, and access operational Google Drive slides.',
       href: '/dashboard/command/met-police',
-      available: true,
+      available: !!user?.isCommand,
       accentColor: 'bg-blue-600',
       badgeColor: 'text-blue-400 bg-blue-500/10 border-blue-500/30'
     },
@@ -100,7 +100,7 @@ export default async function CommandHubPage() {
                 </Link>
               ) : (
                 <div className="w-full py-2.5 border border-neutral-800 text-neutral-600 text-xs font-semibold uppercase tracking-wider flex items-center justify-center">
-                  Met Police Gold Command only
+                  {dept.subtitle === 'LAS' ? 'LAS Gold Command only' : 'Command only'}
                 </div>
               )}
             </div>

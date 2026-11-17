@@ -7,6 +7,7 @@ import { DEVELOPER_ROLE_IDS, MANAGEMENT_ROLE_IDS, WHITELISTED_ROLES, canStaffRol
 import { getMaintenance } from '@/lib/maintenance';
 import { getDiscordSession } from '@/lib/discord-session';
 import { getGuildMember } from '@/lib/discord-member';
+import { hasLasAccess } from '@/lib/departments';
 import { BRONZE_ROLE_ID, DEV_ROLE_ID, GOLD_ROLE_ID, SILVER_ROLE_ID, TRAINER_ROLE_ID, hasCommandAccess } from '@/lib/training-config';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,7 @@ const DENIED = {
   isStaff: false,
   isTrainer: false,
   isCommand: false,
+  canLas: false,
   isDeveloper: false,
   limited: null as 'developer' | 'staff' | null,
   displayName: 'Operator',
@@ -74,6 +76,7 @@ async function checkUserAccessAndFetchDetails(userId: string) {
     limited,
     isTrainer: hasMasterRole || hasAltManagementRole || (!!TRAINER_ROLE_ID && roles.includes(TRAINER_ROLE_ID)) || hasTierRole,
     isCommand: hasCommandAccess(roles),
+    canLas: hasLasAccess(roles),
     isDeveloper: roles.some((role) => DEVELOPER_ROLE_IDS.includes(role)),
     displayName,
     avatarUrl,
@@ -226,7 +229,7 @@ export default async function DashboardLayout({
           )}
 
           {/* Role-Locked Command Button */}
-          {access.isCommand && (
+          {(access.isCommand || access.canLas) && (
             <Link
               href="/dashboard/command"
               className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
@@ -236,7 +239,7 @@ export default async function DashboardLayout({
           )}
 
           {/* Services Hub: opens in a new browser tab */}
-          {access.isCommand && (
+          {(access.isCommand || access.canLas) && (
             <Link
               href="/services"
               target="_blank"

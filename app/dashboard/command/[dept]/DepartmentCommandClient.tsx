@@ -15,13 +15,14 @@ interface Props {
   short: string;
   accent: string;
   userName: string;
+  rosterHref?: string;
   divisions: Division[];
   pending: DivisionApplication[];
   reviewed: DivisionApplication[];
   loadError: string | null;
 }
 
-export default function DepartmentCommandClient({ title, short, accent, userName, divisions, pending, reviewed, loadError }: Props) {
+export default function DepartmentCommandClient({ title, short, accent, userName, rosterHref, divisions, pending, reviewed, loadError }: Props) {
   const [busy, startTransition] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -51,12 +52,22 @@ export default function DepartmentCommandClient({ title, short, accent, userName
             {pending.length === 1 ? '' : 's'} waiting.
           </p>
         </div>
-        <Link
-          href="/dashboard/command"
-          className="px-4 py-2 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[11px] uppercase tracking-wider"
-        >
-          &larr; Command hub
-        </Link>
+        <div className="flex gap-2">
+          {rosterHref && (
+            <Link
+              href={rosterHref}
+              className="px-4 py-2 border border-emerald-600/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] uppercase tracking-wider"
+            >
+              Roster
+            </Link>
+          )}
+          <Link
+            href="/dashboard/command"
+            className="px-4 py-2 border border-neutral-700 hover:bg-neutral-800 text-neutral-300 text-[11px] uppercase tracking-wider"
+          >
+            &larr; Command hub
+          </Link>
+        </div>
       </div>
 
       {loadError && <div className="bg-red-500/10 border border-red-500/30 p-4 text-xs text-red-300">{loadError}</div>}
