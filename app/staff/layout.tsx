@@ -25,7 +25,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   return (
     <StandaloneShell title="Staff Panel" backHref={user.limited ? null : '/dashboard'}>
       <PanelGate panel="staff">
-        <div className="flex flex-col lg:flex-row items-start gap-6 px-8 mt-6 max-w-[1450px] mx-auto w-full">
+        <div className="flex flex-col lg:flex-row items-start gap-6 px-6 mt-6 max-w-[1900px] mx-auto w-full">
           <StaffSidebar pendingAppeals={pendingAppeals} showPatrols={!user.limited} />
           <div className="flex-1 min-w-0 w-full">{children}</div>
         </div>

@@ -98,8 +98,8 @@ export default function StaffSidebar({
   const staffItems = STAFF_ITEMS.filter((i) => showPatrols || i.icon !== 'patrols');
 
   return (
-    <aside className="staff-sidebar w-full lg:w-60 shrink-0 lg:sticky lg:top-24">
-      <div className="bg-neutral-900/90 border border-neutral-800 backdrop-blur-md shadow-2xl relative overflow-hidden">
+    <aside className="staff-sidebar w-full lg:w-60 shrink-0 lg:sticky lg:top-20">
+      <div className="bg-neutral-900/90 border border-neutral-800 backdrop-blur-md shadow-2xl relative overflow-hidden lg:min-h-[calc(100vh-9rem)]">
         <div className="absolute top-0 left-0 right-0 h-1 bg-[#5865F2]" />
 
         <nav ref={navRef} className="relative flex lg:flex-col overflow-x-auto lg:overflow-visible pt-1 pb-2">
