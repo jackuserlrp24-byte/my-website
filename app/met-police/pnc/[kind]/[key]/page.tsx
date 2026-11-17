@@ -30,7 +30,8 @@ export default async function PncRecordPage({ params, searchParams }: { params: 
   const { kind: rawKind, key: rawKey } = await params;
   const kind: 'person' | 'vehicle' = rawKind === 'vehicle' ? 'vehicle' : 'person';
   const key = decodeURIComponent(rawKey);
-  const tab = TABS.some((t) => t.key === (await searchParams).tab) ? (await searchParams).tab! : 'summary';
+  const { tab: rawTab } = await searchParams;
+  const tab = TABS.some((t) => t.key === rawTab) ? rawTab! : 'summary';
 
   const { data: row } = await supabaseAdmin.from('mdt_pnc_records').select('data').eq('kind', kind).eq('key', key).maybeSingle();
   if (!row) notFound();
