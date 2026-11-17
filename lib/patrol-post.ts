@@ -106,8 +106,8 @@ export async function postPatrol(formData: FormData): Promise<{ ok: boolean; mes
     return { ok: false, message: 'Could not save the patrol. Try again.' };
   }
 
-  revalidatePath('/dashboard/staff');
-  revalidatePath('/dashboard/staff/patrols');
+  revalidatePath('/staff');
+  revalidatePath('/staff/patrols');
   revalidatePath('/dashboard/patrols');
   return {
     ok: true,

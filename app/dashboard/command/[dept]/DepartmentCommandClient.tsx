@@ -58,7 +58,7 @@ export default function DepartmentCommandClient({ title, short, accent, userName
               href={rosterHref}
               className="px-4 py-2 border border-emerald-600/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] uppercase tracking-wider"
             >
-              Roster
+              Chain of Command
             </Link>
           )}
           <Link

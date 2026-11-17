@@ -95,7 +95,7 @@ export default function MaintenanceWatcher() {
 
   useEffect(() => {
     // The Developer panel is where it gets switched - never refresh that page under the developer's hands.
-    const skip = () => pathRef.current.startsWith('/dashboard/developer');
+    const skip = () => pathRef.current.startsWith('/developer');
     let stopped = false;
 
     async function check() {

@@ -7,7 +7,7 @@ import AutoRefresh from '@/app/met-police/AutoRefresh';
 
 export const dynamic = 'force-dynamic';
 
-// Roster for a department command suite. Only LAS has one for now (/dashboard/command/las/roster).
+// Chain of Command (roster) for a department command suite. Only LAS has one for now (/dashboard/command/las/roster).
 export default async function DepartmentRosterPage({ params }: { params: Promise<{ dept: string }> }) {
   const { dept: slug } = await params;
   const dept = COMMAND_DEPARTMENTS[slug];
@@ -27,7 +27,7 @@ export default async function DepartmentRosterPage({ params }: { params: Promise
         <div className={`absolute top-0 left-0 right-0 h-1 ${dept.accent}`} />
         <div>
           <span className="text-[10px] text-[#5865F2] tracking-widest uppercase block mb-1">{dept.short} Command Suite</span>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Roster</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-100">Chain of Command</h2>
           <p className="text-xs text-neutral-400 mt-1 font-sans">
             {rows.length} in total. It updates by itself from the Discord roles; numbers and ranks are copied from Discord.
           </p>

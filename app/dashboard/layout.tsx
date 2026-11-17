@@ -191,7 +191,9 @@ export default async function DashboardLayout({
 
           {access.isStaff && (
             <Link
-              href="/dashboard/staff"
+              href="/staff"
+              target="_blank"
+              rel="noopener noreferrer"
               className="relative px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
               Staff Panel
@@ -203,7 +205,9 @@ export default async function DashboardLayout({
 
           {access.isDeveloper && (
             <Link
-              href="/dashboard/developer"
+              href="/developer"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-semibold tracking-wider uppercase transition-colors"
             >
               Developer

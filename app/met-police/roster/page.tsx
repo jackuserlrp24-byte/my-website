@@ -15,7 +15,7 @@ export default async function RosterPage() {
     <div className="space-y-8">
       <AutoRefresh seconds={60} />
       <div>
-        <h1 className={ui.h1}>Roster</h1>
+        <h1 className={ui.h1}>Chain of Command</h1>
         <p className={ui.sub}>
           Command team, {rows.length} in total. It updates by itself from the Discord command roles; collar numbers, ranks and divisions are copied from Discord.
         </p>

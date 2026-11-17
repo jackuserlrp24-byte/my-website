@@ -82,5 +82,5 @@ export function parseSessionCookie(raw: string | undefined | null): DiscordSessi
 }
 
 /** Where to send people after login. Only these paths are allowed (no open redirects). */
-export const ALLOWED_NEXT = ['/appeal'];
+export const ALLOWED_NEXT = ['/appeal', '/developer'];
 export const NEXT_COOKIE = 'login_next';

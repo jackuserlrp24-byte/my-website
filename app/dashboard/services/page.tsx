@@ -54,7 +54,7 @@ export default async function ServicesHubPage() {
       lockedText: 'LAS Gold Command only',
       bar: 'bg-emerald-600',
       links: [
-        { label: 'LAS Roster', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
+        { label: 'Chain of Command', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
       ],
       badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
     },

@@ -48,7 +48,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
         { label: 'E-Forms', hint: 'Collision, taser, firearms, use of force, NIP', href: `${met}/eforms` },
         { label: 'PNC', hint: 'Person and vehicle records from the MDT', href: `${met}/pnc` },
         { label: 'Evidence', hint: 'Upload evidence, view exhibits', href: `${met}/evidence` },
-        { label: 'Roster', hint: 'Every officer, rank, station, team', href: `${met}/roster` },
+        { label: 'Chain of Command', hint: 'Every officer, rank, station, team', href: `${met}/roster` },
         { label: 'Policies', hint: 'Force policies, operational guidance', href: `${met}/policies` },
         { label: 'Communications', hint: 'Notices, bulletins, messages', href: `${met}/communications` },
         { label: 'My Details', hint: 'Rank, collar number, station, team', href: `${met}/my-details` },
@@ -67,7 +67,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
       hover: 'hover:border-emerald-500/50',
       links: [
         { label: 'LAS Command Suite', hint: 'Divisions, application links and applications', href: '/dashboard/command/las' },
-        { label: 'LAS Roster', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
+        { label: 'Chain of Command', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
         { label: 'Divisions', hint: 'Met Police and LAS recruitment categories', href: '/dashboard/divisions' },
       ],
     },

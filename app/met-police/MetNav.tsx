@@ -11,7 +11,7 @@ const TABS = [
   { href: '/met-police/eforms', panel: 'met-eforms', label: 'E-Forms', owns: ['/met-police/reports', '/met-police/forms'] },
   { href: '/met-police/pnc', panel: 'met-pnc', label: 'PNC', owns: ['/met-police/checks'] },
   { href: '/met-police/evidence', panel: 'met-evidence', label: 'Evidence', owns: ['/met-police/body-worn-video'] },
-  { href: '/met-police/roster', panel: 'met-roster', label: 'Roster', owns: [] },
+  { href: '/met-police/roster', panel: 'met-roster', label: 'Chain of Command', owns: [] },
   { href: '/met-police/policies', panel: 'met-policies', label: 'Policies', owns: ['/met-police/law-book'] },
   { href: '/met-police/communications', panel: 'met-communications', label: 'Communications', owns: ['/met-police/announcements'] },
   { href: '/command', panel: 'met-command', label: 'Command', owns: [] },

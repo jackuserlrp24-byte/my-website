@@ -78,7 +78,7 @@ export function limitedAccess(roles: string[]): 'developer' | 'staff' | null {
 
 /** Where a limited user must be sent instead of the general pages (dashboard home, trainings, divisions, patrols). */
 export const limitedHome = (kind: 'developer' | 'staff' | null) =>
-  kind === 'developer' ? '/dashboard/developer' : kind === 'staff' ? '/dashboard/staff' : null;
+  kind === 'developer' ? '/developer' : kind === 'staff' ? '/staff' : null;
 
 export interface PortalUser {
   id: string;

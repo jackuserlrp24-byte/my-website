@@ -181,7 +181,7 @@ export default function MaintenanceScreen({
 
         {devLogin && (
           <a
-            href="/api/auth/discord?next=/dashboard/developer"
+            href="/api/auth/discord?next=/developer"
             className="inline-block mt-6 text-[11px] font-mono uppercase tracking-wider text-neutral-500 hover:text-neutral-300 underline underline-offset-4"
           >
             Developer login
