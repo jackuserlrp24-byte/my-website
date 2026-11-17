@@ -264,3 +264,62 @@ create table if not exists met_acat_entries (
 );
 create index if not exists met_acat_entries_cat_idx on met_acat_entries (category, created_at desc);
 alter table met_acat_entries enable row level security;
+
+-- ---------- MDT link: Incidents, PNC and E-Forms (filled by the in-game MDT through /api/mdt/sync) ----------
+create table if not exists mdt_incidents (
+  cad_ref text primary key,                   -- 1000/261026
+  response_grade text,                        -- Immediate / Urgent / Routine
+  call_type text,                             -- 999 / 101 / 111
+  title text,
+  location text,
+  caller text,
+  details text,
+  frequency text,
+  status text not null default 'New',
+  received text,
+  received_date text,
+  last_updated text,
+  officers jsonb not null default '[]'::jsonb, -- [{ callsign, name, status }]
+  remarks jsonb not null default '[]'::jsonb,  -- [{ stamp, by, text, system }]
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists mdt_incidents_created_idx on mdt_incidents (created_at desc);
+
+create table if not exists mdt_pnc_records (
+  kind text not null check (kind in ('person', 'vehicle')),
+  key text not null,                          -- person: PNC # / vehicle: VRM without spaces
+  search text not null default '',            -- lower case text the PNC search looks through
+  data jsonb not null default '{}'::jsonb,
+  web_edited boolean not null default false,  -- made or changed on the website, waiting for the game to collect it
+  updated_at timestamptz not null default now(),
+  primary key (kind, key)
+);
+create index if not exists mdt_pnc_records_search_idx on mdt_pnc_records (kind, search);
+
+create table if not exists mdt_eforms (
+  ref text primary key,                       -- PC-00001 (game) / PC-W123456 (website)
+  type text not null,
+  title text not null,
+  form_date text,
+  form_time text,
+  callsign text,
+  officer_name text,
+  author_id text,                             -- Discord ID when it was filed on the website (or the game knew it)
+  fields jsonb not null default '{}'::jsonb,
+  photos integer not null default 0,
+  status text not null default 'waiting',     -- waiting / changes / edited / signed
+  ask text,
+  created_at timestamptz not null default now()
+);
+create index if not exists mdt_eforms_author_idx on mdt_eforms (author_id, created_at desc);
+
+create table if not exists mdt_eform_defs (   -- admin-made forms from the MDT form builder
+  id text primary key,
+  def jsonb not null
+);
+
+alter table mdt_incidents enable row level security;
+alter table mdt_pnc_records enable row level security;
+alter table mdt_eforms enable row level security;
+alter table mdt_eform_defs enable row level security;

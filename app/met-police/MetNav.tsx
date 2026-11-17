@@ -7,11 +7,10 @@ import { useEffect, useState } from 'react';
 // Each tab also "owns" the older pages that now live under it, so the right tab stays highlighted on them.
 // `panel` is the maintenance switch for that tab (see lib/maintenance-config.ts).
 const TABS = [
-  { href: '/met-police/incidents', panel: 'met-incidents', label: 'My Incidents', owns: [] as string[] },
-  { href: '/met-police/reports', panel: 'met-reports', label: 'Reports', owns: ['/met-police/forms'] },
-  { href: '/met-police/checks', panel: 'met-checks', label: 'Checks', owns: [] },
+  { href: '/met-police/incidents', panel: 'met-incidents', label: 'Incidents', owns: [] as string[] },
+  { href: '/met-police/eforms', panel: 'met-eforms', label: 'E-Forms', owns: ['/met-police/reports', '/met-police/forms'] },
+  { href: '/met-police/pnc', panel: 'met-pnc', label: 'PNC', owns: ['/met-police/checks'] },
   { href: '/met-police/evidence', panel: 'met-evidence', label: 'Evidence', owns: ['/met-police/body-worn-video'] },
-  { href: '/met-police/statements', panel: 'met-statements', label: 'Statements', owns: [] },
   { href: '/met-police/roster', panel: 'met-roster', label: 'Roster', owns: [] },
   { href: '/met-police/policies', panel: 'met-policies', label: 'Policies', owns: ['/met-police/law-book'] },
   { href: '/met-police/communications', panel: 'met-communications', label: 'Communications', owns: ['/met-police/announcements'] },

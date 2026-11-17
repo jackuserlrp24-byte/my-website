@@ -36,3 +36,16 @@ CHANGES IN THIS UPDATE
 - Duty and Training tabs removed. Delete the old folders app/met-police/duty and app/met-police/training from your project.
 - My Details is now the last tab.
 - The duty rota is still on the Leave of Absence page (/dashboard/command/loa), command rank only.
+
+MDT LINK, INCIDENTS, PNC AND E-FORMS (new)
+- Tabs changed: Statements removed. My Incidents -> Incidents (same list and full-incident screen as the MDT, with remarks).
+  Checks -> PNC (Person / Vehicle search, record tabs, new person / vehicle). Reports -> E-Forms (the MDT forms).
+  Old links (/met-police/statements, /checks, /reports) redirect to the new pages.
+- Run supabase/met-portal.sql again (safe to re-run). It adds mdt_incidents, mdt_pnc_records, mdt_eforms, mdt_eform_defs.
+- In Vercel add MDT_API_KEY = a long random secret, then redeploy.
+- In the MDT resource (CO-MDT-with-web-link.zip): put the same secret in server.cfg
+      set comdt_web_url "https://your-site.vercel.app"
+      set comdt_web_key "<the MDT_API_KEY value>"
+  Copy web_bridge.lua, fxmanifest.lua and server.lua over the MDT files and restart the resource.
+- The MDT sends incidents, PNC and e-forms to the website every 10 seconds. PNC records made on the website are collected by the MDT.
+- Old tables (met_reports, met_pnc_*, met_statements...) are left alone; nothing is deleted from the database.
