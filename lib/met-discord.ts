@@ -27,7 +27,7 @@ const TIERS: { label: string; id: string }[] = [
 // is listed under "Division Command".
 /** Gold Command are always based at New Scotland Yard. */
 export const GOLD_STATION = 'New Scotland Yard';
-/** MO8 command are based at Chadwell Heath. */
+/** MO7 and MO8 command are based at Chadwell Heath. */
 export const MO8_STATION = 'Chadwell Heath Police Base';
 /** Frontline Response command are shared out evenly between these two. */
 export const FRONTLINE_STATIONS = ['Plumstead Police Station', 'Bexleyheath Police Station'];
@@ -180,7 +180,7 @@ export async function getMetRoster(): Promise<RosterResult> {
     const d = details.get(id);
     const collarNo = (nick.collar || wl.get(id)?.collar || '').trim().toUpperCase();
     const isGold = tierIndex === 0;
-    const isMo8 = !isGold && (divisions.includes('MO8') || collarNo === '1050T');
+    const isMo8 = !isGold && (divisions.includes('MO7') || divisions.includes('MO8') || collarNo === '1050T'); // MO7 + MO8 -> Chadwell Heath
     const isFrontline = !isGold && !isMo8 && divisions.includes('Frontline Response');
     const station = isGold ? GOLD_STATION : isMo8 ? MO8_STATION : d?.station ?? null;
     if (isFrontline && !station) frontlineIdx.push(rows.length);
