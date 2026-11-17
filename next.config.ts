@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
     return [
       // The Services Hub is now its own standalone page.
       { source: '/dashboard/services', destination: '/services', permanent: false },
+      // Command is now its own page (/command). Old links and bookmarks still work.
+      { source: '/met-police/command', destination: '/command', permanent: false },
+      { source: '/met-police/command/:path*', destination: '/command/:path*', permanent: false },
       {
         source: '/:path*',
         has: [{ type: 'host', value: twinHost }],

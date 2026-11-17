@@ -4,21 +4,10 @@ import Link from 'next/link';
 import type { ComponentProps } from 'react';
 
 /**
- * A normal link that also puts the browser into full screen when it is clicked (if `fullscreen` is true).
- * The click is the user gesture browsers require, and because Next.js changes page without reloading,
- * the page stays full screen all the way into the Met Police portal.
+ * A normal link: it opens the page in the same tab and does NOT switch the browser to full screen any more.
+ * (The `fullscreen` prop is kept so existing links do not need changing. Full screen is still one click away
+ * on the "Full screen" button inside the portals.)
  */
-export default function FullscreenLink({ fullscreen = true, onClick, ...rest }: ComponentProps<typeof Link> & { fullscreen?: boolean }) {
-  return (
-    <Link
-      {...rest}
-      onClick={(e) => {
-        onClick?.(e);
-        if (!fullscreen) return;
-        try {
-          if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.().catch(() => {});
-        } catch {}
-      }}
-    />
-  );
+export default function FullscreenLink({ fullscreen: _fullscreen, ...rest }: ComponentProps<typeof Link> & { fullscreen?: boolean }) {
+  return <Link {...rest} />;
 }

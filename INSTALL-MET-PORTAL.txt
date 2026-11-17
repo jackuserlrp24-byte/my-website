@@ -56,3 +56,10 @@ COMMAND AREA (new layout)
 - Dashboard: quick numbers (active incidents, forms waiting review, notices) and the section cards.
 - Submitted Forms: every e-form, filter by form and status (command only). Announcements: post / delete notices and bulletins (command only).
 - LOA: only the request form. The duty rota and the "on leave" lists are no longer shown on it.
+
+COMMAND IS NOW ITS OWN PAGE (/command)
+- The Command tab in the officer portal opens /command: a separate page with its own sidebar (Dashboard, Submitted Forms,
+  Announcements, LOA, Police Collisions, Firearms PIP, Anti-Corruption & Abuse) and an "Officer Portal" button back.
+- DELETE the old folder app/met-police/command from your project when you copy this in (it moved to app/command),
+  otherwise the old copy stays behind. Old /met-police/command links redirect to /command (see next.config.ts).
+- Services Hub: clicking a service now opens the page normally. It no longer switches the browser to full screen.

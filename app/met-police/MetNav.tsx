@@ -14,7 +14,7 @@ const TABS = [
   { href: '/met-police/roster', panel: 'met-roster', label: 'Roster', owns: [] },
   { href: '/met-police/policies', panel: 'met-policies', label: 'Policies', owns: ['/met-police/law-book'] },
   { href: '/met-police/communications', panel: 'met-communications', label: 'Communications', owns: ['/met-police/announcements'] },
-  { href: '/met-police/command', panel: 'met-command', label: 'Command', owns: [] },
+  { href: '/command', panel: 'met-command', label: 'Command', owns: [] },
   // My Details sits at the bottom of the list.
   { href: '/met-police/my-details', panel: 'met-my-details', label: 'My Details', owns: [] },
 ];
@@ -46,7 +46,7 @@ export default function MetNav({ showCommand = false }: { showCommand?: boolean 
 
   return (
     <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible px-3 md:px-4 pb-3 md:pb-0">
-      {TABS.filter((t) => t.href !== '/met-police/command' || showCommand).map((t) => {
+      {TABS.filter((t) => t.href !== '/command' || showCommand).map((t) => {
         const active = [t.href, ...t.owns].some((b) => under(path, b));
         return (
           <Link
