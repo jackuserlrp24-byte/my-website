@@ -1,52 +1,6 @@
 import { redirect } from 'next/navigation';
-import { getPortalUser, supabaseAdmin } from '@/lib/portal';
-import { syncLoas, type LoaRequest } from '@/lib/loa';
-import { londonToday } from '@/lib/london-time';
-import { hasCommandRank } from '@/lib/met-access';
-import { getOfficerOptions, type OfficerOption } from '@/lib/met-officers';
-import LoaClient, { type RotaShift } from './LoaClient';
 
-export const dynamic = 'force-dynamic';
-
-export default async function LoaPage() {
-  const user = await getPortalUser();
-  if (!user) redirect('/');
-  if (!user.isCommand) redirect('/dashboard');
-
-  try {
-    await syncLoas();
-  } catch (err) {
-    console.error('LOA sync failed:', err);
-  }
-
-  const [current, mine] = await Promise.all([
-    supabaseAdmin.from('loa_requests').select('*').in('status', ['active', 'approved']).order('start_date', { ascending: true }).limit(100),
-    supabaseAdmin.from('loa_requests').select('*').eq('discord_id', user.id).order('created_at', { ascending: false }).limit(15),
-  ]);
-
-  // The duty rota is for command rank only (Gold / Silver / Bronze, or management).
-  // Anyone else never has it loaded on the server, so it cannot be seen in the page data either.
-  let rota: RotaShift[] | null = null;
-  let officers: OfficerOption[] = [];
-  if (hasCommandRank(user)) {
-    const [shifts, list] = await Promise.all([
-      supabaseAdmin.from('duty_rota').select('*').gte('shift_date', londonToday()).order('shift_date', { ascending: true }).order('start_time', { ascending: true }).limit(200),
-      getOfficerOptions(),
-    ]);
-    rota = (shifts.data ?? []) as RotaShift[];
-    officers = list;
-  }
-
-  return (
-    <LoaClient
-      rota={rota}
-      officers={officers}
-      userId={user.id}
-      canEndAny={user.isManagement}
-      today={londonToday()}
-      current={(current.data ?? []) as LoaRequest[]}
-      mine={(mine.data ?? []) as LoaRequest[]}
-      loadError={current.error ? 'LOA table not found. Run supabase/full-setup.sql in Supabase.' : null}
-    />
-  );
+// The Leave of Absence page now lives inside the Met Police portal.
+export default function OldLoaPage() {
+  redirect('/met-police/command/loa');
 }

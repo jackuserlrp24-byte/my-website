@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { canManageMet, canOpenCommandArea, canViewCollisions, canViewFirearms, getOfficer, hasCommandRank } from '@/lib/met-access';
+import { canManageMet, canOpenCommandArea, canViewAcat, canViewCollisions, canViewFirearms, getOfficer, hasCommandRank } from '@/lib/met-access';
 import { ui } from '@/lib/met-util';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +21,11 @@ export default async function CommandPage() {
       title: 'Firearms PIP',
       text: 'Post incident procedure after a firearms incident. MO19 Command only.',
     },
+    canViewAcat(officer) && {
+      href: '/met-police/command/acat',
+      title: 'Anti-Corruption & Abuse Team',
+      text: 'Case files, referrals, intelligence and integrity checks. ACAT and Gold Command only.',
+    },
     canManageMet(officer) && {
       href: '/met-police/communications',
       title: 'Announcements',
@@ -32,7 +37,7 @@ export default async function CommandPage() {
       text: 'Set rank, station and team for any officer.',
     },
     hasCommandRank(officer) && {
-      href: '/dashboard/command/loa',
+      href: '/met-police/command/loa',
       title: 'Leave of Absence',
       text: 'Leave requests and the duty rota.',
     },

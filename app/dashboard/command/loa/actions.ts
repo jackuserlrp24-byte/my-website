@@ -17,6 +17,7 @@ export async function requestLoa(formData: FormData): Promise<ActionResult> {
     endDate: String(formData.get('endDate') ?? ''),
   });
   revalidatePath('/dashboard/command/loa');
+  revalidatePath('/met-police/command/loa');
   return result;
 }
 
@@ -25,6 +26,7 @@ export async function returnFromLoa(id: string): Promise<ActionResult> {
   if (!user?.isCommand) return { ok: false, message: 'Only command can manage an LOA.' };
   const result = await endLoaEarly(user, id);
   revalidatePath('/dashboard/command/loa');
+  revalidatePath('/met-police/command/loa');
   return result;
 }
 
@@ -62,6 +64,7 @@ export async function addRotaShift(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: 'Could not save the shift. Have you run supabase/met-portal.sql?' };
   }
   revalidatePath('/dashboard/command/loa');
+  revalidatePath('/met-police/command/loa');
   return { ok: true, message: `Shift added for ${name}.` };
 }
 
@@ -70,5 +73,6 @@ export async function removeRotaShift(id: string): Promise<ActionResult> {
   if (!user?.isCommand || !hasCommandRank(user)) return NO_RANK;
   await supabaseAdmin.from('duty_rota').delete().eq('id', id);
   revalidatePath('/dashboard/command/loa');
+  revalidatePath('/met-police/command/loa');
   return { ok: true, message: 'Shift removed.' };
 }

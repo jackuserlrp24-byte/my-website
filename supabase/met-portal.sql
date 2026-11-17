@@ -249,3 +249,18 @@ alter table duty_rota enable row level security;
 alter table met_messages enable row level security;
 alter table met_collisions enable row level security;
 alter table met_firearms_pip enable row level security;
+
+-- ---------- Command: Anti-Corruption & Abuse Team (ACAT role + Gold Command only) ----------
+create table if not exists met_acat_entries (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  category text not null,                    -- cases / referrals / intelligence / integrity / welfare
+  reference text not null unique,            -- ACAT-123456
+  title text not null,
+  details text not null,
+  status text not null default 'open' check (status in ('open', 'under_review', 'closed')),
+  created_by_id text not null,
+  created_by_name text
+);
+create index if not exists met_acat_entries_cat_idx on met_acat_entries (category, created_at desc);
+alter table met_acat_entries enable row level security;

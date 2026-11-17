@@ -33,7 +33,9 @@ const DIVISION_ROLES: { label: string; id: string }[] = [
   { label: 'MO8', id: '1532843930176196788' },
   { label: 'MO12', id: '1532844764330987740' },
   { label: 'MO19', id: '1532845445993468034' },
+  { label: 'Anti-Corruption & Abuse Team', id: '1566858721340948641' },
 ];
+const ACAT_LABEL = 'Anti-Corruption & Abuse Team';
 const DIVISION_TIER = { label: 'Division Command', level: TIERS.length };
 
 // Met ranks, most senior first (lower level = more senior). A Discord role is treated as a rank when its name contains one of
@@ -161,8 +163,11 @@ export async function getMetRoster(): Promise<RosterResult> {
       rank: rank?.rank ?? d?.rank ?? null,
       rankLevel: rank?.level ?? 99,
       station: d?.station ?? null,
-      // Gold Command oversees every division
-      division: tierIndex === 0 ? 'All Divisions' : divisions.length ? divisions.join(', ') : null,
+      // Gold Command oversees every division, but a division they hold the role for (e.g. ACAT) is still named
+      division:
+        tierIndex === 0
+          ? divisions.includes(ACAT_LABEL) ? `All Divisions, ${ACAT_LABEL}` : 'All Divisions'
+          : divisions.length ? divisions.join(', ') : null,
       tier: tierIndex < 0 ? DIVISION_TIER.label : TIERS[tierIndex].label,
       tierLevel: tierIndex < 0 ? DIVISION_TIER.level : tierIndex,
     });
