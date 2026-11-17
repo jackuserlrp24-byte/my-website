@@ -1,5 +1,39 @@
--- Met Police Officer Portal (new tabs). Run once in the Supabase SQL editor (safe to re-run).
--- Also run supabase/met-announcements.sql and supabase/bodycam.sql if you have not already.
+-- Met Police Officer Portal. Run once in the Supabase SQL editor (safe to re-run).
+-- Includes announcements and bodycam, so you no longer need met-announcements.sql or bodycam.sql.
+
+-- ---------- Announcements (Communications > Notices & bulletins) ----------
+create table if not exists met_announcements (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  title text not null,
+  body text not null,
+  author text,
+  pinned boolean not null default false
+);
+create index if not exists met_announcements_created_idx on met_announcements (created_at desc);
+alter table met_announcements add column if not exists kind text not null default 'notice';  -- 'notice' | 'bulletin'
+alter table met_announcements enable row level security;
+
+-- ---------- Bodycam footage (CO-AxonBodycam) ----------
+create table if not exists bodycam_incidents (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  officer_name text,
+  officer_discord_id text,
+  target_name text,
+  target_discord_id text,
+  weapon text,
+  serial text,
+  coords text,
+  trigger text,                                -- hit | firearm | taser
+  status text not null default 'uploading',   -- uploading | ready
+  total_ms integer not null default 0,
+  segments jsonb not null default '[]'::jsonb
+);
+alter table bodycam_incidents add column if not exists trigger text;
+create index if not exists bodycam_incidents_created_idx on bodycam_incidents (created_at desc);
+alter table bodycam_incidents enable row level security;
+insert into storage.buckets (id, name, public) values ('bodycam', 'bodycam', false) on conflict (id) do nothing;
 
 -- ---------- My Incidents ----------
 create table if not exists met_incidents (
@@ -128,16 +162,7 @@ create table if not exists met_officer_details (
   updated_at timestamptz not null default now()
 );
 
--- ---------- Duty ----------
-create table if not exists met_duty_status (
-  discord_id text primary key,
-  name text,
-  status text not null default 'off_duty' check (status in ('on_duty', 'off_duty', 'unavailable')),
-  note text,
-  updated_at timestamptz not null default now()
-);
-
--- Duty rota. Shown ONLY on the LOA page and ONLY to Gold / Silver / Bronze command (and management).
+-- ---------- Duty rota (shown only on the LOA page, command rank only) ----------
 create table if not exists duty_rota (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -152,8 +177,6 @@ create table if not exists duty_rota (
 create index if not exists duty_rota_date_idx on duty_rota (shift_date, start_time);
 
 -- ---------- Communications ----------
-alter table met_announcements add column if not exists kind text not null default 'notice';  -- 'notice' | 'bulletin'
-
 create table if not exists met_messages (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
@@ -222,7 +245,6 @@ alter table met_check_log enable row level security;
 alter table met_evidence enable row level security;
 alter table met_statements enable row level security;
 alter table met_officer_details enable row level security;
-alter table met_duty_status enable row level security;
 alter table duty_rota enable row level security;
 alter table met_messages enable row level security;
 alter table met_collisions enable row level security;

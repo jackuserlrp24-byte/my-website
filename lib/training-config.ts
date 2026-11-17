@@ -9,7 +9,7 @@ export const TRAINER_ROLE_ID = process.env.DISCORD_TRAINER_ROLE_ID || '';
 //   Gold   - sees the trainer panel and approves role requests (the bot then gives the role on Discord)
 //   Silver - posts trainings and can view division applications
 //   Bronze - posts trainings
-export const GOLD_ROLE_ID = process.env.DISCORD_GOLD_COMMAND_ROLE_ID || '1532843318197747872';
+export const GOLD_ROLE_ID = process.env.DISCORD_GOLD_COMMAND_ROLE_ID || '1532828658979569894';
 export const SILVER_ROLE_ID = process.env.DISCORD_SILVER_COMMAND_ROLE_ID || '1532828760410427432';
 export const BRONZE_ROLE_ID = process.env.DISCORD_BRONZE_COMMAND_ROLE_ID || '1532828869944545410';
 

@@ -10,7 +10,7 @@ export interface MetOfficerRow {
   rank: string | null;
   rankLevel: number;
   station: string | null;
-  team: string | null;
+  division: string | null; // division command team role(s) they hold, e.g. "MO2, MO19"
   tier: string; // which command role they hold
   tierLevel: number;
 }
@@ -22,6 +22,19 @@ const TIERS: { label: string; id: string }[] = [
   { label: 'Bronze Command', id: BRONZE_ROLE_ID },
   { label: 'Met Command', id: MET_COMMAND_ROLE_ID },
 ];
+
+// Division command team roles. These fill the Division column, and anyone who holds one but none of the roles above
+// is listed under "Division Command".
+const DIVISION_ROLES: { label: string; id: string }[] = [
+  { label: 'Frontline Response', id: '1532843318197747872' },
+  { label: 'MO2', id: '1532843761732681820' },
+  { label: 'MO3', id: '1532843695815135443' },
+  { label: 'MO7', id: '1532843862165422313' },
+  { label: 'MO8', id: '1532843930176196788' },
+  { label: 'MO12', id: '1532844764330987740' },
+  { label: 'MO19', id: '1532845445993468034' },
+];
+const DIVISION_TIER = { label: 'Division Command', level: TIERS.length };
 
 // Met ranks, most senior first (lower level = more senior). A Discord role is treated as a rank when its name contains one of
 // these words. Add or rename entries here if your server uses different rank names.
@@ -86,7 +99,7 @@ type RosterResult = { rows: MetOfficerRow[]; error: string | null };
 let cached: { at: number; value: RosterResult } | null = null;
 const CACHE_MS = 30_000; // short, so role changes in Discord show up within about a minute
 
-/** Command roster, built live from Discord: who is listed comes from the Gold / Silver / Bronze / Met Command roles, collar number from the nickname, rank from rank roles. Station and team come from My Details. */
+/** Command roster, built live from Discord: who is listed comes from the Gold / Silver / Bronze / Met Command roles, collar number from the nickname, rank from rank roles. Division comes from the division command team roles, station from My Details. */
 export async function getMetRoster(): Promise<RosterResult> {
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.value;
 
@@ -135,7 +148,8 @@ export async function getMetRoster(): Promise<RosterResult> {
     const id = m.user.id;
     const roles = m.roles ?? [];
     const tierIndex = TIERS.findIndex((t) => !!t.id && roles.includes(t.id));
-    if (tierIndex < 0) continue; // not command
+    const divisions = DIVISION_ROLES.filter((d) => roles.includes(d.id)).map((d) => d.label);
+    if (tierIndex < 0 && divisions.length === 0) continue; // not command
 
     const nick = parseNick(m.nick);
     const rank = rankFromRoleNames(roles.map((r) => roleName.get(r)).filter(Boolean) as string[]);
@@ -147,9 +161,9 @@ export async function getMetRoster(): Promise<RosterResult> {
       rank: rank?.rank ?? d?.rank ?? null,
       rankLevel: rank?.level ?? 99,
       station: d?.station ?? null,
-      team: d?.team ?? null,
-      tier: TIERS[tierIndex].label,
-      tierLevel: tierIndex,
+      division: divisions.length ? divisions.join(', ') : null,
+      tier: tierIndex < 0 ? DIVISION_TIER.label : TIERS[tierIndex].label,
+      tierLevel: tierIndex < 0 ? DIVISION_TIER.level : tierIndex,
     });
   }
 

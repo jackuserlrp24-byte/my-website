@@ -17,7 +17,7 @@ export default async function RosterPage() {
       <div>
         <h1 className={ui.h1}>Roster</h1>
         <p className={ui.sub}>
-          Command team, {rows.length} in total. It updates by itself from the Discord command roles; collar numbers and ranks are copied from Discord.
+          Command team, {rows.length} in total. It updates by itself from the Discord command roles; collar numbers, ranks and divisions are copied from Discord.
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export default async function RosterPage() {
                     <th className={ui.th}>Officer</th>
                     <th className={ui.th}>Rank</th>
                     <th className={ui.th}>Station</th>
-                    <th className={ui.th}>Team</th>
+                    <th className={ui.th}>Division</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -50,7 +50,7 @@ export default async function RosterPage() {
                       </td>
                       <td className="px-4 py-2 text-slate-600">{r.rank || '-'}</td>
                       <td className="px-4 py-2 text-slate-600">{r.station || '-'}</td>
-                      <td className="px-4 py-2 text-slate-600">{r.team || '-'}</td>
+                      <td className="px-4 py-2 text-slate-600">{r.division || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
