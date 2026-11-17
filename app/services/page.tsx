@@ -2,6 +2,8 @@ import Link from 'next/link';
 import FullscreenLink from './FullscreenLink';
 import { getPortalUser } from '@/lib/portal';
 import { COMMAND_DEPARTMENTS, canOpenDepartment } from '@/lib/departments';
+import { getOfficer } from '@/lib/met-access';
+import { getLasMember } from '@/lib/las-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +29,7 @@ interface Service {
 
 export default async function ServicesHubPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const { service: picked } = await searchParams;
-  const user = await getPortalUser();
+  const [user, officer, lasMember] = await Promise.all([getPortalUser(), getOfficer(), getLasMember()]);
   const can = (slug: string) => !!user && canOpenDepartment(user.roles, user.isManagement, COMMAND_DEPARTMENTS[slug]);
 
   const met = '/met-police';
@@ -38,8 +40,8 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
       title: 'Metropolitan Police',
       description: 'The officer portal: incidents, e-forms, PNC, evidence, roster, policies, communications and your details.',
       href: met,
-      available: !!user?.isCommand,
-      lockedText: 'Met Police command only',
+      available: !!officer,
+      lockedText: 'Met Police officers only',
       bar: 'bg-blue-600',
       badge: 'text-blue-300 bg-blue-500/10 border-blue-500/30',
       hover: 'hover:border-blue-500/50',
@@ -58,17 +60,19 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
       key: 'las',
       code: 'LAS',
       title: 'London Ambulance Service',
-      description: 'Open or close divisions, set application links and review applications.',
-      href: '/dashboard/command/las',
-      available: can('las'),
-      lockedText: 'LAS Gold Command only',
+      description: 'The LAS staff portal: divisions, chain of command, policies and your details.',
+      href: '/las',
+      available: !!lasMember,
+      lockedText: 'LAS staff only',
       bar: 'bg-emerald-600',
       badge: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
       hover: 'hover:border-emerald-500/50',
       links: [
-        { label: 'LAS Command Suite', hint: 'Divisions, application links and applications', href: '/dashboard/command/las' },
-        { label: 'Chain of Command', hint: 'LAS command team, ranks and numbers', href: '/dashboard/command/las/roster' },
-        { label: 'Divisions', hint: 'Met Police and LAS recruitment categories', href: '/dashboard/divisions' },
+        { label: 'Divisions', hint: 'LAS and Control divisions and how to apply', href: '/las/divisions' },
+        { label: 'Chain of Command', hint: 'LAS command team, ranks and numbers', href: '/las/roster' },
+        { label: 'Policies', hint: 'Service policies and operational guidance', href: '/las/policies' },
+        { label: 'My Details', hint: 'Your name, number and rank', href: '/las/my-details' },
+        ...(can('las') ? [{ label: 'LAS Command Suite', hint: 'Open or close divisions, set links, review applications', href: '/dashboard/command/las' }] : []),
       ],
     },
     {
@@ -103,7 +107,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
             <h1 className="text-2xl font-bold text-neutral-100 tracking-tight">{selected.title}</h1>
             <p className="text-xs text-neutral-400 font-sans leading-relaxed">{selected.description}</p>
             <FullscreenLink
-              fullscreen={selected.key === 'met'}
+              fullscreen={selected.key === 'met' || selected.key === 'las'}
               href={selected.href}
               className="inline-block px-4 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
@@ -112,7 +116,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
             {selected.links.map((l) => (
-              <FullscreenLink key={l.href} fullscreen={selected.key === 'met'} href={l.href} className={`bg-neutral-950 border border-neutral-800 ${selected.hover} p-4 transition-colors`}>
+              <FullscreenLink key={l.href} fullscreen={selected.key === 'met' || selected.key === 'las'} href={l.href} className={`bg-neutral-950 border border-neutral-800 ${selected.hover} p-4 transition-colors`}>
                 <p className="text-xs font-bold text-neutral-100 uppercase tracking-wider">{l.label}</p>
                 <p className="text-[11px] text-neutral-500 font-sans mt-1">{l.hint}</p>
               </FullscreenLink>
@@ -149,7 +153,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
           );
           const cls = 'bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col justify-between relative overflow-hidden transition-colors';
           return s.available ? (
-            <FullscreenLink key={s.key} fullscreen={s.key === 'met'} href={`/services?service=${s.key}`} className={`${cls} ${s.hover} hover:bg-neutral-900/70`}>
+            <FullscreenLink key={s.key} fullscreen={s.key === 'met' || s.key === 'las'} href={`/services?service=${s.key}`} className={`${cls} ${s.hover} hover:bg-neutral-900/70`}>
               {body}
             </FullscreenLink>
           ) : (

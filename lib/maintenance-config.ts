@@ -50,6 +50,8 @@ export const MAINTENANCE_PANELS = [
   { key: 'met-acat', label: 'Met Police: Command - Anti-Corruption & Abuse Team', path: '/command/acat' },
   { key: 'met-loa', label: 'Met Police: Command - Leave of Absence', path: '/command/loa' },
   { key: 'met-my-details', label: 'Met Police: My Details', path: '/met-police/my-details' },
+  // London Ambulance Service portal (/las).
+  { key: 'las-portal', label: 'LAS portal (whole portal)', path: '/las' },
   { key: 'whitelist', label: 'Whitelist process', path: '/whitelistprocess' },
   { key: 'appeal', label: 'Ban Appeal form (public)', path: '/appeal' },
 ] as const;

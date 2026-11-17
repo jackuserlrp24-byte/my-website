@@ -6,6 +6,8 @@ import { GOLD_ROLE_ID, LAS_GOLD_ROLE_ID } from '@/lib/training-config';
 //   LAS: LAS Gold Command (built in, 1545762280199688252) and optionally DISCORD_LAS_COMMAND_ROLE_ID, plus the developer roles.
 //   LFB: optionally DISCORD_LFB_COMMAND_ROLE_ID.
 export const LAS_COMMAND_ROLE_ID = process.env.DISCORD_LAS_COMMAND_ROLE_ID || '';
+/** Everyone in LAS (optional). Lets ordinary LAS staff open the LAS portal. Set DISCORD_LAS_MEMBER_ROLE_ID in Vercel. */
+export const LAS_MEMBER_ROLE_ID = process.env.DISCORD_LAS_MEMBER_ROLE_ID || '';
 export const LFB_COMMAND_ROLE_ID = process.env.DISCORD_LFB_COMMAND_ROLE_ID || '';
 
 export interface CommandDepartment {

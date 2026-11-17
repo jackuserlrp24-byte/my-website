@@ -34,18 +34,16 @@ export default async function MetPoliceLayout({ children }: { children: React.Re
 
           <MetNav showCommand={canOpenCommandArea(officer)} />
 
-          <div className="hidden md:flex flex-col gap-1 mt-auto px-4 py-5 border-t border-slate-200">
+          <div className="flex flex-col gap-1 mt-auto px-4 py-5 border-t border-slate-200">
             <p className="px-1 text-xs text-slate-500">Signed in as</p>
             <p className="px-1 text-sm font-semibold text-slate-800 truncate">{officer.name}</p>
-            <FullscreenButton className="mt-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer" />
-            <Link href="/dashboard" className=" px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md">
+            <FullscreenButton className="mt-2 hidden md:block px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md cursor-pointer" />
+            <Link href="/dashboard" className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md">
               &larr; Back to Portal
             </Link>
-            {officer.isCommand && (
-              <Link href="/services" className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md">
-                Services Hub
-              </Link>
-            )}
+            <Link href="/services" className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-100 rounded-md">
+              Services Hub
+            </Link>
           </div>
         </aside>
 

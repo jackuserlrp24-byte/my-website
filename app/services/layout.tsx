@@ -2,22 +2,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PanelGate } from '@/app/components/MaintenanceGates';
-import { hasCommandAccess } from '@/lib/training-config';
-import { hasLasAccess } from '@/lib/departments';
+import { getOfficer } from '@/lib/met-access';
+import { getLasMember } from '@/lib/las-access';
 import { getDiscordSession } from '@/lib/discord-session';
-import { getGuildMember } from '@/lib/discord-member';
 
 export const dynamic = 'force-dynamic';
 
 // Standalone page: it does NOT sit inside the portal dashboard layout, so no portal navigation bar,
-// no maintenance banner and no portal footer. Same people who can see the Command tab can open it.
+// no maintenance banner and no portal footer. It is the way into the Met Police and LAS portals.
 export default async function ServicesLayout({ children }: { children: React.ReactNode }) {
   const session = await getDiscordSession();
   if (!session?.id) redirect('/');
 
-  const result = await getGuildMember(session.id);
-  const roles = result.status === 'ok' && Array.isArray(result.member.roles) ? result.member.roles : [];
-  if (!hasCommandAccess(roles) && !hasLasAccess(roles)) redirect('/dashboard');
+  // Anyone who can open the Met Police or LAS portal can use the hub to get there.
+  const [officer, las] = await Promise.all([getOfficer(), getLasMember()]);
+  if (!officer && !las) redirect('/dashboard');
 
   return (
     <PanelGate panel="command">
