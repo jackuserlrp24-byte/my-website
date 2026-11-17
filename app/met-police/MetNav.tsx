@@ -13,17 +13,18 @@ const TABS = [
   { href: '/met-police/roster', label: 'Roster', owns: [] },
   { href: '/met-police/policies', label: 'Policies', owns: ['/met-police/law-book'] },
   { href: '/met-police/communications', label: 'Communications', owns: ['/met-police/announcements'] },
+  { href: '/met-police/command', label: 'Command', owns: [] },
   // My Details sits at the bottom of the list.
   { href: '/met-police/my-details', label: 'My Details', owns: [] },
 ];
 
 const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
 
-export default function MetNav() {
+export default function MetNav({ showCommand = false }: { showCommand?: boolean }) {
   const path = usePathname();
   return (
     <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible px-3 md:px-4 pb-3 md:pb-0">
-      {TABS.map((t) => {
+      {TABS.filter((t) => t.href !== '/met-police/command' || showCommand).map((t) => {
         const active = [t.href, ...t.owns].some((b) => under(path, b));
         return (
           <Link

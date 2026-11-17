@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FullscreenLink from './FullscreenLink';
 import { getPortalUser } from '@/lib/portal';
 import { COMMAND_DEPARTMENTS, canOpenDepartment } from '@/lib/departments';
 
@@ -98,19 +99,20 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
             <span className={`px-2.5 py-1 text-[10px] font-bold border rounded-sm inline-block ${selected.badge}`}>{selected.code}</span>
             <h1 className="text-2xl font-bold text-neutral-100 tracking-tight">{selected.title}</h1>
             <p className="text-xs text-neutral-400 font-sans leading-relaxed">{selected.description}</p>
-            <Link
+            <FullscreenLink
+              fullscreen={selected.key === 'met'}
               href={selected.href}
               className="inline-block px-4 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               Open {selected.code} &rarr;
-            </Link>
+            </FullscreenLink>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
             {selected.links.map((l) => (
-              <Link key={l.href} href={l.href} className={`bg-neutral-950 border border-neutral-800 ${selected.hover} p-4 transition-colors`}>
+              <FullscreenLink key={l.href} fullscreen={selected.key === 'met'} href={l.href} className={`bg-neutral-950 border border-neutral-800 ${selected.hover} p-4 transition-colors`}>
                 <p className="text-xs font-bold text-neutral-100 uppercase tracking-wider">{l.label}</p>
                 <p className="text-[11px] text-neutral-500 font-sans mt-1">{l.hint}</p>
-              </Link>
+              </FullscreenLink>
             ))}
           </div>
         </div>
@@ -144,9 +146,9 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
           );
           const cls = 'bg-neutral-900 border border-neutral-800 p-6 shadow-lg flex flex-col justify-between relative overflow-hidden transition-colors';
           return s.available ? (
-            <Link key={s.key} href={`/services?service=${s.key}`} className={`${cls} ${s.hover} hover:bg-neutral-900/70`}>
+            <FullscreenLink key={s.key} fullscreen={s.key === 'met'} href={`/services?service=${s.key}`} className={`${cls} ${s.hover} hover:bg-neutral-900/70`}>
               {body}
-            </Link>
+            </FullscreenLink>
           ) : (
             <div key={s.key} className={`${cls} opacity-60`}>
               {body}

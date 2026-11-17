@@ -168,6 +168,50 @@ create table if not exists met_messages (
 create index if not exists met_messages_to_idx on met_messages (to_id, created_at desc);
 create index if not exists met_messages_from_idx on met_messages (from_id, created_at desc);
 
+-- ---------- Command: Police Collisions (Driving Standards / Gold) ----------
+create table if not exists met_collisions (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  reference text not null unique,            -- COL-123456
+  collision_date date not null,
+  officer_id text not null,
+  officer_name text,
+  vehicle text,
+  location text not null,
+  severity text not null default 'minor' check (severity in ('minor', 'moderate', 'serious', 'fatal')),
+  injuries boolean not null default false,
+  response_driving boolean not null default false,
+  description text not null,
+  status text not null default 'open' check (status in ('open', 'under_review', 'closed')),
+  review_notes text,
+  reviewed_by text,
+  created_by_id text not null,
+  created_by_name text
+);
+create index if not exists met_collisions_date_idx on met_collisions (collision_date desc);
+
+-- ---------- Command: Firearms PIP (MO19 Command) ----------
+create table if not exists met_firearms_pip (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  reference text not null unique,            -- PIP-123456
+  incident_date date not null,
+  incident_ref text,
+  location text not null,
+  officers text not null,
+  discharged boolean not null default false,
+  rounds_fired integer not null default 0,
+  injuries text,
+  summary text not null,
+  status text not null default 'open' check (status in ('open', 'under_review', 'closed')),
+  checklist jsonb not null default '{}'::jsonb,
+  review_notes text,
+  reviewed_by text,
+  created_by_id text not null,
+  created_by_name text
+);
+create index if not exists met_firearms_pip_date_idx on met_firearms_pip (incident_date desc);
+
 -- ---------- Lock-down: only the server (service role) can touch these ----------
 alter table met_incidents enable row level security;
 alter table met_incident_updates enable row level security;
@@ -181,3 +225,5 @@ alter table met_officer_details enable row level security;
 alter table met_duty_status enable row level security;
 alter table duty_rota enable row level security;
 alter table met_messages enable row level security;
+alter table met_collisions enable row level security;
+alter table met_firearms_pip enable row level security;

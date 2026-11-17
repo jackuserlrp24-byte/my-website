@@ -22,3 +22,22 @@ export const hasCommandRank = (u: Pick<PortalUser, 'roles' | 'isManagement'>) =>
   hasRoleId(u.roles, GOLD_ROLE_ID) ||
   hasRoleId(u.roles, SILVER_ROLE_ID) ||
   hasRoleId(u.roles, BRONZE_ROLE_ID);
+
+/**
+ * Command area roles.
+ *  - Police Collisions: Driving Standards Department role, Gold command, or management.
+ *  - Firearms PIP (post incident procedure): MO19 command role only (management can always open it so nobody is locked out).
+ * Set DISCORD_MO19_COMMAND_ROLE_ID in Vercel to the ID of your MO19 Command role. Until it is set, only management can open Firearms PIP.
+ */
+export const DRIVING_STANDARDS_ROLE_ID = process.env.DISCORD_DRIVING_STANDARDS_ROLE_ID || '1559219008744726598';
+export const MO19_COMMAND_ROLE_ID = process.env.DISCORD_MO19_COMMAND_ROLE_ID || '';
+
+type RoleUser = Pick<PortalUser, 'roles' | 'isManagement'>;
+
+export const canViewCollisions = (u: RoleUser) =>
+  u.isManagement || hasRoleId(u.roles, GOLD_ROLE_ID) || hasRoleId(u.roles, DRIVING_STANDARDS_ROLE_ID);
+
+export const canViewFirearms = (u: RoleUser) => u.isManagement || hasRoleId(u.roles, MO19_COMMAND_ROLE_ID);
+
+/** The Command tab shows for command, or for anyone who holds a role that opens one of its sections. */
+export const canOpenCommandArea = (u: PortalUser) => canManageMet(u) || canViewCollisions(u) || canViewFirearms(u);
