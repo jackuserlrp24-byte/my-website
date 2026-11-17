@@ -49,7 +49,7 @@ export default async function MyDetailsPage() {
         <Row label="Name" value={wl.data?.rp_name || officer.name} />
         <Row label="Collar number" value={wl.data?.collar_number} />
         <Row label="Rank" value={det.data?.rank} />
-        <Row label="Station" value={det.data?.station} />
+        <Row label="Station" value={command === 'Gold Command' ? 'New Scotland Yard' : det.data?.station} />
         <Row label="Team" value={det.data?.team} />
         <Row label="Command role" value={command ?? (officer.isManagement ? 'Management' : null)} />
       </div>

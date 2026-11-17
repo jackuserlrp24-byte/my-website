@@ -25,6 +25,13 @@ const TIERS: { label: string; id: string }[] = [
 
 // Division command team roles. These fill the Division column, and anyone who holds one but none of the roles above
 // is listed under "Division Command".
+/** Gold Command are always based at New Scotland Yard. */
+export const GOLD_STATION = 'New Scotland Yard';
+/** MO8 command are based at Chadwell Heath. */
+export const MO8_STATION = 'Chadwell Heath Police Base';
+/** Frontline Response command are shared out evenly between these two. */
+export const FRONTLINE_STATIONS = ['Plumstead Police Station', 'Bexleyheath Police Station'];
+
 const DIVISION_ROLES: { label: string; id: string }[] = [
   { label: 'Frontline Response', id: '1532843318197747872' },
   { label: 'MO2', id: '1532843761732681820' },
@@ -159,6 +166,7 @@ export async function getMetRoster(): Promise<RosterResult> {
   } catch {}
 
   const rows: MetOfficerRow[] = [];
+  const frontlineIdx: number[] = []; // rows that still need a Frontline station
   for (const m of members) {
     if (!m.user || m.user.bot) continue;
     const id = m.user.id;
@@ -170,18 +178,29 @@ export async function getMetRoster(): Promise<RosterResult> {
     const nick = parseNick(m.nick);
     const rank = rankFromRoleNames(roles.map((r) => roleName.get(r)).filter(Boolean) as string[]);
     const d = details.get(id);
+    const collarNo = (nick.collar || wl.get(id)?.collar || '').trim().toUpperCase();
+    const isGold = tierIndex === 0;
+    const isMo8 = !isGold && (divisions.includes('MO8') || collarNo === '1050T');
+    const isFrontline = !isGold && !isMo8 && divisions.includes('Frontline Response');
+    const station = isGold ? GOLD_STATION : isMo8 ? MO8_STATION : d?.station ?? null;
+    if (isFrontline && !station) frontlineIdx.push(rows.length);
     rows.push({
       id,
       name: nick.name || wl.get(id)?.rp_name || m.user.global_name || m.user.username,
       collar: nick.collar || wl.get(id)?.collar || null,
       rank: rank?.rank ?? d?.rank ?? null,
       rankLevel: rank?.level ?? 99,
-      station: d?.station ?? null,
+      station,
       division: divisionLabel(nick.collar || wl.get(id)?.collar || null, tierIndex === 0, divisions),
       tier: tierIndex < 0 ? DIVISION_TIER.label : TIERS[tierIndex].label,
       tierLevel: tierIndex < 0 ? DIVISION_TIER.level : tierIndex,
     });
   }
+
+  // Share Frontline Response command out evenly between Plumstead and Bexleyheath (ordered by Discord ID so it stays stable).
+  frontlineIdx
+    .sort((a, b) => (BigInt(rows[a].id) < BigInt(rows[b].id) ? -1 : 1))
+    .forEach((ri, n) => { rows[ri].station = FRONTLINE_STATIONS[n % FRONTLINE_STATIONS.length]; });
 
   rows.sort((a, b) => {
     const ca = a.collar && /^\d+$/.test(a.collar) ? parseInt(a.collar, 10) : Number.MAX_SAFE_INTEGER;
