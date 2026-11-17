@@ -29,13 +29,13 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
   const user = await getPortalUser();
   const can = (slug: string) => !!user && canOpenDepartment(user.roles, user.isManagement, COMMAND_DEPARTMENTS[slug]);
 
-  const met = '/dashboard/command/met-police';
+  const met = '/met-police';
   const services: Service[] = [
     {
       key: 'met',
       code: 'MET',
       title: 'Metropolitan Police',
-      description: 'Officer dossiers, collar numbers, role requests, training records and bodycam footage.',
+      description: 'The officer portal: incidents, forms and paperwork, announcements, body-worn video and the law book.',
       href: met,
       available: true,
       lockedText: '',
@@ -43,11 +43,11 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
       badge: 'text-blue-300 bg-blue-500/10 border-blue-500/30',
       hover: 'hover:border-blue-500/50',
       links: [
-        { label: 'Officer Search', hint: 'Dossiers and collar numbers', href: `${met}?tab=search` },
-        { label: 'Role Requests', hint: 'Approve or deny role changes', href: `${met}?tab=roles` },
-        { label: 'Training Records', hint: 'Audit who is trained', href: `${met}?tab=training` },
-        { label: 'Bodycam Footage', hint: 'Last 3 minutes, with audio', href: `${met}?tab=bodycam` },
-        { label: 'Google Drive', hint: 'Department slides and files', href: `${met}?tab=drive` },
+        { label: 'Incidents', hint: 'Incidents logged by body-worn cameras', href: `${met}/incidents` },
+        { label: 'Forms & Paperwork', hint: 'Every form in one place', href: `${met}/forms` },
+        { label: 'Announcements', hint: 'News and orders from command', href: `${met}/announcements` },
+        { label: 'Body-Worn Video', hint: 'Uploaded footage, with audio', href: `${met}/body-worn-video` },
+        { label: 'Law Book', hint: 'Search offences and powers', href: `${met}/law-book` },
       ],
     },
     {
@@ -98,7 +98,7 @@ export default async function ServicesHubPage({ searchParams }: { searchParams: 
               href={selected.href}
               className="inline-block px-4 py-2 bg-neutral-950 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
-              Open Command Suite &rarr;
+              Open {selected.code} &rarr;
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">

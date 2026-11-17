@@ -177,6 +177,15 @@ export default async function DashboardLayout({
           </Link>
           )}
 
+          {!access.limited && (
+          <Link
+            href="/met-police"
+            className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-200 text-xs font-semibold tracking-wider uppercase transition-colors"
+          >
+            Met Police
+          </Link>
+          )}
+
           {access.isStaff && (
             <Link
               href="/dashboard/staff"
