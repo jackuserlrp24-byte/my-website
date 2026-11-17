@@ -1,0 +1,20 @@
+MET POLICE OFFICER PORTAL UPDATE
+
+1. Drag everything in this folder (app, lib, supabase, next.config.ts) into your my-website project and choose "Replace".
+   The folder layout matches your project.
+
+2. Paste supabase/met-portal.sql into the Supabase SQL editor and run it once (safe to re-run).
+   (If you have not already run supabase/met-announcements.sql and supabase/bodycam.sql, run those too.)
+
+3. Role IDs (lib/training-config.ts):
+     Gold   1532843318197747872   (was 1532828658979569894 in the code)
+     Silver 1532828760410427432
+     Bronze 1532828869944545410
+   IMPORTANT: if DISCORD_GOLD_COMMAND_ROLE_ID / DISCORD_SILVER_COMMAND_ROLE_ID / DISCORD_BRONZE_COMMAND_ROLE_ID are set in
+   Vercel, those override the code. Update them there too, or delete them so the code values are used.
+
+4. Redeploy.
+
+DUTY ROTA
+The rota now lives on the Leave of Absence page (/dashboard/command/loa). It is only loaded and shown for
+Gold / Silver / Bronze (and management). Everyone else never receives it. The Duty tab links to it for command rank only.

@@ -8,6 +8,8 @@ const canonicalHost = new URL(redirectUri).host;
 const twinHost = canonicalHost.startsWith('www.') ? canonicalHost.slice(4) : `www.${canonicalHost}`;
 
 const nextConfig: NextConfig = {
+  // Evidence uploads (Met Police portal) send the file inside a server action.
+  experimental: { serverActions: { bodySizeLimit: '5mb' } },
   async redirects() {
     return [
       // The Services Hub is now its own standalone page.

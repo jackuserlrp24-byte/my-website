@@ -4,7 +4,17 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import type { ActionResult } from '@/lib/portal-types';
 import type { LoaRequest } from '@/lib/loa';
-import { requestLoa, returnFromLoa } from './actions';
+import type { OfficerOption } from '@/lib/met-officers';
+import { addRotaShift, removeRotaShift, requestLoa, returnFromLoa } from './actions';
+
+export interface RotaShift {
+  id: string;
+  shift_date: string;
+  start_time: string;
+  end_time: string;
+  member_name: string;
+  role_note: string | null;
+}
 
 const inputClass =
   'w-full bg-neutral-950 border border-neutral-800 px-3 py-2 text-xs text-neutral-200 focus:outline-none focus:border-[#5865F2]';
@@ -21,6 +31,8 @@ const STATUS_STYLE: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = { active: 'on leave', approved: 'scheduled', declined: 'declined', ended: 'ended', cancelled: 'ended early' };
 
 export default function LoaClient({
+  rota,
+  officers,
   userId,
   canEndAny,
   today,
@@ -28,6 +40,8 @@ export default function LoaClient({
   mine,
   loadError,
 }: {
+  rota: RotaShift[] | null; // null = this person does not have command rank, so the rota is not shown at all
+  officers: OfficerOption[];
   userId: string;
   canEndAny: boolean;
   today: string;
@@ -156,6 +170,81 @@ export default function LoaClient({
           </div>
         </div>
       </div>
+      {rota !== null && (
+        <div className="bg-neutral-900 border border-neutral-800 p-6 space-y-5">
+          <div>
+            <h3 className="text-sm font-bold text-neutral-100 uppercase tracking-wider">Duty rota</h3>
+            <p className="text-[11px] text-neutral-500 mt-1">Only command rank (Gold, Silver, Bronze) can see this. Times are UK time.</p>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const fd = new FormData(form);
+              startTransition(async () => {
+                const r = await addRotaShift(fd);
+                setResult(r);
+                if (r.ok) form.reset();
+              });
+            }}
+            className="grid grid-cols-2 md:grid-cols-6 gap-3 items-end"
+          >
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Date</label>
+              <input type="date" name="shiftDate" required min={today} defaultValue={today} className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">From</label>
+              <input type="time" name="startTime" required defaultValue="18:00" className={inputClass} />
+            </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">To</label>
+              <input type="time" name="endTime" required defaultValue="22:00" className={inputClass} />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] text-neutral-400 mb-1">Officer</label>
+              <select name="memberId" required defaultValue="" className={inputClass}>
+                <option value="" disabled>Choose...</option>
+                {officers.map((o) => (
+                  <option key={o.discord_id} value={o.discord_id}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] text-neutral-400 mb-1">Role / note</label>
+              <input name="roleNote" maxLength={120} placeholder="Optional" className={inputClass} />
+            </div>
+            <div className="col-span-2 md:col-span-6">
+              <button type="submit" disabled={pending} className={btnClass}>Add shift</button>
+            </div>
+          </form>
+
+          {rota.length === 0 ? (
+            <p className="text-xs font-mono text-neutral-500">No upcoming shifts on the rota.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {rota.map((s) => (
+                <div key={s.id} className="bg-neutral-950 border border-neutral-800 p-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-xs text-neutral-300">
+                    <span className="font-mono font-bold">{s.shift_date}</span>
+                    <span className="text-neutral-500"> {s.start_time}-{s.end_time} - </span>
+                    {s.member_name}
+                    {s.role_note && <span className="text-neutral-500"> ({s.role_note})</span>}
+                  </div>
+                  <button
+                    disabled={pending}
+                    onClick={() => startTransition(async () => setResult(await removeRotaShift(s.id)))}
+                    className="px-3 py-1 border border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-[10px] font-mono uppercase tracking-wider cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }

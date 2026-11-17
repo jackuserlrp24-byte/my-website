@@ -3,20 +3,28 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+// Each tab also "owns" the older pages that now live under it, so the right tab stays highlighted on them.
 const TABS = [
-  { href: '/met-police/incidents', label: 'Incidents' },
-  { href: '/met-police/forms', label: 'Forms & Paperwork' },
-  { href: '/met-police/announcements', label: 'Announcements' },
-  { href: '/met-police/body-worn-video', label: 'Body-Worn Video' },
-  { href: '/met-police/law-book', label: 'Law Book' },
+  { href: '/met-police/incidents', label: 'My Incidents', owns: [] as string[] },
+  { href: '/met-police/reports', label: 'Reports', owns: ['/met-police/forms'] },
+  { href: '/met-police/checks', label: 'Checks', owns: [] },
+  { href: '/met-police/evidence', label: 'Evidence', owns: ['/met-police/body-worn-video'] },
+  { href: '/met-police/statements', label: 'Statements', owns: [] },
+  { href: '/met-police/my-details', label: 'My Details', owns: [] },
+  { href: '/met-police/duty', label: 'Duty', owns: [] },
+  { href: '/met-police/training', label: 'Training', owns: [] },
+  { href: '/met-police/policies', label: 'Policies', owns: ['/met-police/law-book'] },
+  { href: '/met-police/communications', label: 'Communications', owns: ['/met-police/announcements'] },
 ];
+
+const under = (path: string, base: string) => path === base || path.startsWith(`${base}/`);
 
 export default function MetNav() {
   const path = usePathname();
   return (
     <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible px-3 md:px-4 pb-3 md:pb-0">
       {TABS.map((t) => {
-        const active = path === t.href || path.startsWith(`${t.href}/`);
+        const active = [t.href, ...t.owns].some((b) => under(path, b));
         return (
           <Link
             key={t.href}
