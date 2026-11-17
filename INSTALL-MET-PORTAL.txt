@@ -15,6 +15,9 @@ MET POLICE OFFICER PORTAL UPDATE
 
 4. Redeploy.
 
-DUTY ROTA
-The rota now lives on the Leave of Absence page (/dashboard/command/loa). It is only loaded and shown for
-Gold / Silver / Bronze (and management). Everyone else never receives it. The Duty tab links to it for command rank only.
+CHANGES IN THIS UPDATE
+- New Roster tab (/met-police/roster): every officer with collar, rank, station, team.
+- Communications: only command (and management) can post or delete notices and bulletins.
+- Duty and Training tabs removed. Delete the old folders app/met-police/duty and app/met-police/training from your project.
+- My Details is now the last tab.
+- The duty rota is still on the Leave of Absence page (/dashboard/command/loa), command rank only.

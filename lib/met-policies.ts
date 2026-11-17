@@ -25,7 +25,7 @@ export const POLICIES: Policy[] = [
     title: 'Taser',
     summary: 'Only Taser-trained officers, and only against a person who is violent or threatening violence.',
     body: [
-      'You must hold the Taser qualification (see Training).',
+      'You must hold the Taser qualification.',
       'Do not use it on someone who is only running away, or on anyone in a position where a fall could cause serious harm.',
       'Always give a warning if possible. Record the serial number and report the discharge.',
     ],

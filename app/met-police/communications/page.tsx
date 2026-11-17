@@ -52,7 +52,7 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
     <div className="space-y-6">
       <div>
         <h1 className={ui.h1}>Communications</h1>
-        <p className={ui.sub}>Notices and bulletins from command, and internal messages between officers.</p>
+        <p className={ui.sub}>Announcements from command, and internal messages between officers.</p>
       </div>
 
       <div className="flex gap-2">
@@ -64,6 +64,8 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
 
       {active === 'notices' && (
         <>
+          {!manager && <p className="text-xs text-slate-500">Only command can post notices and bulletins.</p>}
+
           {manager && !notices.error && (
             <form action={postAnnouncement} className={ui.panel}>
               <p className={ui.eyebrow}>Post a notice or bulletin</p>

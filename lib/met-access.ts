@@ -9,7 +9,7 @@ export async function getOfficer(): Promise<PortalUser | null> {
   return ok ? u : null;
 }
 
-/** Command + management can post announcements and see / delete every officer's footage. */
+/** Command + management ONLY can post / delete announcements and see every officer's footage. Normal officers cannot. */
 export const canManageMet = (u: PortalUser) => u.isManagement || u.isCommand;
 
 /**
