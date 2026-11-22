@@ -18,6 +18,7 @@ export default function AopCard({ initial }: { initial: Current }) {
   // Pick up changes made in game (or by another staff member) without a refresh.
   useEffect(() => {
     const t = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
       const latest = await getCurrentAop();
       if (!latest) return;
       setCurrent((c) => {
@@ -25,7 +26,7 @@ export default function AopCard({ initial }: { initial: Current }) {
         if (!dirty.current) setPicked(parseAop(latest.aop));
         return latest;
       });
-    }, 8000);
+    }, 30000);
     return () => clearInterval(t);
   }, []);
 

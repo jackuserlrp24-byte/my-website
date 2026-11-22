@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { panelsForPath } from '@/lib/maintenance-config';
 
-const POLL_MS = 4000;
+const POLL_MS = 45000; // was 4s - this ran on every page for every visitor and was the biggest source of requests
 const CREW_LEAVE_MS = 1700; // how long the workers take to walk off
 const DOORS_MS = 550;       // doors closing / opening
 const MIN_HOLD_MS = 300;    // keep the doors shut at least this long so the swap is never seen
@@ -32,12 +32,14 @@ export default function MaintenanceWatcher() {
   const busyRef = useRef(false);
   const sawPendingRef = useRef(false);
   const closedAtRef = useRef(0);
+  const checkRef = useRef<null | (() => void)>(null);
 
   const isBlocked = (s: Status, path: string) => s.site || panelsForPath(path).some((k) => !!s.panels[k]);
 
   useEffect(() => {
     pathRef.current = pathname;
     blockedRef.current = null; // re-learn the state when moving to another page
+    checkRef.current?.(); // ...straight away, since we now poll slowly
   }, [pathname]);
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -123,6 +125,7 @@ export default function MaintenanceWatcher() {
       }
     }
 
+    checkRef.current = check;
     check();
     const t = setInterval(check, POLL_MS);
     const onVisible = () => document.visibilityState === 'visible' && check();
@@ -130,6 +133,7 @@ export default function MaintenanceWatcher() {
     window.addEventListener('online', check);
     return () => {
       stopped = true;
+      checkRef.current = null;
       clearInterval(t);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('online', check);

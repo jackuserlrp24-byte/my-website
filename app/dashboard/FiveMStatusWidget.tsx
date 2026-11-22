@@ -1,46 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useServerStatus } from '@/app/components/useServerStatus';
 import Image from 'next/image';
 
-interface Player {
-  id: number;
-  name: string;
-  ping: number;
-}
-
 export default function FiveMStatusWidget() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [maxClients, setMaxClients] = useState(64);
-  const [isOnline, setIsOnline] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { players, maxClients, isOnline, loaded } = useServerStatus();
+  const loading = !loaded;
 
   const CONNECT_URI = 'fivem://connect/cfx.re/join/bddq8g4';
-
-  useEffect(() => {
-    async function fetchServerStatus() {
-      try {
-        const res = await fetch('/api/server-status', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setIsOnline(data.isOnline);
-          const sortedPlayers = (data.players || []).sort((a: Player, b: Player) => a.id - b.id);
-          setPlayers(sortedPlayers);
-          setMaxClients(data.maxClients || 64);
-        } else {
-          setIsOnline(false);
-        }
-      } catch {
-        setIsOnline(false);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchServerStatus();
-    const interval = setInterval(fetchServerStatus, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="w-full bg-neutral-900/80 border border-neutral-800 p-6 shadow-xl backdrop-blur-md flex flex-col gap-4">

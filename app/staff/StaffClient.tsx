@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import LocalTime from '@/app/components/LocalTime';
+import { useServerStatus } from '@/app/components/useServerStatus';
 import type { GuildMemberLite } from '@/lib/discord';
 import type { ActionResult, GameAction, ModerationAction, ModerationLog } from '@/lib/portal-types';
 import { getGameActions, getHistory, runWorldAction, searchMembers, takeAction } from './actions';
@@ -71,33 +72,16 @@ export default function StaffClient({
   const [scope, setScope] = useState<Scope>('game');
   const [banHours, setBanHours] = useState(24);
   const [game, setGame] = useState<GameAction[]>(gameActions);
-  const [live, setLive] = useState<{ online: boolean; count: number; max: number } | null>(null);
-
-  // How many people are in the FiveM server right now (same feed as the dashboard status widget).
-  useEffect(() => {
-    let stop = false;
-    async function poll() {
-      try {
-        const res = await fetch('/api/server-status', { cache: 'no-store' });
-        const d = res.ok ? await res.json() : null;
-        if (!stop) setLive(d ? { online: !!d.isOnline, count: (d.players ?? []).length, max: Number(d.maxClients) || 64 } : { online: false, count: 0, max: 64 });
-      } catch {
-        if (!stop) setLive({ online: false, count: 0, max: 64 });
-      }
-    }
-    poll();
-    const t = setInterval(poll, 5000);
-    return () => {
-      stop = true;
-      clearInterval(t);
-    };
-  }, []);
+  const status = useServerStatus();
+  const live = status.loaded ? { online: status.isOnline, count: status.players.length, max: status.maxClients } : null;
 
   // Keep the in-game status list fresh while something is still waiting for the server.
   const waiting = game.some((g) => g.status === 'pending' || g.status === 'sent');
   useEffect(() => {
     if (!waiting) return;
-    const t = setInterval(async () => setGame(await getGameActions()), 4000);
+    const t = setInterval(async () => {
+      if (document.visibilityState === 'visible') setGame(await getGameActions());
+    }, 10000);
     return () => clearInterval(t);
   }, [waiting]);
 
